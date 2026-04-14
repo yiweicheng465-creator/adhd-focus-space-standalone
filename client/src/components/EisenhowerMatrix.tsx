@@ -445,6 +445,11 @@ function TaskChip({
   quadrantBorder,
   onDragStart,
   onDragEnd,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  isDragOver = false,
+  dragOverPos = "after",
 }: {
   task: Task;
   quadrantColor: string;
