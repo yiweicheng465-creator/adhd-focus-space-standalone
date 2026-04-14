@@ -154,6 +154,7 @@ async function downloadFromDrive(accessToken: string): Promise<AppBackup> {
 /* ── Component ── */
 export default function StorageBackup() {
   const { user } = useAuth();
+  const [showDriveSetup, setShowDriveSetup] = useState(false);
   const [gdClientId, setGdClientId] = useState("");
   // Fetch Google Client ID from server on mount
   useEffect(() => { fetch("/api/config").then(r=>r.json()).then(d=>{ if(d.googleClientId) setGdClientId(d.googleClientId); }).catch(()=>{}); }, []);
@@ -394,44 +395,56 @@ export default function StorageBackup() {
       {/* Google Drive backup */}
       <Section title="Google Drive Backup" subtitle="Save your data to your own Google Drive — no account setup needed.">
 
-        {/* One-time access notice */}
-        <div style={{ marginBottom: 14, padding: "10px 14px", background: "oklch(0.97 0.025 60)", border: "1px solid oklch(0.82 0.07 60)", borderRadius: 4, display: "flex", gap: 10 }}>
-          <AlertTriangle size={14} style={{ color: "oklch(0.55 0.15 60)", flexShrink: 0, marginTop: 1 }} />
-          <div>
-            <p style={{ fontSize: 11, fontWeight: 600, color: "oklch(0.40 0.10 60)", fontFamily: "'DM Sans', sans-serif", marginBottom: 3 }}>
-              First time? You need to be added as a test user.
-            </p>
-            <p style={{ fontSize: 11, color: "oklch(0.48 0.08 60)", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6, margin: 0 }}>
-              This app is in testing mode. To use Google Drive backup, send your Gmail address to the app owner and ask to be added.
-            </p>
-            {user?.id && (
-              <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
-                <code style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, background: "oklch(0.93 0.025 60)", padding: "3px 8px", borderRadius: 3, color: "oklch(0.35 0.10 60)" }}>
-                  {user.id}
-                </code>
-                <button
-                  onClick={() => { navigator.clipboard.writeText(user.id); toast.success("Gmail copied!"); }}
-                  style={{ fontSize: 10, color: M.coral, background: "none", border: "none", cursor: "pointer", textDecoration: "underline", fontFamily: "'DM Sans', sans-serif" }}
-                >
-                  Copy
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+        {/* Collapsible setup guide */}
+        <div style={{ marginBottom: 14 }}>
+          <button
+            onClick={() => setShowDriveSetup(v => !v)}
+            style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: 0, marginBottom: showDriveSetup ? 10 : 0 }}
+          >
+            <span style={{ fontSize: 10, color: M.muted, fontFamily: "'Space Mono', monospace", letterSpacing: "0.06em" }}>
+              {showDriveSetup ? "▾" : "▸"} First time? How to set up Google Drive backup
+            </span>
+          </button>
 
-        {/* Steps */}
-        <div style={{ marginBottom: 16, display: "flex", flexDirection: "column", gap: 10 }}>
-          {[
-            { n: "1", label: "Copy your Gmail above and send it to the app owner to get added" },
-            { n: "2", label: "Once added, click 'Backup to Google Drive' — a Google permission popup will appear" },
-            { n: "3", label: "Approve access — your backup is saved to your own Google Drive automatically" },
-          ].map(({ n, label }) => (
-            <div key={n} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-              <div style={{ width: 20, height: 20, borderRadius: "50%", flexShrink: 0, background: M.coral, color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Space Mono', monospace", fontSize: 9, fontWeight: 700 }}>{n}</div>
-              <p style={{ fontSize: 11, color: M.ink, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6, margin: 0, paddingTop: 2 }}>{label}</p>
-            </div>
-          ))}
+          {showDriveSetup && (
+            <>
+              <div style={{ marginBottom: 12, padding: "10px 14px", background: "oklch(0.97 0.025 60)", border: "1px solid oklch(0.82 0.07 60)", borderRadius: 4, display: "flex", gap: 10 }}>
+                <AlertTriangle size={14} style={{ color: "oklch(0.55 0.15 60)", flexShrink: 0, marginTop: 1 }} />
+                <div>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: "oklch(0.40 0.10 60)", fontFamily: "'DM Sans', sans-serif", marginBottom: 3 }}>
+                    You need to be added as a test user first.
+                  </p>
+                  <p style={{ fontSize: 11, color: "oklch(0.48 0.08 60)", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6, margin: 0 }}>
+                    This app is in testing mode. Send your Gmail to the app owner and ask to be added.
+                  </p>
+                  {user?.id && (
+                    <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
+                      <code style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, background: "oklch(0.93 0.025 60)", padding: "3px 8px", borderRadius: 3, color: "oklch(0.35 0.10 60)" }}>
+                        {user.id}
+                      </code>
+                      <button onClick={() => { navigator.clipboard.writeText(user.id); toast.success("Gmail copied!"); }}
+                        style={{ fontSize: 10, color: M.coral, background: "none", border: "none", cursor: "pointer", textDecoration: "underline", fontFamily: "'DM Sans', sans-serif" }}>
+                        Copy
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 4, display: "flex", flexDirection: "column", gap: 8 }}>
+                {[
+                  { n: "1", label: "Copy your Gmail above and send it to the app owner to get added" },
+                  { n: "2", label: "Once added, click 'Backup to Google Drive' — a Google permission popup will appear" },
+                  { n: "3", label: "Approve access — your backup saves to your own Google Drive automatically" },
+                ].map(({ n, label }) => (
+                  <div key={n} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                    <div style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, background: M.coral, color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Space Mono', monospace", fontSize: 8, fontWeight: 700 }}>{n}</div>
+                    <p style={{ fontSize: 11, color: M.ink, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6, margin: 0, paddingTop: 1 }}>{label}</p>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Buttons */}
