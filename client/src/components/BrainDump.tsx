@@ -7,11 +7,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { PixelBrain } from "@/components/PixelIcons";
 import { cn } from "@/lib/utils";
-import { ArrowRight, Hash, Tag, Trash2, X } from "lucide-react";
+import { ArrowRight, Hash, Sparkles, Tag, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { nanoid } from "nanoid";
 import type { Task } from "./TaskManager";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { callAI } from "@/lib/ai";
 
 interface BrainDumpEntry {
   id: string;
@@ -88,6 +89,7 @@ export function BrainDump({ onConvertToTask, onCreateAgent, onAddGoal, onDump, i
   const [currentThought, setCurrentThought] = useState("");
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [initialTextHandled, setInitialTextHandled] = useState(false);
+  const [aiSorting, setAiSorting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // localStorage-backed entries
@@ -169,6 +171,45 @@ export function BrainDump({ onConvertToTask, onCreateAgent, onAddGoal, onDump, i
   const clearAll = () => {
     deleteAllMutation.mutate();
     toast.info("Brain dump cleared.", { duration: 2000 });
+  };
+
+  const handleAiSort = async () => {
+    const active = entries.filter((e) => !e.converted);
+    if (active.length === 0) { toast.info("Nothing to sort."); return; }
+    setAiSorting(true);
+    try {
+      const result = await callAI(
+        `You categorize brain dump entries. Return ONLY valid JSON with this shape:
+{ "items": [{ "original": string, "category": string, "action": string, "rewritten": string, "emoji": string }] }
+Categories: task, idea, worry, reference, someday. Keep it brief.`,
+        active.map((e) => e.text).join("\n")
+      );
+      // Try to parse JSON from the response
+      const jsonMatch = result.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]) as { items: { original: string; category: string; action: string; rewritten: string; emoji: string }[] };
+        if (parsed.items?.length) {
+          toast.success(`AI sorted ${parsed.items.length} entries. Tags auto-applied.`);
+          // Re-tag entries with AI category as a hashtag
+          parsed.items.forEach((item) => {
+            const entry = active.find((e) => e.text.includes(item.original.slice(0, 20)));
+            if (entry) {
+              const newTag = item.category.replace(/\s+/g, "_").toLowerCase();
+              if (!entry.tags.includes(newTag)) {
+                setRawEntries((prev) => prev.map((e) => e.id === entry.id ? { ...e, tags: [...e.tags, newTag] } : e));
+              }
+            }
+          });
+        }
+      } else {
+        toast.info("AI sorted your dump — check the console for details.");
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "AI sort failed";
+      toast.error(msg, { duration: 5000 });
+    } finally {
+      setAiSorting(false);
+    }
   };
 
   // Auto-dump initialText once on mount
@@ -286,7 +327,11 @@ export function BrainDump({ onConvertToTask, onCreateAgent, onAddGoal, onDump, i
             <span style={{ color: M.muted }}>({visibleEntries.length})</span>
           </p>
           <div className="flex items-center gap-2">
-                        <button onClick={clearAll} disabled={deleteAllMutation.isPending} className="m-btn-link">
+            <button onClick={handleAiSort} disabled={aiSorting} className="m-btn-link flex items-center gap-1">
+              <Sparkles className="w-3 h-3" />
+              {aiSorting ? "Sorting…" : "AI Sort"}
+            </button>
+            <button onClick={clearAll} disabled={deleteAllMutation.isPending} className="m-btn-link">
               Clear all
             </button>
           </div>

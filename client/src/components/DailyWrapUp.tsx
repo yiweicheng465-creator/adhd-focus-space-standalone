@@ -5,12 +5,13 @@
    ============================================================ */
 
 import { useState } from "react";
-import { CheckCircle2, ClipboardCopy, Sparkles, X } from "lucide-react";
+import { CheckCircle2, ClipboardCopy, Loader2, Sparkles, X } from "lucide-react";
 import { PixelAgents } from "@/components/PixelIcons";
 import { toast } from "sonner";
 import type { Task } from "./TaskManager";
 import type { Win } from "./DailyWins";
 import type { Agent } from "./AgentTracker";
+import { callAI } from "@/lib/ai";
 
 // ── Win category colours (must match DailyWins WIN_ICONS order) ──
 const WIN_CAT_COLORS = [
@@ -304,6 +305,8 @@ interface DailyWrapUpProps {
 
 export function DailyWrapUp({ tasks, wins, agents, quitCount = 0, onClose }: DailyWrapUpProps) {
   const [copied, setCopied] = useState(false);
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
 
   const today    = new Date().toDateString();
   const todayStr = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
@@ -349,9 +352,32 @@ export function DailyWrapUp({ tasks, wins, agents, quitCount = 0, onClose }: Dai
     try {
       await navigator.clipboard.writeText(generateDigest());
       setCopied(true);
-            setTimeout(() => setCopied(false), 3000);
+      setTimeout(() => setCopied(false), 3000);
     } catch {
       toast.error("Copy failed — please select text manually.");
+    }
+  };
+
+  const handleGenerateSummary = async () => {
+    setAiLoading(true);
+    setAiSummary(null);
+    try {
+      const summary = await callAI(
+        "You write warm, personal daily summaries for ADHD users. Be concise (2-3 sentences), positive, and specific about their accomplishments. No bullet points.",
+        JSON.stringify({
+          wins: todayWins.map((w) => w.text),
+          tasksCompleted: doneTasks.map((t) => t.text),
+          tasksPending: activeTasks.slice(0, 5).map((t) => t.text),
+          focusSessions: undefined,
+          score,
+        })
+      );
+      setAiSummary(summary);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "AI request failed";
+      toast.error(msg, { duration: 5000 });
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -499,14 +525,37 @@ export function DailyWrapUp({ tasks, wins, agents, quitCount = 0, onClose }: Dai
 
         </div>
 
+        {/* AI Summary */}
+        {(aiSummary || aiLoading) && (
+          <div className="relative z-10 px-5 pb-1" style={{ borderTop: `1px solid ${M.border}`, paddingTop: 12 }}>
+            <div style={{ background: M.coralBg, border: `1px solid ${M.coralBdr}`, borderRadius: 6, padding: "10px 14px" }}>
+              <p style={{ fontSize: "0.60rem", color: M.coral, fontFamily: "'Space Mono', monospace", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>
+                AI Summary
+              </p>
+              {aiLoading ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 6, color: M.muted }}>
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  <span style={{ fontSize: "0.78rem", fontFamily: "'DM Sans', sans-serif" }}>Generating…</span>
+                </div>
+              ) : (
+                <p style={{ fontSize: "0.875rem", color: M.ink, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6 }}>{aiSummary}</p>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Footer */}
-        <div className="relative z-10 p-4 flex gap-3" style={{ borderTop: `1px solid ${M.border}` }}>
-          <button onClick={onClose} className="m-btn-ghost flex-1">
+        <div className="relative z-10 p-4 flex gap-2 flex-wrap" style={{ borderTop: `1px solid ${M.border}` }}>
+          <button onClick={onClose} className="m-btn-ghost" style={{ flex: "1 1 auto" }}>
             Close
           </button>
-          <button onClick={copyDigest} className="m-btn-primary flex-1 justify-center">
+          <button onClick={handleGenerateSummary} disabled={aiLoading} className="m-btn-ghost flex items-center gap-1.5" style={{ flex: "1 1 auto", justifyContent: "center" }}>
+            <Sparkles className="w-3.5 h-3.5" />
+            {aiLoading ? "Generating…" : "AI Summary"}
+          </button>
+          <button onClick={copyDigest} className="m-btn-primary flex-1 justify-center" style={{ flex: "1 1 auto" }}>
             <ClipboardCopy className="w-3.5 h-3.5" />
-            {copied ? "Copied!" : "Copy summary"}
+            {copied ? "Copied!" : "Copy"}
           </button>
         </div>
       </div>

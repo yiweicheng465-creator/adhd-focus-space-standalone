@@ -49,10 +49,11 @@ import type { Win } from "./DailyWins";
 import type { Goal } from "./Goals";
 import type { Agent } from "./AgentTracker";
 import { useTimer } from "@/contexts/TimerContext";
-import { Clock, Sparkles, Zap, Bot, Check } from "lucide-react";
+import { Clock, Sparkles, Zap, Bot, Check, Send } from "lucide-react";
 import { PixelTrophy } from "@/components/PixelIcons";
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
+import { callAI } from "@/lib/ai";
 
 const SUNSET_BLOB = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410012773/WNs8kMVMKanwFbtYhk72en/adhd-sunset-blob_5606b6c8.png";
 const PERSON_IMG  = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410012773/WNs8kMVMKanwFbtYhk72en/pink-lofi-illustration_e5665e16.png";
@@ -151,6 +152,51 @@ export function Dashboard({
   const [quickCapture, setQuickCapture] = useState("");
   const [completing, setCompleting] = useState<string | null>(null);
   const dumpInputRef = useRef<HTMLInputElement>(null);
+
+  // ── AI Chat ──
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>(() => {
+    try { return JSON.parse(localStorage.getItem(CHAT_HISTORY_KEY) ?? "[]"); } catch { return []; }
+  });
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<HTMLInputElement>(null);
+
+  // Persist chat history
+  useEffect(() => {
+    localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(chatHistory.slice(-MAX_CHAT_HISTORY)));
+  }, [chatHistory]);
+
+  // Scroll to bottom when new message arrives
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatHistory, chatLoading]);
+
+  const sendChat = async () => {
+    const msg = chatInput.trim();
+    if (!msg || chatLoading) return;
+    setChatInput("");
+    const userMsg: ChatMessage = { role: "user", content: msg };
+    setChatHistory((prev) => [...prev, userMsg]);
+    setChatLoading(true);
+    try {
+      const taskSummary = tasks.slice(0, 10).map((t) => `[${t.priority}] ${t.text} (${t.done ? "done" : "pending"})`).join("\n");
+      const winSummary = tasks.filter((t) => t.done).length > 0 ? `${tasks.filter((t) => t.done).length} tasks done today` : "";
+      const systemPrompt = `You are a warm, encouraging ADHD productivity coach. Keep responses short (2-3 sentences max). Here's context about the user's day:
+Tasks: ${taskSummary || "none"}
+${winSummary ? `Progress: ${winSummary}` : ""}
+Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`;
+      const reply = await callAI(systemPrompt, msg);
+      setChatHistory((prev) => [...prev, { role: "assistant", content: reply }]);
+    } catch (err) {
+      const m = err instanceof Error ? err.message : "AI unavailable";
+      toast.error(m, { duration: 5000 });
+      setChatHistory((prev) => prev.slice(0, -1)); // remove user message on error
+      setChatInput(msg); // restore input
+    } finally {
+      setChatLoading(false);
+    }
+  };
 
   // Press / to focus the dashboard dump input
   useEffect(() => {
@@ -516,8 +562,81 @@ export function Dashboard({
               <span className="retro-titlebar-btn">✕</span>
             </div>
           </div>
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", padding: "14px 16px" }}>
-              </div>{/* /inner padding div */}
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", padding: "10px 12px 8px" }}>
+            {/* Messages area */}
+            <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6, minHeight: 0, paddingBottom: 4 }}>
+              {chatHistory.length === 0 && (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 8, opacity: 0.5 }}>
+                  <Bot size={18} style={{ color: AI_ACCENT }} />
+                  <p style={{ fontSize: 10, color: MUTED, fontFamily: "'DM Sans', sans-serif", textAlign: "center", lineHeight: 1.5 }}>
+                    Ask me anything!<br />I know your tasks & mood.
+                  </p>
+                  <p style={{ fontSize: 9, color: MUTED, fontFamily: "'Space Mono', monospace", letterSpacing: "0.06em" }}>press / to focus</p>
+                </div>
+              )}
+              {chatHistory.map((m, i) => (
+                <div key={i} style={{
+                  display: "flex",
+                  justifyContent: m.role === "user" ? "flex-end" : "flex-start",
+                }}>
+                  <div style={{
+                    maxWidth: "85%",
+                    padding: "5px 9px",
+                    background: m.role === "user" ? AI_ACCENT : AI_MSG_BG,
+                    color: m.role === "user" ? "white" : INK,
+                    fontSize: 10.5,
+                    fontFamily: "'DM Sans', sans-serif",
+                    lineHeight: 1.5,
+                    borderRadius: m.role === "user" ? "8px 8px 2px 8px" : "8px 8px 8px 2px",
+                    border: m.role === "assistant" ? `1px solid ${AI_BORDER}` : "none",
+                    wordBreak: "break-word",
+                  }}>
+                    {m.role === "assistant" ? (
+                      <Streamdown>{m.content}</Streamdown>
+                    ) : m.content}
+                  </div>
+                </div>
+              ))}
+              {chatLoading && (
+                <div style={{ display: "flex", gap: 3, padding: "5px 9px", background: AI_MSG_BG, border: `1px solid ${AI_BORDER}`, borderRadius: "8px 8px 8px 2px", width: "fit-content" }}>
+                  {[0,1,2].map((i) => (
+                    <div key={i} style={{
+                      width: 4, height: 4, borderRadius: "50%", background: AI_ACCENT,
+                      animation: `ft-petBounce 0.8s ease infinite`,
+                      animationDelay: `${i * 0.15}s`,
+                    }} />
+                  ))}
+                </div>
+              )}
+              <div ref={chatEndRef} />
+            </div>
+            {/* Input area */}
+            <div style={{ display: "flex", gap: 5, alignItems: "center", paddingTop: 6, borderTop: `1px solid ${AI_BORDER}`, flexShrink: 0 }}>
+              <input
+                ref={(el) => { (window as Window & { __adhd_ai_input?: HTMLInputElement | null }).__adhd_ai_input = el; chatInputRef.current = el; }}
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); } }}
+                placeholder="Ask your coach…"
+                style={{
+                  flex: 1, padding: "5px 8px", fontSize: 10.5,
+                  background: "oklch(0.975 0.018 355)", border: `1px solid ${AI_BORDER}`,
+                  borderRadius: 4, color: INK, outline: "none",
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+              />
+              <button onClick={sendChat} disabled={chatLoading || !chatInput.trim()} style={{
+                background: chatInput.trim() ? AI_ACCENT : "transparent",
+                border: `1px solid ${chatInput.trim() ? AI_ACCENT : AI_BORDER}`,
+                color: chatInput.trim() ? "white" : MUTED,
+                borderRadius: 4, padding: "5px 7px", cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                transition: "all 0.15s",
+              }}>
+                <Send size={11} />
+              </button>
+            </div>
+          </div>{/* /inner padding div */}
         </div>{/* /retro-window Col 3 */}
       </div>{/* /grid */}
 

@@ -25,7 +25,7 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useBlockStreak } from "@/hooks/useBlockStreak";
 import { useTimer } from "@/contexts/TimerContext";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { trpc } from "@/lib/trpc";
+import { LoginScreen } from "@/components/LoginScreen";
 import { nanoid } from "nanoid";
 import {
   DashboardDecor,
@@ -189,69 +189,31 @@ const SUNSET_WIDE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410012773/WN
 export default function Home() {
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
   const { durations } = useTimer();
-  const { isAuthenticated } = useAuth();
-  const utils = trpc.useUtils();
+  const { user, loading: authLoading, login } = useAuth();
   const today = new Date().toDateString();
 
-  // ── tRPC queries (DB) ──
-  const tasksQuery  = trpc.tasks.list.useQuery(undefined, { enabled: isAuthenticated });
-  const winsQuery   = trpc.wins.list.useQuery(undefined, { enabled: isAuthenticated });
-  const goalsQuery  = trpc.goals.list.useQuery(undefined, { enabled: isAuthenticated });
-  const agentsQuery = trpc.agents.list.useQuery(undefined, { enabled: isAuthenticated });
-  const moodQuery   = trpc.logs.getMood.useQuery({ dateKey: today }, { enabled: isAuthenticated });
-  const focusSessionsQuery = trpc.logs.getFocusSessions.useQuery(undefined, { enabled: isAuthenticated });
-  const profileQuery = trpc.profile.getName.useQuery(undefined, { enabled: isAuthenticated });
-  // ── tRPC mutations ───
-  const createTask   = trpc.tasks.create.useMutation({ onSuccess: () => utils.tasks.list.invalidate() });
-  const updateTask   = trpc.tasks.update.useMutation({
-    onMutate: async (input) => {
-      await utils.tasks.list.cancel();
-      const prev = utils.tasks.list.getData();
-      utils.tasks.list.setData(undefined, (old) =>
-        old?.map((t) => t.id === input.id ? { ...t, ...input } : t)
-      );
-      return { prev };
-    },
-    onError: (_err, _input, ctx) => {
-      if (ctx?.prev) utils.tasks.list.setData(undefined, ctx.prev);
-    },
-    onSettled: () => utils.tasks.list.invalidate(),
-  });
-  const deleteTask   = trpc.tasks.delete.useMutation({ onSuccess: () => utils.tasks.list.invalidate() });
-  const createWin    = trpc.wins.create.useMutation({ onSuccess: () => utils.wins.list.invalidate() });
-  const updateWin    = trpc.wins.update.useMutation({ onSuccess: () => utils.wins.list.invalidate() });
-  const deleteWin    = trpc.wins.delete.useMutation({ onSuccess: () => utils.wins.list.invalidate() });
-  const createGoal   = trpc.goals.create.useMutation({ onSuccess: () => utils.goals.list.invalidate() });
-  const updateGoal   = trpc.goals.update.useMutation({ onSuccess: () => utils.goals.list.invalidate() });
-  const deleteGoal   = trpc.goals.delete.useMutation({ onSuccess: () => utils.goals.list.invalidate() });
-  const createAgent  = trpc.agents.create.useMutation({ onSuccess: () => utils.agents.list.invalidate() });
-  const updateAgent  = trpc.agents.update.useMutation({ onSuccess: () => utils.agents.list.invalidate() });
-  const deleteAgent  = trpc.agents.delete.useMutation({ onSuccess: () => utils.agents.list.invalidate() });
-  const setMoodMut   = trpc.logs.setMood.useMutation({ onSuccess: () => utils.logs.getMood.invalidate() });
-  const addFocusSession = trpc.logs.addFocusSession.useMutation({ onSuccess: () => utils.logs.getFocusSessions.invalidate() });
-  const upsertDailyLog  = trpc.logs.upsertDailyLog.useMutation();
-  const updateNameMut = trpc.profile.updateName.useMutation({ onSuccess: (data) => { setDisplayName(data.name); localStorage.setItem("adhd-display-name", data.name); } });
-  const setupProfileMut = trpc.profile.setupProfile.useMutation();
-  // ── Name / personalisation ──
+  // ── Name / personalisation (localStorage + auth user) ──
   const [displayName, setDisplayName] = React.useState<string>(() => localStorage.getItem("adhd-display-name") ?? "");
   const [showNamePrompt, setShowNamePrompt] = React.useState(false);
+
+  // Sync display name from auth user
+  React.useEffect(() => {
+    if (user?.name && !localStorage.getItem("adhd-display-name")) {
+      setDisplayName(user.name);
+      localStorage.setItem("adhd-display-name", user.name);
+    }
+  }, [user]);
+
   // Show name prompt on first visit (no name saved anywhere)
   React.useEffect(() => {
+    if (!user) return;
     const stored = localStorage.getItem("adhd-display-name");
     const skipped = localStorage.getItem("adhd-name-skipped");
     if (!stored && !skipped) {
-      // Small delay so the check-in modal doesn't fight for attention
       const t = setTimeout(() => setShowNamePrompt(true), 1200);
       return () => clearTimeout(t);
     }
-  }, []);
-  // Sync name from DB when authenticated
-  React.useEffect(() => {
-    if (profileQuery.data?.name && !localStorage.getItem("adhd-display-name")) {
-      setDisplayName(profileQuery.data.name);
-      localStorage.setItem("adhd-display-name", profileQuery.data.name);
-    }
-  }, [profileQuery.data]);
+  }, [user]);
   // Listen for navigateTo events (e.g. from backup reminder toast)
   React.useEffect(() => {
     function onNavigateTo(e: Event) {
@@ -296,62 +258,36 @@ export default function Home() {
     setDisplayName(name);
     localStorage.setItem("adhd-display-name", name);
     setShowNamePrompt(false);
-    if (isAuthenticated) {
-      // Save name only — AI works via built-in credits, no key needed on first run
-      setupProfileMut.mutate({ name });
-    }
-      };
+  };
   const handleNameSkip = () => {
     localStorage.setItem("adhd-name-skipped", "1");
     setShowNamePrompt(false);
   };
-  // ── localStorage fallback (for unauthenticated users) ───
-  const [localTasks,  setLocalTasks]  = useLocalStorage<Task[]>("adhd-tasks",  INITIAL_TASKS);
-  const [localWins,   setLocalWins]   = useLocalStorage<Win[]>("adhd-wins",   []);
-  const [localGoals,  setLocalGoals]  = useLocalStorage<Goal[]>("adhd-goals",  INITIAL_GOALS);
-  const [localAgents, setLocalAgents] = useLocalStorage<Agent[]>("adhd-agents", []);
-  const [localMood,   setLocalMood]   = useLocalStorage<number | null>("adhd-mood", null);
 
-  // ── Unified data: DB when logged in, localStorage when not ──
-  const tasks  = isAuthenticated ? ((tasksQuery.data ?? []).map(t => ({ ...t, createdAt: new Date(t.createdAt), priority: t.priority as Task["priority"], context: t.context as Task["context"] })) as Task[]) : localTasks;
-  const wins   = isAuthenticated ? ((winsQuery.data ?? []).map(w => ({ ...w, createdAt: new Date(w.createdAt) })) as Win[]) : localWins;
-  const goals  = isAuthenticated ? ((goalsQuery.data ?? []).map(g => ({ ...g, createdAt: new Date(g.createdAt) })) as Goal[]) : localGoals;
-  const agents = isAuthenticated ? ((agentsQuery.data ?? []).map(a => ({ ...a, startedAt: new Date(a.startedAt) })) as Agent[]) : localAgents;
-  const mood   = isAuthenticated ? (moodQuery.data ?? null) : localMood;
-  const focusSessionsToday = isAuthenticated
-    ? (focusSessionsQuery.data ?? []).filter(s => s.dateKey === today).length
-    : (() => { try { const r = localStorage.getItem("adhd-focus-session-list"); if (r) { const l = JSON.parse(r) as Record<string, unknown[]>; return (l[today] ?? []).length; } return 0; } catch { return 0; } })();
-
-  // ── Unified setters ──
-  const setTasks = useCallback((updater: Task[] | ((prev: Task[]) => Task[])) => {
-    if (!isAuthenticated) { setLocalTasks(updater); return; }
-    // For DB mode, mutations are called directly; this is a no-op placeholder
-  }, [isAuthenticated, setLocalTasks]);
-
-  const setWins = useCallback((updater: Win[] | ((prev: Win[]) => Win[])) => {
-    if (!isAuthenticated) { setLocalWins(updater); return; }
-  }, [isAuthenticated, setLocalWins]);
-
-  const setGoals = useCallback((updater: Goal[] | ((prev: Goal[]) => Goal[])) => {
-    if (!isAuthenticated) { setLocalGoals(updater); return; }
-  }, [isAuthenticated, setLocalGoals]);
-
-  const setAgents = useCallback((updater: Agent[] | ((prev: Agent[]) => Agent[])) => {
-    if (!isAuthenticated) { setLocalAgents(updater); return; }
-  }, [isAuthenticated, setLocalAgents]);
+  // ── All data in localStorage ───────────────────────────────────────────────
+  const [tasks,  setTasks]  = useLocalStorage<Task[]>("adhd-tasks",  INITIAL_TASKS);
+  const [wins,   setWins]   = useLocalStorage<Win[]>("adhd-wins",   []);
+  const [goals,  setGoals]  = useLocalStorage<Goal[]>("adhd-goals",  INITIAL_GOALS);
+  const [agents, setAgents] = useLocalStorage<Agent[]>("adhd-agents", []);
+  const [mood,   setLocalMood]   = useLocalStorage<number | null>("adhd-mood", null);
 
   const setMood = useCallback((v: number | null | ((prev: number | null) => number | null)) => {
-    const val = typeof v === "function" ? v(mood) : v;
-    if (!isAuthenticated) { setLocalMood(val); return; }
-    if (val !== null) setMoodMut.mutate({ dateKey: today, mood: val });
-  }, [isAuthenticated, mood, setLocalMood, setMoodMut, today]);
+    setLocalMood(v);
+  }, [setLocalMood]);
 
-  // Manually deleted custom tags — persisted so they stay gone even if no items use them
+  const focusSessionsToday = (() => {
+    try {
+      const r = localStorage.getItem("adhd-focus-session-list");
+      if (r) { const l = JSON.parse(r) as Record<string, unknown[]>; return (l[today] ?? []).length; }
+      return 0;
+    } catch { return 0; }
+  })();
+
+  // Manually deleted custom tags
   const [deletedCategories, setDeletedCategories] = useLocalStorage<string[]>("adhd-deleted-categories", []);
 
   // ── Transient state ──
   const [focusSessions, setFocusSessions] = useState(focusSessionsToday);
-  // Sync focusSessions from DB when query loads
   useEffect(() => { setFocusSessions(focusSessionsToday); }, [focusSessionsToday]);
 
   const { streak: blockStreak, history: blockHistory, recordBlock } = useBlockStreak();
@@ -366,36 +302,12 @@ export default function Home() {
 
   const handleCheckInComplete = (data: CheckInResult) => {
     if (data.mood) setMood(data.mood);
-    if (data.newGoals?.length) {
-      if (isAuthenticated) {
-        data.newGoals.forEach(g => createGoal.mutate({ id: g.id, text: g.text, context: g.context }));
-      } else {
-        setLocalGoals((p) => [...data.newGoals, ...p]);
-      }
-    }
-    if (data.newTasks.length) {
-      if (isAuthenticated) {
-        data.newTasks.forEach(t => createTask.mutate({ id: t.id, text: t.text, priority: t.priority, context: t.context }));
-      } else {
-        setLocalTasks((p) => [...data.newTasks, ...p]);
-      }
-    }
-    if (data.newWins.length) {
-      if (isAuthenticated) {
-        data.newWins.forEach(w => createWin.mutate({ id: w.id, text: w.text, iconIdx: w.iconIdx ?? 0 }));
-      } else {
-        setLocalWins((p) => [...data.newWins, ...p]);
-      }
-    }
-    if (data.newAgents.length) {
-      if (isAuthenticated) {
-        data.newAgents.forEach(a => createAgent.mutate({ id: a.id, name: a.name, task: a.task, status: a.status, context: a.context }));
-      } else {
-        setLocalAgents((p) => [...data.newAgents, ...p]);
-      }
-    }
+    if (data.newGoals?.length) setGoals((p) => [...data.newGoals, ...p]);
+    if (data.newTasks.length) setTasks((p) => [...data.newTasks, ...p]);
+    if (data.newWins.length) setWins((p) => [...data.newWins, ...p]);
+    if (data.newAgents.length) setAgents((p) => [...data.newAgents, ...p]);
     dismissCheckIn(true);
-      };
+  };
 
   /* ── Task completion with confetti + goal auto-nudge ── */
   const handleTasksChange = (newTasks: Task[]) => {
@@ -410,11 +322,7 @@ export default function Home() {
         iconIdx: 5,
         createdAt: new Date(),
       };
-      if (isAuthenticated) {
-        createWin.mutate({ id: win.id, text: win.text, iconIdx: win.iconIdx ?? 0 });
-      } else {
-        setLocalWins((prev) => [win, ...prev]);
-      }
+      setWins((prev) => [win, ...prev]);
 
       // Auto-nudge linked goals
       const goalNudges: Record<string, number> = {};
@@ -426,64 +334,25 @@ export default function Home() {
         }
       });
       if (Object.keys(goalNudges).length > 0) {
-        if (isAuthenticated) {
-          Object.entries(goalNudges).forEach(([gid, inc]) => {
-            const g = goals.find(g => g.id === gid);
-            if (g) {
-              const newProgress = Math.min(100, g.progress + inc);
-              updateGoal.mutate({ id: gid, progress: newProgress });
-              if (newProgress >= 100 && g.progress < 100) {
-                setTimeout(() => setConfettiTrigger(true), 300);
-                              } else {
-                              }
+        setGoals((prev) =>
+          prev.map((g) => {
+            if (!goalNudges[g.id]) return g;
+            const newProgress = Math.min(100, g.progress + goalNudges[g.id]);
+            if (newProgress >= 100 && g.progress < 100) {
+              setTimeout(() => setConfettiTrigger(true), 300);
             }
-          });
-        } else {
-          setLocalGoals((prev) => {
-            return prev.map((g) => {
-              if (!goalNudges[g.id]) return g;
-              const newProgress = Math.min(100, g.progress + goalNudges[g.id]);
-              if (newProgress >= 100 && g.progress < 100) {
-                setTimeout(() => setConfettiTrigger(true), 300);
-                              } else {
-                const pct = goalNudges[g.id];
-                              }
-              return { ...g, progress: newProgress };
-            });
-          });
-        }
+            return { ...g, progress: newProgress };
+          })
+        );
       }
     }
-    // Sync task changes to DB or localStorage
-    if (isAuthenticated) {
-      // Find changed tasks and update them
-      newTasks.forEach((t) => {
-        const old = tasks.find(o => o.id === t.id);
-        if (!old) {
-          createTask.mutate({ id: t.id, text: t.text, priority: t.priority, context: t.context, goalId: t.goalId ?? null });
-        } else if (old.done !== t.done || old.text !== t.text || old.priority !== t.priority || old.context !== t.context || old.goalId !== t.goalId) {
-          updateTask.mutate({ id: t.id, done: t.done, text: t.text, priority: t.priority, context: t.context, goalId: t.goalId ?? null });
-        }
-      });
-      // Find deleted tasks
-      tasks.forEach((old) => {
-        if (!newTasks.find(t => t.id === old.id)) {
-          deleteTask.mutate({ id: old.id });
-        }
-      });
-    } else {
-      setLocalTasks(newTasks);
-    }
+    setTasks(newTasks);
   };
 
   const handleSessionComplete = () => {
     recordFocusSession(durations.focus);
     setConfettiTrigger(true);
     setFocusSessions((s) => s + 1);
-    if (isAuthenticated) {
-      const sessionNum = focusSessions + 1;
-      addFocusSession.mutate({ sessionNumber: sessionNum, duration: durations.focus, dateKey: today });
-    }
   };
 
   const handleBlockComplete = () => {
@@ -498,22 +367,14 @@ export default function Home() {
       iconIdx: 99,
       createdAt: new Date(),
     };
-    if (isAuthenticated) {
-      createWin.mutate({ id: blockWin.id, text: blockWin.text, iconIdx: 99 });
-    } else {
-      setLocalWins((prev) => [blockWin, ...prev]);
-    }
+    setWins((prev) => [blockWin, ...prev]);
     setFocusSessions(0);
     recordBlock();
   };
 
   const handleConvertToTask = (task: Task) => {
-    if (isAuthenticated) {
-      createTask.mutate({ id: task.id, text: task.text, priority: task.priority, context: task.context, goalId: task.goalId ?? null });
-    } else {
-      setLocalTasks((prev) => [task, ...prev]);
-    }
-      };
+    setTasks((prev) => [task, ...prev]);
+  };
 
   const handleDumpEntry = (task: Task) => {
     recordDumpEntry();
@@ -550,32 +411,41 @@ export default function Home() {
   /** Clear all test data — wipes tasks, wins, goals, agents but keeps settings */
   const handleClearTestData = () => {
     if (!confirm("Clear all tasks, wins, goals, and agents? This cannot be undone.")) return;
-    setLocalTasks([]);
-    setLocalWins([]);
-    setLocalGoals([]);
-    setLocalAgents([]);
+    setTasks([]);
+    setWins([]);
+    setGoals([]);
+    setAgents([]);
     setLocalMood(null);
     setDeletedCategories([]);
     localStorage.removeItem(`adhd-checkin-skip-${today}`);
     localStorage.removeItem(`adhd-checkin-x-${today}`);
     dismissCheckIn(false);
     setTimeout(() => { window.location.reload(); }, 300);
-      };
+  };
 
   /** Delete a custom category: reassign all its items to "personal", then hide the tag */
   const handleDeleteCategory = (ctx: string) => {
     if (ctx === "work" || ctx === "personal") return;
-    if (isAuthenticated) {
-      tasks.filter(t => t.context === ctx).forEach(t => updateTask.mutate({ id: t.id, context: "personal" }));
-      goals.filter(g => g.context === ctx).forEach(g => updateGoal.mutate({ id: g.id, context: "personal" }));
-      agents.filter(a => a.context === ctx).forEach(a => updateAgent.mutate({ id: a.id, context: "personal" }));
-    } else {
-      setLocalTasks((prev) => prev.map((t) => t.context === ctx ? { ...t, context: "personal" } : t));
-      setLocalGoals((prev) => prev.map((g) => g.context === ctx ? { ...g, context: "personal" } : g));
-      setLocalAgents((prev) => prev.map((a) => a.context === ctx ? { ...a, context: "personal" } : a));
-    }
+    setTasks((prev) => prev.map((t) => t.context === ctx ? { ...t, context: "personal" } : t));
+    setGoals((prev) => prev.map((g) => g.context === ctx ? { ...g, context: "personal" } : g));
+    setAgents((prev) => prev.map((a) => a.context === ctx ? { ...a, context: "personal" } : a));
     setDeletedCategories((prev) => [...prev, ctx]);
-      };
+  };
+
+  // ── Show login screen until auth check completes ─────────────────────────
+  if (authLoading) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "oklch(0.96 0.025 355)" }}>
+        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.65rem", color: "oklch(0.62 0.060 330)", letterSpacing: "0.14em", textTransform: "uppercase" }}>
+          Loading…
+        </span>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginScreen onLogin={() => { window.location.reload(); }} login={login} />;
+  }
 
   return (
     <div className="min-h-screen flex">
@@ -704,22 +574,10 @@ export default function Home() {
                   const updated = tasks.map((t) => t.id === id ? { ...t, done: !t.done } : t);
                   handleTasksChange(updated);
                 }}
-                onTaskCreate={(task) => {
-                  if (isAuthenticated) createTask.mutate({ id: task.id, text: task.text, priority: task.priority, context: task.context, goalId: task.goalId ?? null });
-                  else setLocalTasks((prev) => [task, ...prev]);
-                }}
-                onGoalCreate={(goal) => {
-                  if (isAuthenticated) createGoal.mutate({ id: goal.id, text: goal.text, context: goal.context });
-                  else setLocalGoals((prev) => [goal, ...prev]);
-                }}
-                onAgentCreate={(agent) => {
-                  if (isAuthenticated) createAgent.mutate({ id: agent.id, name: agent.name, task: agent.task, status: agent.status, context: agent.context });
-                  else setLocalAgents((prev) => [agent, ...prev]);
-                }}
-                onWinCreate={(win) => {
-                  if (isAuthenticated) createWin.mutate({ id: win.id, text: win.text, iconIdx: win.iconIdx ?? 0 });
-                  else setLocalWins((prev) => [win, ...prev]);
-                }}
+                onTaskCreate={(task) => setTasks((prev) => [task, ...prev])}
+                onGoalCreate={(goal) => setGoals((prev) => [goal, ...prev])}
+                onAgentCreate={(agent) => setAgents((prev) => [agent, ...prev])}
+                onWinCreate={(win) => setWins((prev) => [win, ...prev])}
               />
               </div>
             )}
@@ -850,21 +708,7 @@ export default function Home() {
               <div className="p-8 min-h-[600px] flex flex-col relative overflow-hidden">
                 <WinsDecor />
                 <div className="relative z-10">
-                  <DailyWins wins={wins} onWinsChange={(newWins) => {
-                    if (isAuthenticated) {
-                      // Find deleted wins
-                      wins.forEach(w => { if (!newWins.find(nw => nw.id === w.id)) deleteWin.mutate({ id: w.id }); });
-                      // Find new wins
-                      newWins.forEach(w => { if (!wins.find(ow => ow.id === w.id)) createWin.mutate({ id: w.id, text: w.text, iconIdx: w.iconIdx ?? 0 }); });
-                      // Find updated wins (iconIdx or archived changed)
-                      newWins.forEach(w => {
-                        const old = wins.find(ow => ow.id === w.id);
-                        if (old && (old.iconIdx !== w.iconIdx || old.archived !== w.archived)) {
-                          updateWin.mutate({ id: w.id, iconIdx: w.iconIdx ?? 0, archived: w.archived ?? false });
-                        }
-                      });
-                    } else { setLocalWins(newWins); }
-                  }} />
+                  <DailyWins wins={wins} onWinsChange={setWins} />
                 </div>
               </div>
               </RetroPageWrapper>
@@ -881,8 +725,7 @@ export default function Home() {
                     onCreateAgent={(taskText) => { toast("Agent created from dump!"); }}
                     onAddGoal={(text) => {
                       const id = nanoid();
-                      if (isAuthenticated) createGoal.mutate({ id, text, context: "personal" });
-                      else setLocalGoals((p) => [{ id, text, progress: 0, context: "personal", createdAt: new Date() }, ...p]);
+                      setGoals((p) => [{ id, text, progress: 0, context: "personal", createdAt: new Date() }, ...p]);
                     }}
                     onDump={() => recordDumpEntry()}
                     initialText={pendingDump ?? undefined}
@@ -898,16 +741,7 @@ export default function Home() {
               <div className="p-8 min-h-[600px] flex flex-col relative overflow-hidden">
                 <GoalsDecor />
                 <div className="relative z-10">
-                  <Goals goals={goals} onGoalsChange={(newGoals) => {
-                    if (isAuthenticated) {
-                      goals.forEach(g => { if (!newGoals.find(ng => ng.id === g.id)) deleteGoal.mutate({ id: g.id }); });
-                      newGoals.forEach(g => {
-                        const old = goals.find(og => og.id === g.id);
-                        if (!old) createGoal.mutate({ id: g.id, text: g.text, context: g.context });
-                        else if (old.text !== g.text || old.progress !== g.progress || old.context !== g.context) updateGoal.mutate({ id: g.id, text: g.text, progress: g.progress, context: g.context });
-                      });
-                    } else { setLocalGoals(newGoals); }
-                  }} allCategories={allCategories} onDeleteCategory={handleDeleteCategory} tasks={tasks} onTasksChange={handleTasksChange} />
+                  <Goals goals={goals} onGoalsChange={setGoals} allCategories={allCategories} onDeleteCategory={handleDeleteCategory} tasks={tasks} onTasksChange={handleTasksChange} />
                 </div>
               </div>
               </RetroPageWrapper>
@@ -919,16 +753,7 @@ export default function Home() {
                 <AgentsDecor />
                 <AgentTracker
                   agents={agents}
-                  onAgentsChange={(newAgents) => {
-                    if (isAuthenticated) {
-                      agents.forEach(a => { if (!newAgents.find(na => na.id === a.id)) deleteAgent.mutate({ id: a.id }); });
-                      newAgents.forEach(a => {
-                        const old = agents.find(oa => oa.id === a.id);
-                        if (!old) createAgent.mutate({ id: a.id, name: a.name, task: a.task, status: a.status, context: a.context });
-                        else if (old.status !== a.status || old.name !== a.name || old.task !== a.task) updateAgent.mutate({ id: a.id, name: a.name, task: a.task, status: a.status });
-                      });
-                    } else { setLocalAgents(newAgents); }
-                  }}
+                  onAgentsChange={setAgents}
                   tasks={tasks}
                   allCategories={allCategories}
                   pendingTaskText={pendingAgentTask ?? undefined}
@@ -948,10 +773,7 @@ export default function Home() {
       </main>
 
       {/* ── Global overlays ── */}
-      <GlobalQuickAdd onAddTask={(t) => {
-        if (isAuthenticated) createTask.mutate({ id: t.id, text: t.text, priority: t.priority, context: t.context, goalId: t.goalId ?? null });
-        else setLocalTasks((p) => [t, ...p]);
-      }} />
+      <GlobalQuickAdd onAddTask={(t) => setTasks((p) => [t, ...p])} />
       <ConfettiCelebration trigger={confettiTrigger} onComplete={() => setConfettiTrigger(false)} />
 
       {wrapUpOpen && (

@@ -24,6 +24,10 @@ export const APP_STORAGE_KEYS = [
   "adhd-music-vol",
   "adhd_braindump_entries",
   "cyber-pet-deaths",
+  "adhd-ai-chat-history",   // AI chat messages (Dashboard)
+  "adhd-hue-rotate",        // theme hue rotation value
+  "adhd-quick-chips",       // custom quick-add chips
+  "adhd-block-streak-data", // block streak tracking data
 ] as const;
 
 /** UI-only keys excluded from backup (theme, sidebar width, skip flags) */

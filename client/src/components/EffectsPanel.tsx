@@ -1,8 +1,6 @@
 /* ============================================================
-   ADHD FOCUS SPACE — Settings Panel v2.0
-   Renamed from "effects.exe" → "settings.exe"
-   Two tabs: EFFECTS (film grain + work mode) | API KEY
-   openFxPanel event auto-opens on the API KEY tab
+   ADHD FOCUS SPACE — Settings Panel v3.0
+   Sections: Film Grain | Theme Hue | Work Mode | OpenAI API Key
    ============================================================ */
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -96,12 +94,60 @@ export function EffectsPanel() {
   const { enabled: workMode, toggle: toggleWorkMode } = useWorkMode();
   const { hue, setHue, reset: resetHue } = useHue();
 
-  // API key state (OpenAI only — Manus built-in is the default, OpenAI is optional fallback)
-  // AI signal: green = working (built-in or user key), red = credits exhausted + no key
-  // Persisted in localStorage so it survives navigation
-  const [aiAvailable, setAiAvailable] = useState<boolean>(() => {
-    return localStorage.getItem("adhd-ai-available") !== "false";
-  });
+  // ── API Key state ──
+  const [apiKeyInput, setApiKeyInput] = useState("");
+  const [showKey, setShowKey] = useState(false);
+  const [hasKey, setHasKey] = useState<boolean | null>(null); // null = not checked yet
+  const [keyLoading, setKeyLoading] = useState(false);
+
+  // Check key status when panel opens
+  useEffect(() => {
+    if (!open) return;
+    fetch("/api/key/status", { credentials: "include" })
+      .then((r) => r.json())
+      .then((d) => setHasKey(d.hasKey ?? false))
+      .catch(() => setHasKey(false));
+  }, [open]);
+
+  const saveKey = async () => {
+    if (!apiKeyInput.trim()) return;
+    setKeyLoading(true);
+    try {
+      const res = await fetch("/api/key", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: apiKeyInput.trim() }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        toast.error(d.error ?? "Failed to save key");
+        return;
+      }
+      setHasKey(true);
+      setApiKeyInput("");
+      toast.success("API key saved securely.");
+    } catch {
+      toast.error("Failed to save key. Are you logged in?");
+    } finally {
+      setKeyLoading(false);
+    }
+  };
+
+  const removeKey = async () => {
+    setKeyLoading(true);
+    try {
+      const res = await fetch("/api/key", { method: "DELETE", credentials: "include" });
+      if (!res.ok) { toast.error("Failed to remove key"); return; }
+      setHasKey(false);
+      setApiKeyInput("");
+      toast.success("API key removed.");
+    } catch {
+      toast.error("Failed to remove key.");
+    } finally {
+      setKeyLoading(false);
+    }
+  };
 
   const grainOn = intensity > 0;
   const iconColor = (open || grainOn || workMode)
@@ -378,6 +424,123 @@ export function EffectsPanel() {
                       }} />
                     </button>
                   </div>
+                </div>
+
+                {/* Divider */}
+                <div style={{ height: 1, background: "oklch(0.88 0.06 340)", margin: "0 -2px" }} />
+
+                {/* ── OpenAI API Key section ── */}
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                    <span style={{ fontSize: "0.55rem", color: "oklch(0.45 0.12 340)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                      ◉ OpenAI API Key
+                    </span>
+                    {/* Status indicator */}
+                    <span style={{
+                      fontSize: "0.42rem",
+                      fontFamily: "'Space Mono', monospace",
+                      letterSpacing: "0.06em",
+                      padding: "2px 6px",
+                      borderRadius: 10,
+                      border: `1px solid ${hasKey ? "oklch(0.55 0.14 160)" : "oklch(0.72 0.040 330)"}`,
+                      background: hasKey ? "oklch(0.55 0.14 160 / 0.10)" : "transparent",
+                      color: hasKey ? "oklch(0.40 0.14 160)" : "oklch(0.58 0.040 330)",
+                    }}>
+                      {hasKey === null ? "…" : hasKey ? "✓ key saved" : "no key"}
+                    </span>
+                  </div>
+
+                  {hasKey ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <p style={{ fontSize: "0.48rem", color: "oklch(0.55 0.040 330)", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>
+                        AI features enabled. Your key is stored encrypted.
+                      </p>
+                      <button
+                        onClick={removeKey}
+                        disabled={keyLoading}
+                        style={{
+                          fontSize: "0.48rem",
+                          fontFamily: "'Space Mono', monospace",
+                          letterSpacing: "0.08em",
+                          padding: "3px 8px",
+                          borderRadius: 4,
+                          border: "1px solid oklch(0.72 0.10 25)",
+                          background: "transparent",
+                          color: "oklch(0.52 0.14 25)",
+                          cursor: keyLoading ? "not-allowed" : "pointer",
+                          alignSelf: "flex-start",
+                        }}
+                      >
+                        {keyLoading ? "Removing…" : "Remove key"}
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <p style={{ fontSize: "0.44rem", color: "oklch(0.58 0.040 330)", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5, marginBottom: 2 }}>
+                        Add your OpenAI key to enable AI features (brain dump sorting, daily summaries, etc.)
+                      </p>
+                      <div style={{ position: "relative" }}>
+                        <input
+                          type={showKey ? "text" : "password"}
+                          value={apiKeyInput}
+                          onChange={(e) => setApiKeyInput(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Enter") saveKey(); }}
+                          placeholder="sk-..."
+                          style={{
+                            width: "100%",
+                            boxSizing: "border-box",
+                            padding: "5px 28px 5px 8px",
+                            fontSize: "0.55rem",
+                            fontFamily: "'Space Mono', monospace",
+                            border: "1px solid oklch(0.82 0.06 340)",
+                            borderRadius: 4,
+                            background: "oklch(0.975 0.010 355)",
+                            color: "oklch(0.28 0.040 320)",
+                            outline: "none",
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowKey((v) => !v)}
+                          style={{
+                            position: "absolute",
+                            right: 6,
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            fontSize: "0.55rem",
+                            color: "oklch(0.60 0.040 330)",
+                            padding: 0,
+                            lineHeight: 1,
+                          }}
+                          title={showKey ? "Hide" : "Show"}
+                        >
+                          {showKey ? "●" : "○"}
+                        </button>
+                      </div>
+                      <button
+                        onClick={saveKey}
+                        disabled={keyLoading || !apiKeyInput.trim()}
+                        style={{
+                          fontSize: "0.48rem",
+                          fontFamily: "'Space Mono', monospace",
+                          letterSpacing: "0.08em",
+                          padding: "4px 10px",
+                          borderRadius: 4,
+                          border: `1px solid ${!apiKeyInput.trim() ? "oklch(0.80 0.040 330)" : "oklch(0.55 0.18 340)"}`,
+                          background: !apiKeyInput.trim() ? "transparent" : "oklch(0.55 0.18 340)",
+                          color: !apiKeyInput.trim() ? "oklch(0.65 0.040 330)" : "white",
+                          cursor: keyLoading || !apiKeyInput.trim() ? "not-allowed" : "pointer",
+                          alignSelf: "flex-start",
+                          transition: "all 0.15s",
+                        }}
+                      >
+                        {keyLoading ? "Saving…" : "Save Key"}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </>
           </div>

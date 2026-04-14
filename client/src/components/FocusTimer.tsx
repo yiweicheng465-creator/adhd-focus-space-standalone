@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import { callAI } from "@/lib/ai";
 /* ============================================================
    ADHD FOCUS SPACE — Focus Timer (Cyber Pet Edition)
    Design: Tamagotchi-style pixel pet + retro OS window chrome
@@ -404,8 +405,8 @@ function TearStrip({ text, state, isNext }: {
 }
 
 // ── Complete wrap-up ──────────────────────────────────────────────────────────
-function CompleteWrapUp({ sessions, mode, onNewSession }: {
-  sessions: number; mode: TimerMode; onNewSession: () => void;
+function CompleteWrapUp({ sessions, mode, onNewSession, duration }: {
+  sessions: number; mode: TimerMode; onNewSession: () => void; duration?: number;
 }) {
   const accentColor = MODE_COLORS[mode];
   const messages = [
@@ -418,6 +419,24 @@ function CompleteWrapUp({ sessions, mode, onNewSession }: {
 
   const [intention, setIntention] = useState("");
   const [outcome, setOutcome] = useState("");
+  const [aiReflection, setAiReflection] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const handleReflect = async () => {
+    setAiLoading(true);
+    try {
+      const reflection = await callAI(
+        "Write a 1-sentence focus reflection. Warm, brief, encouraging. No emoji at start.",
+        `Completed ${duration ?? mode === "focus" ? 25 : 5}min ${mode} session. Session number ${sessions} today.`
+      );
+      setAiReflection(reflection);
+    } catch (err) {
+      const m = err instanceof Error ? err.message : "AI unavailable";
+      toast.error(m, { duration: 4000 });
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   return (
     <div className="ft-fade-in" style={{
@@ -439,12 +458,29 @@ function CompleteWrapUp({ sessions, mode, onNewSession }: {
         <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 6, color: BORDER, letterSpacing: "0.14em", textTransform: "uppercase", marginTop: 2 }}>SESSION{sessions !== 1 ? "S" : ""}</span>
       </div>
 
-      <button onClick={onNewSession} style={{
-        background: DARK, border: "none", color: "#FAF6F1",
-        padding: "8px 22px", fontSize: 8, cursor: "pointer",
-        fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.14em",
-        boxShadow: `2px 2px 0 ${BORDER}`,
-      }}>↺ NEW SESSION</button>
+      {aiReflection && (
+        <p style={{
+          fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: DARK,
+          maxWidth: 200, lineHeight: 1.5, textAlign: "center",
+          background: `${accentColor}10`, border: `1px solid ${accentColor}40`,
+          padding: "6px 12px",
+        }}>{aiReflection}</p>
+      )}
+      <div style={{ display: "flex", gap: 6 }}>
+        <button onClick={handleReflect} disabled={aiLoading} style={{
+          background: "transparent", border: `1px solid ${BORDER}`, color: BORDER,
+          padding: "5px 14px", fontSize: 7, cursor: aiLoading ? "not-allowed" : "pointer",
+          fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.10em",
+        }}>
+          {aiLoading ? "…" : "✦ REFLECT"}
+        </button>
+        <button onClick={onNewSession} style={{
+          background: DARK, border: "none", color: "#FAF6F1",
+          padding: "8px 22px", fontSize: 8, cursor: "pointer",
+          fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.14em",
+          boxShadow: `2px 2px 0 ${BORDER}`,
+        }}>↺ NEW SESSION</button>
+      </div>
     </div>
   );
 }
@@ -932,7 +968,7 @@ export function FocusTimer({ onSessionComplete, onBlockComplete, onQuit, fillHei
 
       {/* ── Complete wrap-up ── */}
       {phase === "complete" && (
-        <CompleteWrapUp sessions={sessions} mode={mode} onNewSession={handleNewSession} />
+        <CompleteWrapUp sessions={sessions} mode={mode} onNewSession={handleNewSession} duration={durations[mode]} />
       )}
 
       {/* ── Quit wrap-up ── */}
