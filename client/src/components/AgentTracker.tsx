@@ -181,12 +181,12 @@ export function AgentTracker({ agents, onAgentsChange, tasks, defaultContext = "
     const agent: Agent = {
       id: nanoid(),
       name: popupName || popupTask.text.slice(0, 40),
-      task: popupBrief || popupTask.text,
+      task: popupTask.text,
       status: "running",
       context: (popupTask.context as ItemContext) ?? "work",
       linkedTaskId: popupTask.id,
       startedAt: new Date(),
-      notes: popupFirstStep ? `First step: ${popupFirstStep}` : undefined,
+      notes: popupBrief || (popupFirstStep ? `First step: ${popupFirstStep}` : undefined),
     };
     onAgentsChange([agent, ...agents]);
         setPopupTask(null);
@@ -604,7 +604,7 @@ export function AgentTracker({ agents, onAgentsChange, tasks, defaultContext = "
                     )}
                   </div>
                   <p className="text-xs font-medium mt-3 mb-1.5" style={{ color: M.muted, fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                    Notes / output summary
+                    Prompts / Summary
                   </p>
                   {noteEditing?.id === agent.id ? (
                     <div className="flex flex-col gap-2">
@@ -624,7 +624,7 @@ export function AgentTracker({ agents, onAgentsChange, tasks, defaultContext = "
                       onClick={() => setNoteEditing({ id: agent.id, value: agent.notes ?? "" })}
                       style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", color: agent.notes ? M.ink : M.muted, fontStyle: agent.notes ? "normal" : "italic", padding: "10px 12px", borderRadius: 8, border: `1px dashed ${M.border}`, background: "oklch(0.990 0.005 355 / 0.60)", cursor: "pointer", minHeight: 40 }}
                     >
-                      {agent.notes ? agent.notes : <span className="italic opacity-60">Add a note, e.g. "Check if tests pass before merging" or paste output summary here…</span>}
+                      {agent.notes ? agent.notes : <span className="italic opacity-60">Agent brief, prompt, or output summary…</span>}
                     </div>
                   )}
 
