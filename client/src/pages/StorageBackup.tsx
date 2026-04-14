@@ -506,10 +506,21 @@ export default function StorageBackup() {
           </div>
         )}
 
-        <p style={{ fontSize: 10, color: M.muted, fontFamily: "'DM Sans', sans-serif", marginTop: 10, lineHeight: 1.6 }}>
-          Access is only requested when you click Backup or Restore — no automatic syncing.
-          File saved as <code style={{ fontFamily: "'DM Mono', monospace" }}>{BACKUP_FILENAME}</code> in your Drive root.
-        </p>
+        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 4 }}>
+          {/* Auto-backup notice — shown once user has a valid token */}
+          {getPersistedToken() && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", background: "oklch(0.97 0.018 340)", border: "1px solid oklch(0.82 0.08 340)", borderRadius: 4 }}>
+              <CheckCircle2 size={11} style={{ color: "oklch(0.50 0.14 168)", flexShrink: 0 }} />
+              <p style={{ fontSize: 10, color: "oklch(0.40 0.12 168)", fontFamily: "'DM Sans', sans-serif", margin: 0 }}>
+                <strong>Auto-backup enabled</strong> — your data will be backed up to Google Drive automatically every 24 hours.
+              </p>
+            </div>
+          )}
+          <p style={{ fontSize: 10, color: M.muted, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6, margin: 0 }}>
+            Access is only requested when you click Backup or Restore.
+            File saved as <code style={{ fontFamily: "'DM Mono', monospace" }}>{BACKUP_FILENAME}</code> in your Drive root.
+          </p>
+        </div>
       </Section>
 
       {/* What's backed up */}
