@@ -481,7 +481,7 @@ export function DailyWins({ wins, onWinsChange }: DailyWinsProps) {
   }, []);
 
   // Separate active vs archived
-  const activeWins   = wins.filter((w) => !w.archived);
+  const activeWins   = wins.filter((w) => !w.archived).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   const archivedWins = wins.filter((w) => w.archived);
 
   const addWin = () => {
