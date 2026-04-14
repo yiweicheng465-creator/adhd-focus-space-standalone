@@ -596,21 +596,6 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
               <svg width="10" height="10" viewBox="0 0 12 12" fill="none" style={{ opacity: 0.55 }}>
                 <path d="M6 0 L6.5 5 L12 6 L6.5 7 L6 12 L5.5 7 L0 6 L5.5 5 Z" fill="oklch(0.62 0.14 340)" />
               </svg>
-              {chatHistory.length > 0 && (
-                <button
-                  onClick={() => { setChatHistory([]); localStorage.removeItem(CHAT_HISTORY_KEY); }}
-                  style={{
-                    fontFamily: "'Space Mono', monospace", fontSize: "0.50rem", letterSpacing: "0.10em",
-                    padding: "2px 8px", borderRadius: 3,
-                    border: "1.5px solid oklch(0.65 0.10 330)",
-                    background: "oklch(0.92 0.025 340)",
-                    color: "oklch(0.38 0.10 330)",
-                    cursor: "pointer", fontWeight: 700,
-                  }}
-                >
-                  CLEAR
-                </button>
-              )}
             </div>
             <div className="retro-titlebar-buttons">
               <span className="retro-titlebar-btn">_</span>
@@ -685,6 +670,20 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
 
             {/* Input area */}
             <div style={{ display: "flex", gap: 5, alignItems: "center", paddingTop: 6, borderTop: `1px solid ${AI_BORDER}`, flexShrink: 0 }}>
+              {chatHistory.length > 0 && (
+                <button
+                  onClick={() => { setChatHistory([]); localStorage.removeItem(CHAT_HISTORY_KEY); }}
+                  title="Clear chat"
+                  style={{
+                    flexShrink: 0, padding: "5px 7px", borderRadius: 4,
+                    border: `1px solid ${AI_BORDER}`, background: "transparent",
+                    color: MUTED, cursor: "pointer", fontSize: 9,
+                    fontFamily: "'Space Mono', monospace", letterSpacing: "0.08em",
+                  }}
+                >
+                  CLR
+                </button>
+              )}
               <input
                 ref={(el) => { (window as Window & { __adhd_ai_input?: HTMLInputElement | null }).__adhd_ai_input = el; chatInputRef.current = el; }}
                 value={chatInput}
