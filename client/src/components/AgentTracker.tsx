@@ -428,32 +428,6 @@ export function AgentTracker({ agents, onAgentsChange, tasks, defaultContext = "
           </select>
         </div>
 
-        {/* Context/tag selector — same tags as Tasks */}
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-          <span style={{ fontSize: "0.62rem", fontFamily: "'Space Mono', monospace", letterSpacing: "0.08em", color: M.muted, textTransform: "uppercase" }}>Tag:</span>
-          {knownCategories.map((ctx) => {
-            const { label, color, bg, border } = getContextConfig(ctx);
-            const isAct = newCtx === ctx;
-            return (
-              <button
-                key={ctx}
-                onClick={() => setNewCtx(ctx as ItemContext)}
-                style={{
-                  padding: "3px 10px", borderRadius: 4,
-                  border: `1px solid ${isAct ? border : M.border}`,
-                  background: isAct ? bg : "transparent",
-                  color: isAct ? color : M.muted,
-                  fontFamily: "'DM Sans', sans-serif", fontSize: "0.72rem",
-                  fontWeight: isAct ? 600 : 400, cursor: "pointer",
-                  letterSpacing: "0.04em",
-                }}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
-
         <button
           onClick={addAgent}
           className="m-btn-primary self-start"
@@ -622,7 +596,7 @@ export function AgentTracker({ agents, onAgentsChange, tasks, defaultContext = "
                   ) : (
                     <div
                       onClick={() => setNoteEditing({ id: agent.id, value: agent.notes ?? "" })}
-                      style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", color: agent.notes ? M.ink : M.muted, fontStyle: agent.notes ? "normal" : "italic", padding: "10px 12px", borderRadius: 8, border: `1px dashed ${M.border}`, background: "oklch(0.990 0.005 355 / 0.60)", cursor: "pointer", minHeight: 40 }}
+                      style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", color: agent.notes ? M.ink : M.muted, fontStyle: agent.notes ? "normal" : "italic", padding: "10px 12px", borderRadius: 8, border: `1px dashed ${M.border}`, background: "oklch(0.990 0.005 355 / 0.60)", cursor: "pointer", minHeight: 40, whiteSpace: "pre-wrap", wordBreak: "break-word" }}
                     >
                       {agent.notes ? agent.notes : <span className="italic opacity-60">Agent brief, prompt, or output summary…</span>}
                     </div>
