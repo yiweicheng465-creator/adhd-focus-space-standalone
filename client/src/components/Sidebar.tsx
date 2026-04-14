@@ -141,7 +141,7 @@ const NAV: Array<{
 ];
 
 /* ── Floating timer pill ── */
-function TimerPill({ onGoToFocus }: { onGoToFocus: () => void }) {
+export function TimerPill({ onGoToFocus }: { onGoToFocus: () => void }) {
   const { phase, remaining, mode, durations, handleStartPause } = useTimer();
   const sound = useSoundContext();
   const [showPopover, setShowPopover] = useState(false);
@@ -513,19 +513,7 @@ export function Sidebar({ activeSection, onSectionChange, onClearData }: Sidebar
       {/* Effects panel (grain + work mode) */}
       <EffectsPanel />
 
-      {/* Timer pill — fixed on right edge, doesn't block sidebar on small screens */}
-      <div style={{
-        position: "fixed",
-        right: 0,
-        top: "50%",
-        transform: "translateY(-50%)",
-        zIndex: 40,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-      }}>
-        <TimerPill onGoToFocus={() => onSectionChange("focus")} />
-      </div>
+
 
       {/* Secondary divider — separates functional items from help */}
       <div style={{ width: "60%", height: "1px", background: "oklch(0.80 0.060 340 / 0.5)", margin: "12px 0 4px" }} />

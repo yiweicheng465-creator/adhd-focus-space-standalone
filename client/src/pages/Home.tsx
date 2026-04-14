@@ -7,7 +7,7 @@
    ============================================================ */
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Sidebar } from "@/components/Sidebar";
+import { Sidebar, TimerPill } from "@/components/Sidebar";
 import { Dashboard } from "@/components/Dashboard";
 import { FocusTimer } from "@/components/FocusTimer";
 import { TaskManager, type Task } from "@/components/TaskManager";
@@ -452,6 +452,16 @@ export default function Home() {
     <div className="min-h-screen flex">
       {/* Sidebar */}
       <Sidebar activeSection={activeSection} onSectionChange={(s) => setActiveSection(s as Section)} onClearData={handleClearTestData} />
+
+      {/* Timer pill — fixed to right edge, completely outside sidebar DOM so it's not affected by filters/transforms */}
+      <div style={{
+        position: "fixed",
+        right: 0,
+        bottom: "30%",
+        zIndex: 50,
+      }}>
+        <TimerPill onGoToFocus={() => setActiveSection("focus")} />
+      </div>
 
       {/* Main content */}
       <main className="flex-1 ml-14 min-h-screen flex flex-col">
