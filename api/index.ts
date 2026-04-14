@@ -199,9 +199,17 @@ export default async function handler(req: any, res: any) {
 
     if (req.method === "GET") {
       try {
-        const { rows } = await db.query("SELECT api_key_encrypted FROM users WHERE id = $1", [user.sub]);
+        const { rows } = await db.query(
+          "SELECT api_key_encrypted, ai_usage_count FROM users WHERE id = $1", [user.sub]);
         await db.end();
-        json(res, 200, { hasKey: !!(rows[0]?.api_key_encrypted) });
+        const hasKey = !!(rows[0]?.api_key_encrypted);
+        const usageCount = Number(rows[0]?.ai_usage_count ?? 0);
+        json(res, 200, {
+          hasKey,
+          usageCount,
+          freeLimit: FREE_LIMIT,
+          remaining: hasKey ? null : Math.max(0, FREE_LIMIT - usageCount),
+        });
       } catch (err: any) {
         json(res, 500, { error: err?.message });
       }

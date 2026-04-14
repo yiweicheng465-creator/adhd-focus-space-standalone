@@ -99,13 +99,19 @@ export function EffectsPanel() {
   const [showKey, setShowKey] = useState(false);
   const [hasKey, setHasKey] = useState<boolean | null>(null); // null = not checked yet
   const [keyLoading, setKeyLoading] = useState(false);
+  const [usageCount, setUsageCount] = useState<number | null>(null);
+  const [freeLimit, setFreeLimit] = useState<number>(5);
 
   // Check key status when panel opens
   useEffect(() => {
     if (!open) return;
     fetch("/api/key", { method: "GET", credentials: "include" })
       .then((r) => r.json())
-      .then((d) => setHasKey(d.hasKey ?? false))
+      .then((d) => {
+        setHasKey(d.hasKey ?? false);
+        setUsageCount(d.usageCount ?? 0);
+        setFreeLimit(d.freeLimit ?? 5);
+      })
       .catch(() => setHasKey(false));
   }, [open]);
 
@@ -141,6 +147,11 @@ export function EffectsPanel() {
       if (!res.ok) { toast.error("Failed to remove key"); return; }
       setHasKey(false);
       setApiKeyInput("");
+      // Re-fetch to get updated usage count
+      fetch("/api/key", { method: "GET", credentials: "include" })
+        .then((r) => r.json())
+        .then((d) => { setUsageCount(d.usageCount ?? 0); setFreeLimit(d.freeLimit ?? 5); })
+        .catch(() => {});
       toast.success("API key removed.");
     } catch {
       toast.error("Failed to remove key.");
@@ -476,8 +487,42 @@ export function EffectsPanel() {
                     </div>
                   ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {/* Free tier usage bar */}
+                      {usageCount !== null && (
+                        <div style={{ marginBottom: 4 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 3 }}>
+                            <span style={{ fontSize: "0.44rem", fontFamily: "'Space Mono', monospace", color: "oklch(0.45 0.040 330)", letterSpacing: "0.06em" }}>
+                              FREE AI REQUESTS
+                            </span>
+                            <span style={{ fontSize: "0.48rem", fontFamily: "'Space Mono', monospace",
+                              color: usageCount >= freeLimit ? "oklch(0.52 0.14 25)" : "oklch(0.45 0.040 330)" }}>
+                              {usageCount}/{freeLimit} used
+                            </span>
+                          </div>
+                          {/* Progress bar */}
+                          <div style={{ height: 4, background: "oklch(0.88 0.025 340)", borderRadius: 2, overflow: "hidden" }}>
+                            <div style={{
+                              height: "100%",
+                              width: `${Math.min(100, (usageCount / freeLimit) * 100)}%`,
+                              background: usageCount >= freeLimit
+                                ? "oklch(0.52 0.14 25)"
+                                : usageCount >= freeLimit - 1
+                                ? "oklch(0.62 0.14 55)"
+                                : "oklch(0.58 0.14 168)",
+                              borderRadius: 2,
+                              transition: "width 0.3s ease",
+                            }} />
+                          </div>
+                          <p style={{ fontSize: "0.42rem", color: usageCount >= freeLimit ? "oklch(0.52 0.14 25)" : "oklch(0.58 0.040 330)",
+                            fontFamily: "'DM Sans', sans-serif", lineHeight: 1.4, marginTop: 3 }}>
+                            {usageCount >= freeLimit
+                              ? "Free requests used up — add your key below to continue."
+                              : `${freeLimit - usageCount} free request${freeLimit - usageCount === 1 ? "" : "s"} left. Add your key for unlimited access.`}
+                          </p>
+                        </div>
+                      )}
                       <p style={{ fontSize: "0.44rem", color: "oklch(0.58 0.040 330)", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5, marginBottom: 2 }}>
-                        Add your OpenAI key to enable AI features (brain dump sorting, daily summaries, etc.)
+                        Add your OpenAI key for unlimited AI features (brain dump sorting, daily summaries, focus reflections…)
                       </p>
                       <div style={{ position: "relative" }}>
                         <input
