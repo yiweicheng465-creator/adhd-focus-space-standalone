@@ -494,9 +494,6 @@ export function EffectsPanel() {
 
                   {hasKey ? (
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      <p style={{ fontSize: "0.48rem", color: "oklch(0.55 0.040 330)", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>
-                        AI features enabled. Your key is stored encrypted.
-                      </p>
                       {/* API call usage stats */}
                       {(() => {
                         const total = Number(localStorage.getItem("adhd-api-calls-total") ?? 0);
@@ -519,6 +516,9 @@ export function EffectsPanel() {
                           </div>
                         );
                       })()}
+                      <p style={{ fontSize: "0.48rem", color: "oklch(0.55 0.040 330)", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>
+                        AI features enabled. Your key is stored encrypted.
+                      </p>
                       <button
                         onClick={removeKey}
                         disabled={keyLoading}
