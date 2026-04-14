@@ -25,9 +25,12 @@ export const APP_STORAGE_KEYS = [
   "adhd_braindump_entries",
   "cyber-pet-deaths",
   "adhd-ai-chat-history",   // AI chat messages (Dashboard)
-  "adhd-hue-rotate",        // theme hue rotation value
-  "adhd-quick-chips",       // custom quick-add chips
-  "adhd-block-streak-data", // block streak tracking data
+  "adhd-hue-rotate",           // theme hue rotation offset
+  "adhd-base-hue",             // theme hue (color picker)
+  "adhd-film-grain-intensity",  // film grain intensity
+  "adhd-film-grain-speed",      // film grain speed
+  "adhd-quick-chips",           // custom quick-add chips
+  "adhd-block-streak-data",     // block streak tracking data
 ] as const;
 
 /** UI-only keys excluded from backup (theme, sidebar width, skip flags) */
