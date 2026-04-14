@@ -139,8 +139,9 @@ export function BrainDump({ onConvertToTask, onCreateAgent, onAddGoal, onDump, i
 
   // All unique tags across all entries
   const allTags = useMemo(() => {
+    // Only show tags that exist on at least one unconverted (visible) entry
     const tagSet = new Set<string>();
-    entries.forEach((e) => e.tags.forEach((t) => tagSet.add(t)));
+    entries.filter((e) => !e.converted).forEach((e) => e.tags.forEach((t) => tagSet.add(t)));
     return Array.from(tagSet).sort();
   }, [entries]);
 
