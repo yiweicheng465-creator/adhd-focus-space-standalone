@@ -8,8 +8,9 @@ import { useState, useRef, useEffect } from "react";
 import { EisenhowerMatrix, priorityToQuadrant, type QuadrantId } from "./EisenhowerMatrix";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Circle, Flame, Plus, Star, Trash2, Zap, Pencil, X, Check } from "lucide-react";
+import { CheckCircle2, Circle, Flame, Loader2, Plus, Sparkles, Star, Trash2, Zap, Pencil, X, Check } from "lucide-react";
 import { toast } from "sonner";
+import { callAI } from "@/lib/ai";
 import { nanoid } from "nanoid";
 import {
   ContextSwitcher, ContextBadge, getContextConfig,
@@ -108,6 +109,8 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
   // Inline editing state
   const [editingTaskId,   setEditingTaskId]   = useState<string | null>(null);
   const [editPopoverPos,  setEditPopoverPos]  = useState<{ top: number; left: number; width?: number } | null>(null);
+  const [aiEditInput,    setAiEditInput]    = useState("");
+  const [aiEditing,      setAiEditing]      = useState(false);
   const [editContext,     setEditContext]      = useState<ItemContext>("work");
   const [editGoalId,      setEditGoalId]       = useState<string | null>(null);
   const [editPriority,    setEditPriority]     = useState<TaskPriority>("focus");
@@ -192,8 +195,40 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
     toast("Task updated.", { duration: 1500 });
   };
 
+  // AI-powered edit
+  const handleAiEdit = async (taskId: string) => {
+    if (!aiEditInput.trim()) return;
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+    setAiEditing(true);
+    try {
+      const result = await callAI(
+        `You update task fields based on a user instruction. Return ONLY valid JSON with changed fields:
+{"text":"...","priority":"urgent|focus|normal|someday","context":"work|personal"}
+Only include fields that should change. Valid priorities: urgent, focus, normal, someday.`,
+        `Task: "${task.text}" (current priority: ${task.priority}, context: ${task.context})
+Instruction: ${aiEditInput.trim()}`
+      );
+      const match = result.match(/\{[\s\S]*\}/);
+      if (match) {
+        const changes = JSON.parse(match[0]) as Partial<Task>;
+        onTasksChange(tasks.map((t) =>
+          t.id === taskId ? { ...t, ...changes } : t
+        ));
+        toast("Task updated by AI.", { duration: 1500 });
+        setEditingTaskId(null);
+        setAiEditInput("");
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "AI edit failed";
+      if (msg !== "no-key" && msg !== "invalid-key") toast.error(msg);
+    } finally {
+      setAiEditing(false);
+    }
+  };
+
   // Close without saving
-  const closeEdit = () => setEditingTaskId(null);
+  const closeEdit = () => { setEditingTaskId(null); setAiEditInput(""); };
 
   // Close popover when clicking outside
   useEffect(() => {
@@ -471,131 +506,54 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
                       gap: 8,
                     }}
                   >
-                    {/* Priority row */}
-                    <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                      <span style={{ ...LABEL_STYLE, marginRight: 4, minWidth: 52 }}>Priority</span>
-                      {(Object.keys(PRIORITY_CONFIG) as TaskPriority[]).map((p) => {
-                        const { icon: PIco, color, bg, border } = PRIORITY_CONFIG[p];
-                        const isAct = editPriority === p;
-                        return (
-                          <button
-                            key={p}
-                            onClick={() => setEditPriority(p)}
-                            style={{
-                              width: 26, height: 26,
-                              border: `1.5px solid ${isAct ? border : M.border}`,
-                              borderRadius: 4,
-                              background: isAct ? bg : "transparent",
-                              display: "flex", alignItems: "center", justifyContent: "center",
-                              cursor: "pointer",
-                            }}
-                            title={PRIORITY_CONFIG[p].label}
-                          >
-                            <PIco size={12} style={{ color: isAct ? color : M.muted }} />
-                          </button>
-                        );
-                      })}
-                    </div>
+                    {/* Task text (read-only) */}
+                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem", color: M.ink, fontWeight: 500, marginBottom: 2 }}>{task.text}</p>
 
-                    {/* Category row */}
-                    <div style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap" }}>
-                      <span style={{ ...LABEL_STYLE, marginRight: 4, minWidth: 52 }}>Category</span>
-                      {allContexts.map((ctx) => {
-                        const cfg = getContextConfig(ctx);
-                        const isAct = editContext === ctx;
-                        return (
-                          <button
-                            key={ctx}
-                            onClick={() => setEditContext(ctx)}
-                            style={{
-                              padding: "2px 8px",
-                              border: `1px solid ${isAct ? cfg.border : M.border}`,
-                              borderRadius: 0,
-                              background: isAct ? cfg.bg : "transparent",
-                              color: isAct ? cfg.color : M.muted,
-                              fontFamily: "'DM Sans', sans-serif",
-                              fontSize: "0.62rem",
-                              fontWeight: isAct ? 600 : 400,
-                              letterSpacing: "0.10em",
-                              textTransform: "uppercase",
-                              cursor: "pointer",
-                            }}
-                          >
-                            {cfg.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Goal row */}
-                    {goals.length > 0 && (
-                      <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                        <span style={{ ...LABEL_STYLE, marginRight: 4, minWidth: 52 }}>Goal</span>
-                        <select
-                          value={editGoalId ?? ""}
-                          onChange={(e) => setEditGoalId(e.target.value || null)}
-                          style={{
-                            flex: 1,
-                            background: editGoalId ? "oklch(0.52 0.14 290 / 0.10)" : "transparent",
-                            color: editGoalId ? "oklch(0.40 0.14 290)" : M.muted,
-                            border: `1px solid ${editGoalId ? "oklch(0.52 0.14 290 / 0.40)" : M.border}`,
-                            fontFamily: "'DM Sans', sans-serif",
-                            fontSize: "0.62rem",
-                            letterSpacing: "0.08em",
-                            borderRadius: 0,
-                            padding: "3px 6px",
-                            cursor: "pointer",
-                            outline: "none",
-                          }}
-                        >
-                          <option value="">No goal</option>
-                          {goals.map((g) => (
-                            <option key={g.id} value={g.id}>
-                              {g.text.length > 32 ? g.text.slice(0, 32) + "…" : g.text}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-
-                    {/* Save / Cancel */}
-                    <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", marginTop: 2 }}>
+                    {/* AI edit input */}
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <input
+                        autoFocus
+                        value={aiEditInput}
+                        onChange={(e) => setAiEditInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleAiEdit(task.id); } if (e.key === "Escape") closeEdit(); }}
+                        placeholder='e.g. "make urgent" · "change to personal" · "link to goal X"'
+                        autoComplete="off"
+                        style={{
+                          flex: 1, padding: "5px 9px",
+                          border: `1.5px solid #d4a0c0`,
+                          borderRadius: 4, background: "white",
+                          fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem",
+                          color: M.ink, outline: "none",
+                        }}
+                      />
+                      <button
+                        onClick={() => handleAiEdit(task.id)}
+                        disabled={aiEditing || !aiEditInput.trim()}
+                        style={{
+                          flexShrink: 0, padding: "5px 10px", borderRadius: 4,
+                          background: aiEditInput.trim() ? M.coral : "transparent",
+                          border: `1.5px solid ${aiEditInput.trim() ? M.coral : "#d4a0c0"}`,
+                          color: aiEditInput.trim() ? "white" : M.muted,
+                          cursor: aiEditing || !aiEditInput.trim() ? "not-allowed" : "pointer",
+                          display: "flex", alignItems: "center", gap: 4,
+                          fontFamily: "'Space Mono', monospace", fontSize: "0.55rem", letterSpacing: "0.08em",
+                        }}
+                      >
+                        {aiEditing ? <Loader2 size={10} style={{ animation: "spin 1s linear infinite" }} /> : <Sparkles size={10} />}
+                        {aiEditing ? "…" : "Apply"}
+                      </button>
                       <button
                         onClick={closeEdit}
                         style={{
-                          padding: "3px 10px",
-                          border: `1px solid ${M.border}`,
-                          background: "transparent",
-                          color: M.muted,
-                          fontFamily: "'DM Sans', sans-serif",
-                          fontSize: "0.62rem",
-                          letterSpacing: "0.10em",
-                          textTransform: "uppercase",
-                          cursor: "pointer",
-                          display: "flex", alignItems: "center", gap: 4,
+                          flexShrink: 0, padding: "5px 7px", borderRadius: 4,
+                          background: "transparent", border: `1px solid #d4a0c0`,
+                          color: M.muted, cursor: "pointer",
                         }}
                       >
-                        <X size={10} /> Cancel
-                      </button>
-                      <button
-                        onClick={() => saveEdit(task.id)}
-                        style={{
-                          padding: "3px 10px",
-                          border: `1px solid ${M.coral}60`,
-                          background: `${M.coral}12`,
-                          color: M.coral,
-                          fontFamily: "'DM Sans', sans-serif",
-                          fontSize: "0.62rem",
-                          fontWeight: 600,
-                          letterSpacing: "0.10em",
-                          textTransform: "uppercase",
-                          cursor: "pointer",
-                          display: "flex", alignItems: "center", gap: 4,
-                        }}
-                      >
-                        <Check size={10} /> Save
+                        <X size={12} />
                       </button>
                     </div>
+                    <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.50rem", color: M.muted, opacity: 0.7 }}>Press Enter to apply · Esc to cancel</p>
                   </div>
                 )}
               </div>

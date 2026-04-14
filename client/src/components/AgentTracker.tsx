@@ -662,6 +662,7 @@ export function AgentTracker({ agents, onAgentsChange, tasks, defaultContext = "
                       <Sparkles className="w-3 h-3" />
                       {generating ? "Generating…" : "AI Generate"}
                     </button>
+                    <span style={{ color: "oklch(0.75 0.040 330)", fontSize: "0.65rem", lineHeight: 1 }}>|</span>
                     <button
                       onClick={handleCopyBrief}
                       className="m-btn-link flex items-center gap-1"
