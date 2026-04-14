@@ -1,3 +1,4 @@
+import React from 'react';
 /* ============================================================
    ADHD FOCUS SPACE — Guide Page
    Comprehensive feature reference + AI feature documentation
@@ -163,12 +164,24 @@ function FeedbackModal({ onClose }: { onClose: () => void }) {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
 
-  const handleSend = () => {
-    if (!title.trim()) { toast.error("Please enter a title."); return; }
-    toast.success('Thanks for your feedback!'); setTitle(''); setBody('');
-  };
+  const [sending, setSending] = React.useState(false);
 
-  const sending = false;
+  const handleSend = async () => {
+    if (!title.trim()) { toast.error("Please enter a title."); return; }
+    setSending(true);
+    try {
+      const subject = encodeURIComponent(`[ADHD Focus Space] ${type === "bug" ? "Bug Report" : "Feature Request"}: ${title.trim()}`);
+      const bodyText = encodeURIComponent(
+        `Type: ${type === "bug" ? "Bug Report" : "Feature Request"}\n\nTitle: ${title.trim()}\n\nDetails:\n${body.trim() || "(none provided)"}\n\n---\nSent from ADHD Focus Space feedback form`
+      );
+      window.open(`mailto:yiweicheng465@gmail.com?subject=${subject}&body=${bodyText}`, "_blank");
+      toast.success("Opening your email client — thanks for the feedback!");
+      setTitle("");
+      setBody("");
+    } finally {
+      setSending(false);
+    }
+  };
 
   return (
     <div
@@ -267,7 +280,7 @@ function FeedbackModal({ onClose }: { onClose: () => void }) {
 
         {/* Send */}
         <div className="flex items-center justify-between">
-          <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.52rem", color: M.muted, opacity: 0.7 }}>Sends directly — no email client needed</p>
+          <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.52rem", color: M.muted, opacity: 0.7 }}>Opens your email client with the report pre-filled</p>
           <button
             onClick={handleSend}
             disabled={sending}
