@@ -235,9 +235,9 @@ export function EffectsPanel() {
       {open && (
         <div style={{
           position: "fixed",
-          left: 56,
-          bottom: 80,
-          width: 240,
+          left: "max(56px, env(safe-area-inset-left, 0px))",
+          bottom: 8,
+          width: "min(260px, calc(100vw - 64px))",
           zIndex: 10000,
           fontFamily: "'Space Mono', monospace",
           filter: "drop-shadow(3px 3px 0 oklch(0.55 0.12 340 / 0.35))",
