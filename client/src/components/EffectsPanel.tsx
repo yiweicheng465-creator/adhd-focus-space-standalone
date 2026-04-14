@@ -103,7 +103,7 @@ export function EffectsPanel() {
   // Check key status when panel opens
   useEffect(() => {
     if (!open) return;
-    fetch("/api/key/status", { credentials: "include" })
+    fetch("/api/key", { method: "GET", credentials: "include" })
       .then((r) => r.json())
       .then((d) => setHasKey(d.hasKey ?? false))
       .catch(() => setHasKey(false));

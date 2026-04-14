@@ -1,21 +1,31 @@
-import jwt from "jsonwebtoken";
+import { SignJWT, jwtVerify } from "jose";
 
-const SECRET = process.env.JWT_SECRET ?? "dev-secret-change-me";
+const SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET ?? "dev-secret-change-me"
+);
+
 export interface Payload { sub: string; name: string | null }
 
-export function sign(p: Payload): string {
-  return jwt.sign(p, SECRET, { expiresIn: "30d" });
+export async function sign(payload: Payload): Promise<string> {
+  return new SignJWT({ sub: payload.sub, name: payload.name })
+    .setProtectedHeader({ alg: "HS256" })
+    .setExpirationTime("30d")
+    .sign(SECRET);
 }
 
-export function verify(token: string): Payload | null {
-  try { return jwt.verify(token, SECRET) as Payload; }
-  catch { return null; }
+export async function verify(token: string): Promise<Payload | null> {
+  try {
+    const { payload } = await jwtVerify(token, SECRET);
+    return { sub: payload.sub as string, name: (payload.name ?? null) as string | null };
+  } catch {
+    return null;
+  }
 }
 
-export function fromCookies(header?: string): string | null {
-  if (!header) return null;
-  const m = header.split(";").find(c => c.trim().startsWith("adhd_token="));
-  return m ? decodeURIComponent(m.trim().slice("adhd_token=".length)) : null;
+export function parseCookies(header: string): Record<string, string> {
+  return Object.fromEntries(
+    header.split(";").map(c => c.trim().split("=").map(decodeURIComponent))
+  );
 }
 
 export function setCookie(res: any, token: string) {
@@ -26,10 +36,16 @@ export function setCookie(res: any, token: string) {
 }
 
 export function clearCookie(res: any) {
-  res.setHeader("Set-Cookie", "adhd_token=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax");
+  const isProd = process.env.NODE_ENV === "production";
+  res.setHeader("Set-Cookie",
+    `adhd_token=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax${isProd ? "; Secure" : ""}`);
 }
 
-export function getUser(req: any): Payload | null {
-  const token = fromCookies(req.headers?.cookie);
-  return token ? verify(token) : null;
+export async function getUser(req: any): Promise<Payload | null> {
+  const cookieHeader = req.headers?.cookie ?? "";
+  if (!cookieHeader) return null;
+  const cookies = parseCookies(cookieHeader);
+  const token = cookies["adhd_token"];
+  if (!token) return null;
+  return verify(token);
 }
