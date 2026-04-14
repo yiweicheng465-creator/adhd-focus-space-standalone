@@ -364,6 +364,94 @@ export default async function handler(req: any, res: any) {
     return;
   }
 
+  // ── POST /api/ai/stream — streaming AI (SSE) ─────────────────────────────
+  if (url === "/api/ai/stream" && req.method === "POST") {
+    const user = await getUser(req);
+    if (!user) { json(res, 401, { error: "Not authenticated" }); return; }
+
+    try {
+      const body = await readBody(req);
+      const { systemPrompt, userMessage, model = "gpt-4o-mini" } = body ?? {};
+      if (!userMessage) { json(res, 400, { error: "userMessage required" }); return; }
+
+      const db = getDb();
+      const { rows } = await db.query(
+        "SELECT api_key_encrypted, api_key_iv, ai_usage_count FROM users WHERE id = $1", [user.sub]);
+      await db.end();
+      const row = rows[0];
+
+      let apiKey: string;
+      let usingOwnerKey = false;
+
+      if (row?.api_key_encrypted && row?.api_key_iv) {
+        apiKey = decrypt(row.api_key_encrypted as string, row.api_key_iv as string);
+      } else {
+        const usageCount = Number(row?.ai_usage_count ?? 0);
+        if (usageCount >= FREE_LIMIT) {
+          json(res, 402, { error: `You've used your ${FREE_LIMIT} free AI requests. Add your OpenAI key in Settings.` });
+          return;
+        }
+        const ownerKey = process.env.OWNER_OPENAI_KEY;
+        if (!ownerKey) { json(res, 402, { error: "No API key configured." }); return; }
+        apiKey = ownerKey;
+        usingOwnerKey = true;
+      }
+
+      // SSE headers
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+      res.setHeader("Access-Control-Allow-Origin", req.headers?.origin ?? "*");
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+      res.statusCode = 200;
+
+      const openai = new OpenAI({ apiKey });
+      const stream = await openai.chat.completions.create({
+        model, stream: true,
+        messages: [
+          ...(systemPrompt ? [{ role: "system" as const, content: systemPrompt }] : []),
+          { role: "user" as const, content: userMessage },
+        ],
+        max_tokens: 1000,
+      });
+
+      let fullContent = "";
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta?.content ?? "";
+        if (delta) {
+          fullContent += delta;
+          res.write(`data: ${JSON.stringify({ delta })}
+
+`);
+        }
+      }
+
+      // Increment usage if using owner key
+      if (usingOwnerKey) {
+        const db2 = getDb();
+        await db2.query("UPDATE users SET ai_usage_count = COALESCE(ai_usage_count,0)+1 WHERE id=$1", [user.sub]);
+        await db2.end();
+      }
+
+      res.write(`data: ${JSON.stringify({ done: true })}
+
+`);
+      res.end();
+    } catch (err: any) {
+      if (!res.headersSent) {
+        if (err?.status === 401) { json(res, 401, { error: "Invalid OpenAI API key." }); return; }
+        if (err?.status === 429) { json(res, 429, { error: "OpenAI rate limit." }); return; }
+        json(res, 500, { error: err?.message ?? "Stream failed" });
+      } else {
+        res.write(`data: ${JSON.stringify({ error: err?.message ?? "Stream error" })}
+
+`);
+        res.end();
+      }
+    }
+    return;
+  }
+
   // 404
   json(res, 404, { error: "Not found" });
 }

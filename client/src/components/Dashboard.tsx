@@ -53,7 +53,7 @@ import { Clock, Sparkles, Zap, Bot, Check, Send } from "lucide-react";
 import { PixelTrophy } from "@/components/PixelIcons";
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
-import { callAI } from "@/lib/ai";
+import { callAI, callAIStream } from "@/lib/ai";
 
 const SUNSET_BLOB = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410012773/WNs8kMVMKanwFbtYhk72en/adhd-sunset-blob_5606b6c8.png";
 const PERSON_IMG  = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410012773/WNs8kMVMKanwFbtYhk72en/pink-lofi-illustration_e5665e16.png";
@@ -200,7 +200,22 @@ Current tasks:
 ${taskSummary || "none"}
 Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`;
 
-      const reply = await callAI(systemPrompt, msg);
+      // Add empty assistant message to start streaming into
+      setChatHistory((prev) => [...prev, { role: "assistant", content: "" }]);
+
+      let reply = "";
+      await callAIStream(
+        systemPrompt, msg,
+        (delta) => {
+          reply += delta;
+          setChatHistory((prev) => {
+            const updated = [...prev];
+            updated[updated.length - 1] = { role: "assistant", content: reply };
+            return updated;
+          });
+        },
+        () => {} // onDone — no-op, we handle via state
+      );
 
       // Parse optional action from reply
       const actionMatch = reply.match(/ACTION:(\{.*\})/);
@@ -229,11 +244,17 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
         } catch { /* ignore parse errors */ }
       }
 
-      setChatHistory((prev) => [...prev, { role: "assistant", content: displayReply }]);
+      // Update the last message with the final processed reply (action stripped)
+      setChatHistory((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = { role: "assistant", content: displayReply };
+        return updated;
+      });
     } catch (err) {
       const m = err instanceof Error ? err.message : "AI unavailable";
       toast.error(m, { duration: 5000 });
-      setChatHistory((prev) => prev.slice(0, -1));
+      // Remove both the user message and the empty assistant placeholder
+      setChatHistory((prev) => prev.slice(0, -2));
       setChatInput(msg);
     } finally {
       setChatLoading(false);

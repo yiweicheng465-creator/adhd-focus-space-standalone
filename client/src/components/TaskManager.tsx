@@ -107,6 +107,7 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
   const [completingId,    setCompletingId]    = useState<string | null>(null);
   const [activeContext,   setActiveContext]   = useState<ActiveContext>(defaultContext);
   const [filter,          setFilter]          = useState<"all" | "active" | "done">("active");
+  const [sortBy,          setSortBy]          = useState<"priority" | "created" | "due">("priority");
   // Inline editing state
   // Quadrant map: taskId → quadrantId (persisted in component state)
   const [quadrantMap, setQuadrantMap]         = useState<Record<string, QuadrantId>>(() => {
@@ -171,8 +172,18 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
   const contextFiltered = tasks.filter((t) => activeContext === "all" ? true : t.context === activeContext);
   const sorted = [...contextFiltered].sort((a, b) => {
     if (a.done !== b.done) return a.done ? 1 : -1;
-    const order: TaskPriority[] = ["urgent", "focus", "normal"];
-    return order.indexOf(a.priority) - order.indexOf(b.priority);
+    if (sortBy === "priority") {
+      const order: TaskPriority[] = ["urgent", "focus", "normal", "someday"];
+      return order.indexOf(a.priority) - order.indexOf(b.priority);
+    }
+    if (sortBy === "due") {
+      if (!a.dueDate && !b.dueDate) return 0;
+      if (!a.dueDate) return 1;
+      if (!b.dueDate) return -1;
+      return a.dueDate.localeCompare(b.dueDate);
+    }
+    // created: newest first
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
   const filtered = sorted.filter((t) => {
     if (filter === "active") return !t.done;
@@ -315,8 +326,9 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
         </div>
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex gap-0 text-xs" style={{ borderBottom: `1px solid ${M.border}` }}>
+      {/* Filter tabs + sort selector */}
+      <div className="flex items-center justify-between" style={{ borderBottom: `1px solid ${M.border}` }}>
+        <div className="flex gap-0 text-xs">
         {[
           { id: "active", label: `Active (${activeCount})` },
           { id: "done",   label: `Done (${doneCount})` },
@@ -342,6 +354,27 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
             </button>
           );
         })}
+        </div>
+        {/* Sort selector */}
+        <div className="flex items-center gap-1 pr-2">
+          {(["priority", "created", "due"] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => setSortBy(s)}
+              title={s === "priority" ? "Sort by priority" : s === "created" ? "Sort by newest" : "Sort by due date"}
+              style={{
+                fontSize: "0.58rem", fontFamily: "'Space Mono', monospace",
+                letterSpacing: "0.06em", padding: "2px 7px", borderRadius: 3,
+                border: `1px solid ${sortBy === s ? M.coral : M.border}`,
+                background: sortBy === s ? `${M.coral}12` : "transparent",
+                color: sortBy === s ? M.coral : M.muted,
+                cursor: "pointer",
+              }}
+            >
+              {s === "priority" ? "⚡" : s === "created" ? "🕐" : "📅"}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Task list — retro dashed-border rows with icon box + dotted connectors */}

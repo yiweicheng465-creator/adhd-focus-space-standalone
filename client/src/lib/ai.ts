@@ -82,3 +82,58 @@ export async function callAI(
 
   return data.content as string;
 }
+
+/**
+ * Streaming AI call — calls /api/ai/stream and yields chunks via onChunk.
+ * Falls back to showing a toast if no API key.
+ */
+export async function callAIStream(
+  systemPrompt: string,
+  userMessage: string,
+  onChunk: (delta: string) => void,
+  onDone: () => void,
+  model = "gpt-4o-mini"
+): Promise<void> {
+  const res = await fetch("/api/ai/stream", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ systemPrompt, userMessage, model }),
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({ error: "Stream error" }));
+    if (res.status === 402) {
+      toast(data.error ?? "Add your OpenAI key in Settings.", {
+        duration: 8000,
+        action: { label: "Add Key →", onClick: openApiKeySettings },
+      });
+      throw new Error("no-key");
+    }
+    throw new Error(data.error ?? "Stream failed");
+  }
+
+  const reader = res.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      try {
+        const parsed = JSON.parse(line.slice(6)) as { delta?: string; done?: boolean; error?: string };
+        if (parsed.error) throw new Error(parsed.error);
+        if (parsed.delta) onChunk(parsed.delta);
+        if (parsed.done) { onDone(); return; }
+      } catch (e) {
+        if (e instanceof Error && e.message !== line) throw e;
+      }
+    }
+  }
+  onDone();
+}
