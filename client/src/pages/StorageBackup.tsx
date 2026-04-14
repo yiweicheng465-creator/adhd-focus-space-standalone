@@ -396,46 +396,81 @@ export default function StorageBackup() {
       <Section title="Google Drive Backup" subtitle="Manually save or restore your data from Google Drive.">
 
         {/* OAuth Client ID setup */}
-        <div style={{ marginBottom: 12 }}>
+        <div style={{ marginBottom: 16 }}>
+          {/* Status badge + toggle */}
           <button
             onClick={() => setShowClientIdInput(!showClientIdInput)}
             style={{
-              fontSize: 10, color: M.muted, background: "none", border: "none",
-              cursor: "pointer", fontFamily: "'DM Mono', monospace", letterSpacing: "0.06em",
-              textDecoration: "underline",
+              display: "inline-flex", alignItems: "center", gap: 6,
+              fontSize: 11, background: "none", border: `1px solid ${gdClientId ? "oklch(0.65 0.14 168)" : M.border}`,
+              borderRadius: 4, padding: "4px 10px",
+              color: gdClientId ? "oklch(0.40 0.14 168)" : M.muted,
+              cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
             }}
           >
-            {gdClientId ? "✓ OAuth Client ID configured — click to change" : "⚙ Set up Google OAuth Client ID"}
+            <span>{gdClientId ? "✓" : "⚙"}</span>
+            {gdClientId ? "Google OAuth configured — click to change" : "Set up Google OAuth Client ID"}
           </button>
 
           {showClientIdInput && (
-            <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
-              <p style={{ fontSize: 10, color: M.muted, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6 }}>
-                Create a project at <a href="https://console.cloud.google.com" target="_blank" rel="noreferrer" style={{ color: M.coral }}>console.cloud.google.com</a>,
-                enable the Google Drive API, create an OAuth 2.0 Client ID (Web application),
-                and add your app's domain to Authorized JavaScript origins.
-              </p>
-              <input
-                type="text"
-                value={gdClientId}
-                onChange={(e) => setGdClientId(e.target.value)}
-                placeholder="your-client-id.apps.googleusercontent.com"
-                style={{
-                  padding: "7px 10px", fontSize: 11, fontFamily: "'DM Mono', monospace",
-                  border: `1px solid ${M.border}`, background: M.card, color: M.ink,
-                  outline: "none",
-                }}
-              />
-              <button
-                onClick={() => { saveClientId(gdClientId); setShowClientIdInput(false);  }}
-                style={{
-                  alignSelf: "flex-start", padding: "5px 14px", fontSize: 10,
-                  fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.08em",
-                  background: M.coral, color: "white", border: "none", cursor: "pointer",
-                }}
-              >
-                SAVE
-              </button>
+            <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10,
+              padding: "14px 16px", background: "oklch(0.97 0.015 340)", border: `1px solid ${M.border}`, borderRadius: 6 }}>
+
+              {/* Step-by-step guide */}
+              <div>
+                <p style={{ fontSize: 11, fontWeight: 700, color: M.ink, fontFamily: "'DM Sans', sans-serif", marginBottom: 8 }}>
+                  How to get your Google OAuth Client ID:
+                </p>
+                <ol style={{ paddingLeft: 16, margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+                  {[
+                    <>Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noreferrer" style={{ color: M.coral, fontWeight: 600 }}>console.cloud.google.com/apis/credentials</a></>,
+                    <>Click <strong>Create credentials</strong> → <strong>OAuth client ID</strong></>,
+                    <>Set Application type to <strong>"Web application"</strong></>,
+                    <><strong>Authorized JavaScript origins</strong> — add your site URL:<br />
+                      <code style={{ background: "oklch(0.92 0.025 340)", padding: "2px 6px", borderRadius: 3, fontSize: 10, fontFamily: "'DM Mono', monospace" }}>
+                        {window.location.origin}
+                      </code>
+                      <button onClick={() => { navigator.clipboard.writeText(window.location.origin); toast.success("URL copied!"); }}
+                        style={{ marginLeft: 6, fontSize: 9, color: M.coral, background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
+                        Copy
+                      </button>
+                    </>,
+                    <>Leave <strong>Authorized redirect URIs</strong> empty</>,
+                    <>Click <strong>Create</strong>, then copy the <strong>Client ID</strong> (ends in .apps.googleusercontent.com)</>,
+                  ].map((step, i) => (
+                    <li key={i} style={{ fontSize: 11, color: M.ink, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6 }}>
+                      {step}
+                    </li>
+                  ))}
+                </ol>
+                <p style={{ marginTop: 8, fontSize: 10, color: M.muted, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>
+                  ⚠ If you see <strong>Error 400: redirect_uri_mismatch</strong>, it means your site URL is not in
+                  "Authorized JavaScript origins". Copy the URL above and add it in Google Cloud Console.
+                </p>
+              </div>
+
+              {/* Input */}
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  type="text"
+                  value={gdClientId}
+                  onChange={(e) => setGdClientId(e.target.value)}
+                  placeholder="xxxx.apps.googleusercontent.com"
+                  style={{
+                    flex: 1, padding: "7px 10px", fontSize: 11, fontFamily: "'DM Mono', monospace",
+                    border: `1px solid ${M.border}`, background: M.card, color: M.ink, outline: "none", borderRadius: 4,
+                  }}
+                />
+                <button
+                  onClick={() => { saveClientId(gdClientId); setShowClientIdInput(false); toast.success("Client ID saved."); }}
+                  style={{
+                    padding: "7px 16px", fontSize: 11, fontFamily: "'DM Sans', sans-serif", fontWeight: 600,
+                    background: M.coral, color: "white", border: "none", cursor: "pointer", borderRadius: 4,
+                  }}
+                >
+                  Save
+                </button>
+              </div>
             </div>
           )}
         </div>
