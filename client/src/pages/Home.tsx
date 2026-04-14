@@ -225,20 +225,20 @@ export default function Home() {
   }, [])  // ── 7-day backup reminder ───────────────────────────────────────────
   React.useEffect(() => {
     const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-    const lastBackup = Number(localStorage.getItem("adhd-last-backup") ?? 0);
-    const lastReminder = Number(localStorage.getItem("adhd-backup-reminder-shown") ?? 0);
     const now = Date.now();
-    // Only show if: never backed up (or >7 days ago) AND reminder not shown in the last 24h
-    const neverBacked = lastBackup === 0;
-    const overdueBackup = !neverBacked && (now - lastBackup) > SEVEN_DAYS;
-    const needsReminder = neverBacked || overdueBackup;
+    // On first visit, seed the backup timestamp so 7-day clock starts now (no immediate nudge)
+    if (!localStorage.getItem("adhd-last-backup")) {
+      localStorage.setItem("adhd-last-backup", String(now));
+    }
+    const lastBackup = Number(localStorage.getItem("adhd-last-backup"));
+    const lastReminder = Number(localStorage.getItem("adhd-backup-reminder-shown") ?? 0);
+    // Only show if more than 7 days since last backup AND reminder not shown in last 24h
+    const overdueBackup = (now - lastBackup) > SEVEN_DAYS;
+    const needsReminder = overdueBackup;
     const shownRecently = (now - lastReminder) < 24 * 60 * 60 * 1000;
     if (needsReminder && !shownRecently) {
-      // Delay: 6s for first-time nudge, 4s for overdue
-      const delay = neverBacked ? 6000 : 4000;
-      const msg = neverBacked
-        ? "💾 No backup yet — your tasks & wins live in your browser. Download a backup to keep them safe."
-        : `⏰ Last backup was ${Math.floor((now - lastBackup) / 86_400_000)} days ago — time for a fresh one?`;
+      const delay = 4000;
+      const msg = `⏰ Last backup was ${Math.floor((now - lastBackup) / 86_400_000)} days ago — time for a fresh one?`;
       const t = setTimeout(() => {
         localStorage.setItem("adhd-backup-reminder-shown", String(now));
         toast(msg, {
