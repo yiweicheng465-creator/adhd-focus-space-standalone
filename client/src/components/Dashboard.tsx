@@ -614,16 +614,10 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
               </div>
               {chatHistory.length > 0 && (
                 <button
+                  className="m-btn-link"
                   onClick={() => { setChatHistory([]); localStorage.removeItem(CHAT_HISTORY_KEY); }}
-                  style={{
-                    fontSize: "0.50rem", fontFamily: "'Space Mono', monospace", letterSpacing: "0.10em",
-                    padding: "2px 8px", borderRadius: 3,
-                    border: "1.5px solid oklch(0.65 0.10 330)",
-                    background: "oklch(0.92 0.025 340)", color: "oklch(0.38 0.10 330)",
-                    cursor: "pointer", fontWeight: 700,
-                  }}
                 >
-                  CLEAR
+                  Clear
                 </button>
               )}
             </div>
