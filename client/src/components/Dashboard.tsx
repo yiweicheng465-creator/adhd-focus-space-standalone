@@ -273,16 +273,15 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
     }, 350);
   };
 
-  // / keyboard shortcut: focus the AI input
+  // ` (backtick) shortcut: focus the AI chat input
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement).isContentEditable) return;
-      if (e.key === "/") {
+      if (e.key === "`") {
         e.preventDefault();
-        const el = (window as Window & { __adhd_ai_input?: HTMLInputElement | null }).__adhd_ai_input;
-        el?.focus();
-        el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        chatInputRef.current?.focus();
+        chatInputRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }
     };
     window.addEventListener("keydown", handler);
@@ -592,7 +591,7 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
         <div className="retro-window" style={{ display: "flex", flexDirection: "column", height: "378px", overflow: "hidden" }}>
           <div className="retro-titlebar">
             <span>ai_assistant.app</span>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: "auto", marginRight: 4 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 5, marginLeft: "auto", marginRight: 4 }}>
               {/* sparkle sticker */}
               <svg width="10" height="10" viewBox="0 0 12 12" fill="none" style={{ opacity: 0.55 }}>
                 <path d="M6 0 L6.5 5 L12 6 L6.5 7 L6 12 L5.5 7 L0 6 L5.5 5 Z" fill="oklch(0.62 0.14 340)" />
@@ -600,9 +599,14 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
               {chatHistory.length > 0 && (
                 <button
                   onClick={() => { setChatHistory([]); localStorage.removeItem(CHAT_HISTORY_KEY); }}
-                  style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.42rem", letterSpacing: "0.10em",
-                    padding: "1px 6px", borderRadius: 3, border: "1px solid oklch(0.72 0.08 330)",
-                    background: "transparent", color: "oklch(0.52 0.060 330)", cursor: "pointer" }}
+                  style={{
+                    fontFamily: "'Space Mono', monospace", fontSize: "0.50rem", letterSpacing: "0.10em",
+                    padding: "2px 8px", borderRadius: 3,
+                    border: "1.5px solid oklch(0.65 0.10 330)",
+                    background: "oklch(0.92 0.025 340)",
+                    color: "oklch(0.38 0.10 330)",
+                    cursor: "pointer", fontWeight: 700,
+                  }}
                 >
                   CLEAR
                 </button>
@@ -678,25 +682,7 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
               )}
               <div ref={chatEndRef} />
             </div>
-            {/* Quick suggestion chips — shown when chatting */}
-            {chatHistory.length > 0 && (
-              <div style={{ display: "flex", gap: 4, flexWrap: "wrap", paddingTop: 4, paddingBottom: 2, flexShrink: 0 }}>
-                {CHAT_SUGGESTIONS.slice(0, 4).map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => { setChatInput(s); setTimeout(() => chatInputRef.current?.focus(), 50); }}
-                    style={{
-                      fontFamily: "'DM Sans', sans-serif", fontSize: 9,
-                      padding: "2px 7px", borderRadius: 10,
-                      border: `1px solid ${AI_BORDER}`, background: "oklch(0.978 0.010 355)",
-                      color: MUTED, cursor: "pointer", whiteSpace: "nowrap",
-                    }}
-                  >
-                    {s.length > 22 ? s.slice(0, 22) + "…" : s}
-                  </button>
-                ))}
-              </div>
-            )}
+
             {/* Input area */}
             <div style={{ display: "flex", gap: 5, alignItems: "center", paddingTop: 6, borderTop: `1px solid ${AI_BORDER}`, flexShrink: 0 }}>
               <input
@@ -704,7 +690,7 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); } }}
-                placeholder="press / to start..."
+                placeholder="press ` to focus…"
                 style={{
                   flex: 1, padding: "5px 8px", fontSize: 10.5,
                   background: "oklch(0.975 0.018 355)", border: `1px solid ${AI_BORDER}`,
