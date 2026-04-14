@@ -525,37 +525,56 @@ export function DailyWrapUp({ tasks, wins, agents, quitCount = 0, onClose }: Dai
 
         </div>
 
-        {/* AI Summary */}
-        {(aiSummary || aiLoading) && (
-          <div className="relative z-10 px-5 pb-1" style={{ borderTop: `1px solid ${M.border}`, paddingTop: 12 }}>
-            <div style={{ background: M.coralBg, border: `1px solid ${M.coralBdr}`, borderRadius: 6, padding: "10px 14px" }}>
-              <p style={{ fontSize: "0.60rem", color: M.coral, fontFamily: "'Space Mono', monospace", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>
-                AI Summary
-              </p>
-              {aiLoading ? (
-                <div style={{ display: "flex", alignItems: "center", gap: 6, color: M.muted }}>
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  <span style={{ fontSize: "0.78rem", fontFamily: "'DM Sans', sans-serif" }}>Generating…</span>
-                </div>
-              ) : (
-                <p style={{ fontSize: "0.875rem", color: M.ink, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6 }}>{aiSummary}</p>
-              )}
-            </div>
+        {/* AI Day Summary — always visible as a section */}
+        <div className="relative z-10 px-6 py-5" style={{ borderTop: `1px solid ${M.border}` }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <Sparkles size={16} style={{ color: M.coral }} />
+            <span style={{ fontSize: "1rem", fontWeight: 700, color: M.ink, fontFamily: "'DM Sans', sans-serif" }}>AI Day Summary</span>
           </div>
-        )}
+          {!aiSummary && !aiLoading && (
+            <>
+              <p style={{ fontSize: "0.875rem", color: M.muted, fontFamily: "'DM Sans', sans-serif", fontStyle: "italic", lineHeight: 1.6, marginBottom: 12 }}>
+                Let AI reflect on your day — a personal note based on what you actually did.
+              </p>
+              <button
+                onClick={handleGenerateSummary}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 6,
+                  background: M.coralBg, border: `1px solid ${M.coralBdr}`,
+                  color: M.coral, borderRadius: 8, padding: "8px 16px",
+                  fontSize: "0.875rem", fontFamily: "'DM Sans', sans-serif",
+                  fontWeight: 500, cursor: "pointer",
+                }}
+              >
+                <Sparkles size={14} />
+                Generate summary
+              </button>
+            </>
+          )}
+          {aiLoading && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Loader2 size={14} className="animate-spin" style={{ color: M.coral }} />
+              <span style={{ fontSize: "0.875rem", color: M.muted, fontFamily: "'DM Sans', sans-serif", fontStyle: "italic" }}>Generating…</span>
+            </div>
+          )}
+          {aiSummary && !aiLoading && (
+            <div>
+              <p style={{ fontSize: "0.875rem", color: M.ink, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.7, marginBottom: 8 }}>{aiSummary}</p>
+              <button onClick={() => setAiSummary(null)} style={{ fontSize: "0.75rem", color: M.muted, background: "none", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+                Regenerate
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Footer */}
-        <div className="relative z-10 p-4 flex gap-2 flex-wrap" style={{ borderTop: `1px solid ${M.border}` }}>
-          <button onClick={onClose} className="m-btn-ghost" style={{ flex: "1 1 auto" }}>
-            Close
+        <div className="relative z-10 p-4 flex gap-3" style={{ borderTop: `1px solid ${M.border}` }}>
+          <button onClick={onClose} className="m-btn-ghost flex-1" style={{ justifyContent: "center", letterSpacing: "0.12em" }}>
+            CLOSE
           </button>
-          <button onClick={handleGenerateSummary} disabled={aiLoading} className="m-btn-ghost flex items-center gap-1.5" style={{ flex: "1 1 auto", justifyContent: "center" }}>
-            <Sparkles className="w-3.5 h-3.5" />
-            {aiLoading ? "Generating…" : "AI Summary"}
-          </button>
-          <button onClick={copyDigest} className="m-btn-primary flex-1 justify-center" style={{ flex: "1 1 auto" }}>
-            <ClipboardCopy className="w-3.5 h-3.5" />
-            {copied ? "Copied!" : "Copy"}
+          <button onClick={copyDigest} className="m-btn-primary flex-1 justify-center" style={{ letterSpacing: "0.10em" }}>
+            <ClipboardCopy size={14} />
+            {copied ? "COPIED!" : "COPY SUMMARY"}
           </button>
         </div>
       </div>

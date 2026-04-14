@@ -11,7 +11,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 const LS_INTENSITY = "adhd-film-grain-intensity";
 const LS_SPEED     = "adhd-film-grain-speed";
 const DEFAULT_INTENSITY = 40;
-const DEFAULT_SPEED     = 30; // default: moderate flicker
+const DEFAULT_SPEED     = 15; // default: slow flicker for perf
 
 /* ─── helpers ─────────────────────────────────────────────── */
 function readLS(key: string, def: number) {
@@ -107,7 +107,7 @@ export function FilmGrainOverlay() {
     resize();
     window.addEventListener("resize", resize);
 
-    const GRAIN_SIZE = 3;
+    const GRAIN_SIZE = 5;
 
     function drawGrain(timestamp: number) {
       const lvl   = intensityRef.current;
@@ -127,7 +127,7 @@ export function FilmGrainOverlay() {
       // Speed 0 → redraw every ~2000ms  (frozen feel)
       // Speed 50 → redraw every ~66ms   (~15fps)
       // Speed 100 → redraw every 0ms    (full 60fps)
-      const minInterval = 0;
+      const minInterval = 80; // cap at ~12fps max — avoids lag on slow devices
       const maxInterval = 2000;
       // Exponential mapping so low speeds feel very slow
       const t = 1 - spd / 100; // 0 at max speed, 1 at min speed
