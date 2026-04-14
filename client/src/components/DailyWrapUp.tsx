@@ -523,10 +523,8 @@ export function DailyWrapUp({ tasks, wins, agents, quitCount = 0, onClose }: Dai
             </Section>
           )}
 
-        </div>
-
-        {/* AI Day Summary — always visible as a section */}
-        <div className="relative z-10 px-6 py-5" style={{ borderTop: `1px solid ${M.border}` }}>
+          {/* AI Day Summary — inside scroll so it scrolls with content */}
+          <div className="relative z-10 pt-2 pb-4" style={{ borderTop: `1px solid ${M.border}`, marginTop: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
             <Sparkles size={16} style={{ color: M.coral }} />
             <span style={{ fontSize: "1rem", fontWeight: 700, color: M.ink, fontFamily: "'DM Sans', sans-serif" }}>AI Day Summary</span>
@@ -565,14 +563,15 @@ export function DailyWrapUp({ tasks, wins, agents, quitCount = 0, onClose }: Dai
               </button>
             </div>
           )}
+          </div>
         </div>
 
         {/* Footer */}
-        <div className="relative z-10 p-4 flex gap-3" style={{ borderTop: `1px solid ${M.border}` }}>
-          <button onClick={onClose} className="m-btn-ghost flex-1" style={{ justifyContent: "center", letterSpacing: "0.12em" }}>
+        <div className="relative z-10 px-4 py-3 flex gap-3" style={{ borderTop: `1px solid ${M.border}` }}>
+          <button onClick={onClose} className="m-btn-ghost flex-1" style={{ justifyContent: "center", letterSpacing: "0.12em", padding: "0.6rem 1rem", fontSize: "0.68rem" }}>
             CLOSE
           </button>
-          <button onClick={copyDigest} className="m-btn-primary flex-1 justify-center" style={{ letterSpacing: "0.10em" }}>
+          <button onClick={copyDigest} className="m-btn-primary flex-1 justify-center" style={{ letterSpacing: "0.10em", padding: "0.6rem 1rem", fontSize: "0.68rem" }}>
             <ClipboardCopy size={14} />
             {copied ? "COPIED!" : "COPY SUMMARY"}
           </button>
