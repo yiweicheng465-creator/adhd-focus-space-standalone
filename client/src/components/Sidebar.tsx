@@ -133,9 +133,9 @@ const NAV: Array<{
   { id: "dashboard", short: "HOME",   Icon: IconHome,   title: "Dashboard"   },
   { id: "focus",     short: "FOCUS",  Icon: IconFocus,  title: "Focus Timer"  },
   { id: "tasks",     short: "TASKS",  Icon: IconTasks,  title: "My Tasks"     },
-  { id: "wins",      short: "WINS",   Icon: IconWins,   title: "Daily Wins"   },
-  { id: "dump",      short: "DUMP",   Icon: IconDump,   title: "Brain Dump"   },
   { id: "goals",     short: "GOALS",  Icon: IconGoals,  title: "Goals"        },
+  { id: "dump",      short: "DUMP",   Icon: IconDump,   title: "Brain Dump"   },
+  { id: "wins",      short: "WINS",   Icon: IconWins,   title: "Daily Wins"   },
   { id: "agents",    short: "AGENTS", Icon: IconAgents, title: "AI Agents"    },
   { id: "storage",   short: "STORE",  Icon: IconStorage, title: "Storage & Backup" },
 ];
