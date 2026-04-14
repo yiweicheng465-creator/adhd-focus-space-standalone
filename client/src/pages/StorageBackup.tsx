@@ -172,6 +172,28 @@ async function downloadFromDrive(accessToken: string): Promise<AppBackup> {
 export default function StorageBackup() {
   const { user } = useAuth();
 
+  // All state declared first to avoid TDZ errors with useEffects below
+  const [showDriveSetup, setShowDriveSetup] = useState(false);
+  const [gdStatus, setGdStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [gdMessage, setGdMessage] = useState("");
+  const [lastBackupInfo, setLastBackupInfo] = useState<string | null>(() => localStorage.getItem("adhd-last-backup-info"));
+  const [lastBackupTs, setLastBackupTs] = useState<number | null>(() => {
+    const ts = localStorage.getItem("adhd-last-backup");
+    if (ts) return parseInt(ts, 10);
+    const info = localStorage.getItem("adhd-last-backup-info");
+    if (info) {
+      const match = info.match(/(\d{1,2}\/\d{1,2}\/\d{4},\s*\d{1,2}:\d{2}:\d{2}\s*[AP]M)/);
+      if (match) {
+        const parsed = new Date(match[1]).getTime();
+        if (!isNaN(parsed)) { localStorage.setItem("adhd-last-backup", String(parsed)); return parsed; }
+      }
+      const fallback = Date.now();
+      localStorage.setItem("adhd-last-backup", String(fallback));
+      return fallback;
+    }
+    return null;
+  });
+
   const [gdClientId, setGdClientId] = useState("");
   // Fetch Google Client ID from server on mount
   useEffect(() => { fetch("/api/config").then(r=>r.json()).then(d=>{ if(d.googleClientId) setGdClientId(d.googleClientId); }).catch(()=>{}); }, []);
@@ -196,35 +218,7 @@ export default function StorageBackup() {
       } catch { /* silent fail */ }
     })();
   }, [gdClientId]);
-  const [showDriveSetup, setShowDriveSetup] = useState(false);
-  const [gdStatus, setGdStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [gdMessage, setGdMessage] = useState("");
-  const [lastBackupInfo, setLastBackupInfo] = useState<string | null>(() => localStorage.getItem("adhd-last-backup-info"));
-  const [lastBackupTs, setLastBackupTs] = useState<number | null>(() => {
-    const ts = localStorage.getItem("adhd-last-backup");
-    if (ts) return parseInt(ts, 10);
-    // Fallback: if we have an info string (e.g. "Exported 4/12/2026, 8:46:57 PM · 18 data categories")
-    // but no explicit timestamp key, parse the date from the info string so the badge shows correctly.
-    const info = localStorage.getItem("adhd-last-backup-info");
-    if (info) {
-      // info starts with "Exported MM/DD/YYYY, HH:MM:SS AM/PM" or "Backed up MM/DD/YYYY..."
-      const match = info.match(/(\d{1,2}\/\d{1,2}\/\d{4},\s*\d{1,2}:\d{2}:\d{2}\s*[AP]M)/);
-      if (match) {
-        const parsed = new Date(match[1]).getTime();
-        if (!isNaN(parsed)) {
-          // Persist so future mounts don't need to re-parse
-          localStorage.setItem("adhd-last-backup", String(parsed));
-          return parsed;
-        }
-      }
-      // If we can't parse a date, at least treat it as "backed up at some point" using now as a floor
-      // so the badge doesn't say "Never backed up" when info clearly exists.
-      const fallback = Date.now();
-      localStorage.setItem("adhd-last-backup", String(fallback));
-      return fallback;
-    }
-    return null;
-  });
+
 
   // Compute relative time from the last backup timestamp
   const lastBackupRelative = (() => {
