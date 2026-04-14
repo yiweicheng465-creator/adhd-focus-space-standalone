@@ -444,8 +444,10 @@ export default function StorageBackup() {
                   ))}
                 </ol>
                 <p style={{ marginTop: 8, fontSize: 10, color: M.muted, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>
-                  ⚠ If you see <strong>Error 400: redirect_uri_mismatch</strong>, it means your site URL is not in
-                  "Authorized JavaScript origins". Copy the URL above and add it in Google Cloud Console.
+                  ⚠ If you see <strong>Error 400: redirect_uri_mismatch</strong> — add your site URL to "Authorized JavaScript origins" in Google Cloud Console.<br />
+                  ⚠ If you see <strong>Error 403: access_denied</strong> — your email needs to be added as a test user at{" "}
+                  <a href="https://console.cloud.google.com/auth/audience" target="_blank" rel="noreferrer" style={{ color: M.coral }}>console.cloud.google.com/auth/audience</a>
+                  {" "}→ scroll down to <strong>Test users</strong> → Add Users.
                 </p>
               </div>
 
