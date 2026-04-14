@@ -16,6 +16,7 @@ export const APP_STORAGE_KEYS = [
   "adhd-care-log",
   "adhd-focus-session-list",
   "adhd-quadrant-map",
+  "adhd-quadrant-task-order",
   "adhd-work-mode",
   "adhd-deleted-categories",
   "adhd-display-name",

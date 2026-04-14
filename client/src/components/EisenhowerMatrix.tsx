@@ -4,7 +4,7 @@
    stamps, ruled notebook lines, warm muted palette.
    ============================================================ */
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { Task, TaskPriority } from "./TaskManager";
 
 // ── Quadrant definitions ──────────────────────────────────────────────────────
@@ -120,7 +120,14 @@ export function EisenhowerMatrix({
   const [dragOverQ, setDragOverQ] = useState<QuadrantId | null>(null);
   const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null);
   const [dragOverPos, setDragOverPos] = useState<"before" | "after">("after");
-  const [taskOrder, setTaskOrder] = useState<Record<string, number>>({});
+  const [taskOrder, setTaskOrder] = useState<Record<string, number>>(() => {
+    try { return JSON.parse(localStorage.getItem("adhd-quadrant-task-order") ?? "{}"); } catch { return {}; }
+  });
+
+  // Persist taskOrder to localStorage whenever it changes
+  useEffect(() => {
+    try { localStorage.setItem("adhd-quadrant-task-order", JSON.stringify(taskOrder)); } catch {}
+  }, [taskOrder]);
   const draggingId = useRef<string | null>(null);
 
   const activeTasks = tasks.filter((t) => !t.done);
