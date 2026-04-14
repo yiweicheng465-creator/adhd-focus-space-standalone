@@ -185,12 +185,17 @@ function TimerPill({ onGoToFocus }: { onGoToFocus: () => void }) {
       <button
         onClick={handleClick}
         title={active ? `${mm}:${ss} · ${label} — click for controls` : "Go to Focus Timer"}
-        className="w-full flex flex-col items-center justify-center py-2 transition-all duration-200"
+        className="flex flex-col items-center justify-center py-2 transition-all duration-200"
         style={{
           background: modeBg,
           borderTop: `1px solid ${active ? modeColor : "oklch(0.80 0.060 340 / 0.4)"}`,
           borderBottom: `1px solid ${active ? modeColor : "oklch(0.80 0.060 340 / 0.4)"}`,
+          borderLeft: `1px solid ${active ? modeColor : "oklch(0.80 0.060 340 / 0.4)"}`,
+          borderRight: "none",
+          borderRadius: "6px 0 0 6px",
           opacity: active ? 1 : 0.55,
+          width: 32,
+          minHeight: 64,
         }}
       >
         <div style={{ position: "relative", width: 6, height: 6, marginBottom: 3 }}>
@@ -217,7 +222,7 @@ function TimerPill({ onGoToFocus }: { onGoToFocus: () => void }) {
         <div
           style={{
             position: "absolute",
-            left: "calc(100% + 8px)",
+            right: "calc(100% + 8px)",
             bottom: 0,
             zIndex: 200,
             background: "oklch(0.97 0.015 340)",
@@ -497,11 +502,6 @@ export function Sidebar({ activeSection, onSectionChange, onClearData }: Sidebar
         })}
       </nav>
 
-      {/* Timer pill */}
-      <div className="w-full my-1">
-        <TimerPill onGoToFocus={() => onSectionChange("focus")} />
-      </div>
-
       {/* Divider */}
       <div style={{ width: "70%", height: "1px", background: "oklch(0.80 0.060 340)", marginBottom: 4 }} />
 
@@ -512,6 +512,20 @@ export function Sidebar({ activeSection, onSectionChange, onClearData }: Sidebar
 
       {/* Effects panel (grain + work mode) */}
       <EffectsPanel />
+
+      {/* Timer pill — fixed on right edge, doesn't block sidebar on small screens */}
+      <div style={{
+        position: "fixed",
+        right: 0,
+        top: "50%",
+        transform: "translateY(-50%)",
+        zIndex: 40,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+      }}>
+        <TimerPill onGoToFocus={() => onSectionChange("focus")} />
+      </div>
 
       {/* Secondary divider — separates functional items from help */}
       <div style={{ width: "60%", height: "1px", background: "oklch(0.80 0.060 340 / 0.5)", margin: "12px 0 4px" }} />
