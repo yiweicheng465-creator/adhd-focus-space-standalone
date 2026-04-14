@@ -28,6 +28,7 @@ export interface Task {
   createdAt: Date;
   /** Optional: ID of a Goal this task contributes to */
   goalId?: string;
+  dueDate?: string; // ISO date string YYYY-MM-DD
 }
 
 /* Morandi priority palette */
@@ -102,6 +103,7 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
   const [newTaskPriority, setNewTaskPriority] = useState<TaskPriority>("focus");
   const [newTaskContext,  setNewTaskContext]  = useState<ItemContext>("work");
   const [newTaskGoalId,   setNewTaskGoalId]   = useState<string | null>(null);
+  const [newTaskDueDate,  setNewTaskDueDate]  = useState<string>("");
   const [completingId,    setCompletingId]    = useState<string | null>(null);
   const [activeContext,   setActiveContext]   = useState<ActiveContext>(defaultContext);
   const [filter,          setFilter]          = useState<"all" | "active" | "done">("active");
@@ -136,10 +138,12 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
       priority: newTaskPriority, context,
       done: false, createdAt: new Date(),
       ...(newTaskGoalId ? { goalId: newTaskGoalId } : {}),
+        ...(newTaskDueDate ? { dueDate: newTaskDueDate } : {}),
     };
     onTasksChange([task, ...tasks]);
     setNewTaskText("");
     setNewTaskGoalId(null);
+    setNewTaskDueDate("");
   };
 
   const toggleTask = (id: string) => {
@@ -289,6 +293,25 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
               ))}
             </select>
           )}
+          {/* Due date input */}
+          <input
+            type="date"
+            value={newTaskDueDate}
+            onChange={(e) => setNewTaskDueDate(e.target.value)}
+            min={new Date().toISOString().slice(0, 10)}
+            style={{
+              background: newTaskDueDate ? "oklch(0.52 0.10 32 / 0.08)" : "transparent",
+              color: newTaskDueDate ? "oklch(0.40 0.10 32)" : M.muted,
+              border: `1px solid ${newTaskDueDate ? "oklch(0.52 0.10 32 / 0.40)" : M.border}`,
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: "0.62rem",
+              borderRadius: 0,
+              padding: "3px 8px",
+              cursor: "pointer",
+              outline: "none",
+            }}
+            title="Due date (optional)"
+          />
         </div>
       </div>
 
@@ -385,6 +408,25 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
                 >
                   {cleanText}
                 </p>
+                {task.dueDate && (() => {
+                  const due = new Date(task.dueDate);
+                  const today = new Date(); today.setHours(0,0,0,0);
+                  const isOverdue = due < today && !task.done;
+                  const isTomorrow = due.getTime() === today.getTime() + 86400000;
+                  const isToday = due.getTime() === today.getTime();
+                  const label = isToday ? "today" : isTomorrow ? "tomorrow" : due.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                  return (
+                    <span style={{
+                      fontSize: "0.58rem", fontFamily: "'Space Mono', monospace",
+                      letterSpacing: "0.06em", padding: "1px 5px", borderRadius: 2,
+                      background: isOverdue ? "oklch(0.55 0.14 25 / 0.12)" : "oklch(0.52 0.10 32 / 0.08)",
+                      color: isOverdue ? "oklch(0.45 0.18 25)" : "oklch(0.42 0.10 32)",
+                      border: `1px solid ${isOverdue ? "oklch(0.55 0.14 25 / 0.35)" : "oklch(0.52 0.10 32 / 0.25)"}`,
+                    }}>
+                      {isOverdue ? "⚠ " : "📅 "}{label}
+                    </span>
+                  );
+                })()}
                 {task.goalId && (() => {
                   const linkedGoal = goals.find((g) => g.id === task.goalId);
                   return linkedGoal ? (

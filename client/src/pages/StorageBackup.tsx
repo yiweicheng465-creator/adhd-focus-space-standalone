@@ -18,8 +18,19 @@ import {
 import { toast } from "sonner";
 import { AlertTriangle, CheckCircle2, CloudDownload, CloudUpload, Download, HardDrive, RefreshCw, Upload } from "lucide-react";
 
-// Cache Google access token in memory — valid for ~1 hour
-let cachedToken: { token: string; expiresAt: number } | null = null;
+// Persist Google access token in localStorage — reuse across page loads
+const TOKEN_KEY = "adhd-gdrive-token";
+function getPersistedToken(): string | null {
+  try {
+    const raw = localStorage.getItem(TOKEN_KEY);
+    if (!raw) return null;
+    const { token, expiresAt } = JSON.parse(raw) as { token: string; expiresAt: number };
+    return expiresAt > Date.now() + 120_000 ? token : null;
+  } catch { return null; }
+}
+function persistToken(token: string) {
+  try { localStorage.setItem(TOKEN_KEY, JSON.stringify({ token, expiresAt: Date.now() + 55 * 60 * 1000 })); } catch {}
+}
 
 /* ── Design tokens ── */
 const M = {
@@ -71,9 +82,8 @@ function loadGapiScripts(): Promise<void> {
 /** Get an access token via Google Identity Services — reuses cached token if still valid */
 function getGoogleAccessToken(clientId: string): Promise<string> {
   // Return cached token if still valid (with 2-min buffer)
-  if (cachedToken && cachedToken.expiresAt > Date.now() + 120_000) {
-    return Promise.resolve(cachedToken.token);
-  }
+  const persisted = getPersistedToken();
+  if (persisted) return Promise.resolve(persisted);
   return new Promise((resolve, reject) => {
     const tokenClient = (window as any).google.accounts.oauth2.initTokenClient({
       client_id: clientId,
@@ -86,11 +96,7 @@ function getGoogleAccessToken(clientId: string): Promise<string> {
             reject(new Error(response.error));
           }
         } else {
-          // Cache token for ~55 minutes (Google tokens last 1 hour)
-          cachedToken = {
-            token: response.access_token as string,
-            expiresAt: Date.now() + 55 * 60 * 1000,
-          };
+          persistToken(response.access_token as string);
           resolve(response.access_token as string);
         }
       },
@@ -165,6 +171,28 @@ async function downloadFromDrive(accessToken: string): Promise<AppBackup> {
 /* ── Component ── */
 export default function StorageBackup() {
   const { user } = useAuth();
+
+  // Auto-backup to Google Drive every 24 hours if token exists
+  useEffect(() => {
+    const AUTO_BACKUP_KEY = "adhd-gdrive-auto-backup-ts";
+    const AUTO_INTERVAL = 24 * 60 * 60 * 1000; // 24h
+    const last = Number(localStorage.getItem(AUTO_BACKUP_KEY) ?? 0);
+    const token = getPersistedToken();
+    if (!token || !gdClientId) return;
+    if (Date.now() - last < AUTO_INTERVAL) return;
+    // Silent auto-backup
+    (async () => {
+      try {
+        const backup = exportAppData();
+        await uploadToDrive(token, backup);
+        const now = Date.now();
+        localStorage.setItem(AUTO_BACKUP_KEY, String(now));
+        localStorage.setItem("adhd-last-backup", String(now));
+        localStorage.setItem("adhd-last-backup-info", `Auto-backed up ${new Date(now).toLocaleString()} · ${Object.keys(backup.appData).length} data categories`);
+        console.log("[ADHD] Auto-backup to Google Drive succeeded");
+      } catch { /* silent fail */ }
+    })();
+  }, [gdClientId]);
   const [showDriveSetup, setShowDriveSetup] = useState(false);
   const [gdClientId, setGdClientId] = useState("");
   // Fetch Google Client ID from server on mount
