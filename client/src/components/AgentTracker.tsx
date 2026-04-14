@@ -206,8 +206,9 @@ export function AgentTracker({ agents, onAgentsChange, tasks, defaultContext = "
   // Unified categories: use shared list if provided, else derive from own agents
   const knownCategories = allCategories ?? Array.from(new Set(["work", "personal", ...agents.map((a) => a.context)]));
 
-  const counts: Record<string, number> = { all: agents.length };
-  knownCategories.forEach((ctx) => { counts[ctx] = agents.filter((a) => a.context === ctx).length; });
+  // Use task counts so all tags that have tasks are visible in the filter
+  const counts: Record<string, number> = { all: activeTasks.length };
+  knownCategories.forEach((ctx) => { counts[ctx] = activeTasks.filter((t) => t.context === ctx).length; });
 
   // Consume pendingTaskText from Brain Dump
   useEffect(() => {
