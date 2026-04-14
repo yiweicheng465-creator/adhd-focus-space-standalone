@@ -273,12 +273,12 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
     }, 350);
   };
 
-  // ` (backtick) shortcut: focus the AI chat input
+  // C key shortcut: focus the AI chat input
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement).isContentEditable) return;
-      if (e.key === "`") {
+      if (e.key === "c" || e.key === "C") {
         e.preventDefault();
         chatInputRef.current?.focus();
         chatInputRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -696,7 +696,7 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); } }}
-                placeholder="press ` to focus…"
+                placeholder="press C to focus…"
                 style={{
                   flex: 1, padding: "5px 8px", fontSize: 10.5,
                   background: "oklch(0.975 0.018 355)", border: `1px solid ${AI_BORDER}`,
