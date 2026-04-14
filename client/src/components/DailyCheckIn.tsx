@@ -312,7 +312,7 @@ export function DailyCheckIn({ onComplete, onSkip, onClose, displayName, existin
         style={{
           background: M.bg,
           border: `1.5px solid ${M.border}`,
-          boxShadow: "0 8px 32px rgba(180,130,160,0.18), 4px 6px 20px rgba(212,88,152,0.18), 0 0 0 1px rgba(232,184,208,0.60)",
+          boxShadow: "0 20px 60px rgba(140,40,90,0.35), 0 8px 24px rgba(180,60,120,0.25), 0 0 0 1.5px rgba(212,88,152,0.40)",
           position: "relative",
         }}
       >
