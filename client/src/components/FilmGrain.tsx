@@ -10,8 +10,8 @@ import { useEffect, useRef, useState, useCallback } from "react";
 
 const LS_INTENSITY = "adhd-film-grain-intensity";
 const LS_SPEED     = "adhd-film-grain-speed";
-const DEFAULT_INTENSITY = 40;
-const DEFAULT_SPEED     = 15; // default: slow flicker for perf
+const DEFAULT_INTENSITY = 15;
+const DEFAULT_SPEED     = 88;
 
 /* ─── helpers ─────────────────────────────────────────────── */
 function readLS(key: string, def: number) {
