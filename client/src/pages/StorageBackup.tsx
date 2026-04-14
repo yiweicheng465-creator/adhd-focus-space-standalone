@@ -5,7 +5,8 @@
    - Optional: Local file download/upload (no login needed)
    ============================================================ */
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useAuth } from "@/_core/hooks/useAuth";
 import {
   exportAppData,
   importAppData,
@@ -152,6 +153,7 @@ async function downloadFromDrive(accessToken: string): Promise<AppBackup> {
 
 /* ── Component ── */
 export default function StorageBackup() {
+  const { user } = useAuth();
   const [gdClientId, setGdClientId] = useState("");
   // Fetch Google Client ID from server on mount
   useEffect(() => { fetch("/api/config").then(r=>r.json()).then(d=>{ if(d.googleClientId) setGdClientId(d.googleClientId); }).catch(()=>{}); }, []);
@@ -390,47 +392,77 @@ export default function StorageBackup() {
       </Section>
 
       {/* Google Drive backup */}
-      <Section title="Google Drive Backup" subtitle="Manually save or restore your data from Google Drive.">
+      <Section title="Google Drive Backup" subtitle="Save your data to your own Google Drive — no account setup needed.">
 
-        {/* Drive action buttons */}
+        {/* One-time access notice */}
+        <div style={{ marginBottom: 14, padding: "10px 14px", background: "oklch(0.97 0.025 60)", border: "1px solid oklch(0.82 0.07 60)", borderRadius: 4, display: "flex", gap: 10 }}>
+          <AlertTriangle size={14} style={{ color: "oklch(0.55 0.15 60)", flexShrink: 0, marginTop: 1 }} />
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 600, color: "oklch(0.40 0.10 60)", fontFamily: "'DM Sans', sans-serif", marginBottom: 3 }}>
+              First time? You need to be added as a test user.
+            </p>
+            <p style={{ fontSize: 11, color: "oklch(0.48 0.08 60)", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6, margin: 0 }}>
+              This app is in testing mode. To use Google Drive backup, send your Gmail address to the app owner and ask to be added.
+            </p>
+            {user?.id && (
+              <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
+                <code style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, background: "oklch(0.93 0.025 60)", padding: "3px 8px", borderRadius: 3, color: "oklch(0.35 0.10 60)" }}>
+                  {user.id}
+                </code>
+                <button
+                  onClick={() => { navigator.clipboard.writeText(user.id); toast.success("Gmail copied!"); }}
+                  style={{ fontSize: 10, color: M.coral, background: "none", border: "none", cursor: "pointer", textDecoration: "underline", fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  Copy
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Steps */}
+        <div style={{ marginBottom: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+          {[
+            { n: "1", label: "Copy your Gmail above and send it to the app owner to get added" },
+            { n: "2", label: "Once added, click 'Backup to Google Drive' — a Google permission popup will appear" },
+            { n: "3", label: "Approve access — your backup is saved to your own Google Drive automatically" },
+          ].map(({ n, label }) => (
+            <div key={n} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+              <div style={{ width: 20, height: 20, borderRadius: "50%", flexShrink: 0, background: M.coral, color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Space Mono', monospace", fontSize: 9, fontWeight: 700 }}>{n}</div>
+              <p style={{ fontSize: 11, color: M.ink, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6, margin: 0, paddingTop: 2 }}>{label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Buttons */}
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <ActionButton
             icon={gdStatus === "loading" ? <RefreshCw size={13} className="animate-spin" /> : <CloudUpload size={13} />}
             label="Backup to Google Drive"
             onClick={handleDriveBackup}
-            disabled={gdStatus === "loading"}
+            disabled={gdStatus === "loading" || !gdClientId}
             primary
           />
           <ActionButton
             icon={gdStatus === "loading" ? <RefreshCw size={13} className="animate-spin" /> : <CloudDownload size={13} />}
             label="Restore from Google Drive"
             onClick={handleDriveRestore}
-            disabled={gdStatus === "loading"}
+            disabled={gdStatus === "loading" || !gdClientId}
           />
         </div>
 
-        {/* Status message */}
+        {/* Status */}
         {gdMessage && (
-          <div style={{
-            marginTop: 10, padding: "8px 12px",
-            background: gdStatus === "error" ? "oklch(0.97 0.025 355)" : gdStatus === "success" ? "oklch(0.97 0.018 340)" : "oklch(0.96 0.015 340)",
-            border: `1px solid ${gdStatus === "error" ? "oklch(0.80 0.08 355)" : gdStatus === "success" ? "oklch(0.82 0.08 340)" : M.border}`,
-            display: "flex", alignItems: "center", gap: 8,
-          }}>
+          <div style={{ marginTop: 10, padding: "8px 12px", background: gdStatus === "error" ? "oklch(0.97 0.025 355)" : "oklch(0.97 0.018 340)", border: `1px solid ${gdStatus === "error" ? "oklch(0.80 0.08 355)" : "oklch(0.82 0.08 340)"}`, display: "flex", alignItems: "center", gap: 8, borderRadius: 4 }}>
             {gdStatus === "success" && <CheckCircle2 size={12} style={{ color: M.sage, flexShrink: 0 }} />}
             {gdStatus === "error" && <AlertTriangle size={12} style={{ color: "oklch(0.55 0.18 355)", flexShrink: 0 }} />}
-            <p style={{
-              fontSize: 10, fontFamily: "'DM Mono', monospace",
-              color: gdStatus === "error" ? "oklch(0.45 0.18 355)" : gdStatus === "success" ? M.sage : M.muted,
-            }}>
-              {gdMessage}
-            </p>
+            <p style={{ fontSize: 10, fontFamily: "'DM Mono', monospace", color: gdStatus === "error" ? "oklch(0.45 0.18 355)" : M.sage }}>{gdMessage}</p>
           </div>
         )}
 
         <p style={{ fontSize: 10, color: M.muted, fontFamily: "'DM Sans', sans-serif", marginTop: 10, lineHeight: 1.6 }}>
-          Google Drive access is only requested when you click Backup or Restore. No automatic syncing occurs.
-          The backup file is named <code style={{ background: "oklch(0.93 0.015 340)", padding: "1px 5px" }}>{BACKUP_FILENAME}</code> in your Drive root.
+          Access is only requested when you click Backup or Restore — no automatic syncing.
+          File saved as <code style={{ fontFamily: "'DM Mono', monospace" }}>{BACKUP_FILENAME}</code> in your Drive root.
         </p>
       </Section>
 
