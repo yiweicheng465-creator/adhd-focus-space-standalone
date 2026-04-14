@@ -9,11 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
-  CheckCircle2, Clock, Flame,
+  CheckCircle2, Clock, Copy, Flame,
   Link2, Pause, Play, Plus, RefreshCw, Sparkles, Trash2, X, XCircle,
 } from "lucide-react";
 import { PixelAgents } from "@/components/PixelIcons";
 import { toast } from "sonner";
+import { callAI } from "@/lib/ai";
 import { nanoid } from "nanoid";
 import type { Task } from "./TaskManager";
 import {
@@ -132,12 +133,47 @@ export function AgentTracker({ agents, onAgentsChange, tasks, defaultContext = "
   const [popupName,      setPopupName]     = useState("");
   const [popupBrief,     setPopupBrief]    = useState("");
   const [popupFirstStep, setPopupFirstStep] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const openCreatePopup = (task: Task) => {
     setPopupTask(task);
     setPopupName(task.text.slice(0, 40));
     setPopupBrief("");
     setPopupFirstStep("");
+  };
+
+  const handleGenerate = async () => {
+    if (!popupTask) return;
+    setGenerating(true);
+    try {
+      const result = await callAI(
+        `You generate AI agent briefs. Given a task, output ONLY valid JSON:
+{"name":"short punchy agent name (3-5 words)","brief":"detailed 2-3 paragraph prompt to paste into ChatGPT or Claude. Include: what to do, how to approach it, what format to return results in. Be specific and actionable."}`,
+        `Task: ${popupTask.text}`
+      );
+      const match = result.match(/\{[\s\S]*\}/);
+      if (match) {
+        const parsed = JSON.parse(match[0]) as { name?: string; brief?: string };
+        if (parsed.name) setPopupName(parsed.name);
+        if (parsed.brief) { setPopupBrief(parsed.brief); setPopupFirstStep(""); }
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Generation failed";
+      if (msg !== "no-key" && msg !== "invalid-key") toast.error(msg, { duration: 5000 });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleCopyBrief = () => {
+    const text = popupBrief + (popupFirstStep ? `\n\nFirst step: ${popupFirstStep}` : "");
+    if (!text.trim()) { toast.info("Nothing to copy yet."); return; }
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      toast.success("Brief copied to clipboard!");
+      setTimeout(() => setCopied(false), 2000);
+    });
   };
 
   const confirmCreateAgent = () => {
@@ -614,11 +650,32 @@ export function AgentTracker({ agents, onAgentsChange, tasks, defaultContext = "
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold mb-1 block" style={{ color: "oklch(0.52 0.040 330)", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.06em", textTransform: "uppercase" }}>Suggest Prompt</label>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                  <label className="text-xs font-semibold" style={{ color: "oklch(0.52 0.040 330)", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.06em", textTransform: "uppercase" }}>Agent Brief</label>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button
+                      onClick={handleGenerate}
+                      disabled={generating}
+                      className="m-btn-link flex items-center gap-1"
+                      style={{ fontSize: "0.65rem" }}
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      {generating ? "Generating…" : "AI Generate"}
+                    </button>
+                    <button
+                      onClick={handleCopyBrief}
+                      className="m-btn-link flex items-center gap-1"
+                      style={{ fontSize: "0.65rem" }}
+                    >
+                      <Copy className="w-3 h-3" />
+                      {copied ? "Copied!" : "Copy"}
+                    </button>
+                  </div>
+                </div>
                 <Textarea
                   value={popupBrief + (popupFirstStep ? `\n\nFirst step: ${popupFirstStep}` : "")}
                   onChange={(e) => { setPopupBrief(e.target.value); setPopupFirstStep(""); }}
-                  placeholder={`e.g. Help me review the PR at [link]. Check for code quality issues, missing tests, and security concerns. Summarize what needs to be fixed before it can be merged, and flag anything that looks risky.`}
+                  placeholder="Describe what this agent should do — or click AI Generate above."
                   rows={5}
                   style={{ fontFamily: "'DM Sans', sans-serif", resize: "none" }}
                 />
