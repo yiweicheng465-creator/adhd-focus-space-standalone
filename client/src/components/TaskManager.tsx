@@ -456,16 +456,17 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
                       top: editPopoverPos?.top ?? 0,
                       left: editPopoverPos?.left ?? 0,
                       zIndex: 9999,
-                      background: M.card,
-                      border: `1.5px solid ${M.border}`,
+                      background: "#fdf4f8",
+                      border: "1.5px solid #d4a0c0",
                       borderRadius: 6,
                       padding: "10px 12px",
-                      minWidth: 260,
-                      boxShadow: "0 4px 16px oklch(0.28 0.04 320 / 0.12)",
+                      minWidth: 280,
+                      maxWidth: "min(340px, 90vw)",
+                      boxShadow: "0 8px 24px rgba(180,60,120,0.18), 0 2px 0 #d4a0c0",
                       display: "flex",
                       flexDirection: "column",
                       gap: 8,
-                      marginTop: 4,
+                      isolation: "isolate",
                     }}
                   >
                     {/* Priority row */}
