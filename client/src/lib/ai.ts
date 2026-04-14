@@ -60,5 +60,25 @@ export async function callAI(
     }
   }
 
+  // Track total API calls in localStorage
+  try {
+    const today = new Date().toDateString();
+    const total = Number(localStorage.getItem("adhd-api-calls-total") ?? 0) + 1;
+    const dayKey = `adhd-api-calls-${today}`;
+    const todayCount = Number(localStorage.getItem(dayKey) ?? 0) + 1;
+    localStorage.setItem("adhd-api-calls-total", String(total));
+    localStorage.setItem(dayKey, String(todayCount));
+    // Clean old daily keys (keep only last 7 days)
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k?.startsWith("adhd-api-calls-") && k !== dayKey && k !== "adhd-api-calls-total") {
+        const d = new Date(k.replace("adhd-api-calls-", ""));
+        if (!isNaN(d.getTime()) && Date.now() - d.getTime() > 7 * 86400000) {
+          localStorage.removeItem(k); i--;
+        }
+      }
+    }
+  } catch {}
+
   return data.content as string;
 }

@@ -493,10 +493,32 @@ export function EffectsPanel() {
                   </div>
 
                   {hasKey ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       <p style={{ fontSize: "0.48rem", color: "oklch(0.55 0.040 330)", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>
                         AI features enabled. Your key is stored encrypted.
                       </p>
+                      {/* API call usage stats */}
+                      {(() => {
+                        const total = Number(localStorage.getItem("adhd-api-calls-total") ?? 0);
+                        const today = Number(localStorage.getItem(`adhd-api-calls-${new Date().toDateString()}`) ?? 0);
+                        if (total === 0) return null;
+                        return (
+                          <div style={{ background: "oklch(0.96 0.015 340)", border: "1px solid oklch(0.84 0.040 340)", borderRadius: 4, padding: "6px 8px", display: "flex", gap: 12 }}>
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.70rem", fontWeight: 700, color: "oklch(0.45 0.12 340)" }}>{today}</span>
+                              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.40rem", color: "oklch(0.60 0.040 330)", letterSpacing: "0.08em", textTransform: "uppercase" }}>today</span>
+                            </div>
+                            <div style={{ width: 1, background: "oklch(0.84 0.040 340)" }} />
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.70rem", fontWeight: 700, color: "oklch(0.45 0.12 340)" }}>{total}</span>
+                              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.40rem", color: "oklch(0.60 0.040 330)", letterSpacing: "0.08em", textTransform: "uppercase" }}>total</span>
+                            </div>
+                            <div style={{ marginLeft: "auto", alignSelf: "center" }}>
+                              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.38rem", color: "oklch(0.65 0.040 330)", letterSpacing: "0.06em", textTransform: "uppercase" }}>API calls</span>
+                            </div>
+                          </div>
+                        );
+                      })()}
                       <button
                         onClick={removeKey}
                         disabled={keyLoading}
