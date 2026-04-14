@@ -172,6 +172,9 @@ async function downloadFromDrive(accessToken: string): Promise<AppBackup> {
 export default function StorageBackup() {
   const { user } = useAuth();
 
+  const [gdClientId, setGdClientId] = useState("");
+  // Fetch Google Client ID from server on mount
+  useEffect(() => { fetch("/api/config").then(r=>r.json()).then(d=>{ if(d.googleClientId) setGdClientId(d.googleClientId); }).catch(()=>{}); }, []);
   // Auto-backup to Google Drive every 24 hours if token exists
   useEffect(() => {
     const AUTO_BACKUP_KEY = "adhd-gdrive-auto-backup-ts";
@@ -194,9 +197,6 @@ export default function StorageBackup() {
     })();
   }, [gdClientId]);
   const [showDriveSetup, setShowDriveSetup] = useState(false);
-  const [gdClientId, setGdClientId] = useState("");
-  // Fetch Google Client ID from server on mount
-  useEffect(() => { fetch("/api/config").then(r=>r.json()).then(d=>{ if(d.googleClientId) setGdClientId(d.googleClientId); }).catch(()=>{}); }, []);
   const [gdStatus, setGdStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [gdMessage, setGdMessage] = useState("");
   const [lastBackupInfo, setLastBackupInfo] = useState<string | null>(() => localStorage.getItem("adhd-last-backup-info"));
