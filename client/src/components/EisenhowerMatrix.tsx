@@ -118,6 +118,9 @@ export function EisenhowerMatrix({
   onQuadrantMapChange,
 }: EisenhowerMatrixProps) {
   const [dragOverQ, setDragOverQ] = useState<QuadrantId | null>(null);
+  const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null);
+  const [dragOverPos, setDragOverPos] = useState<"before" | "after">("after");
+  const [taskOrder, setTaskOrder] = useState<Record<string, number>>({});
   const draggingId = useRef<string | null>(null);
 
   const activeTasks = tasks.filter((t) => !t.done);
@@ -136,6 +139,7 @@ export function EisenhowerMatrix({
     (e.currentTarget as HTMLElement).style.opacity = "1";
     draggingId.current = null;
     setDragOverQ(null);
+    setDragOverTaskId(null);
   }
 
   function handleDragOver(e: React.DragEvent, qId: QuadrantId) {
@@ -155,6 +159,48 @@ export function EisenhowerMatrix({
       t.id === id ? { ...t, priority: newPriority } : t
     );
     onTasksChange(updated);
+    setDragOverQ(null);
+  }
+
+  function handleDragOverTask(e: React.DragEvent, targetId: string) {
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const pos = e.clientY < rect.top + rect.height / 2 ? "before" : "after";
+    setDragOverTaskId(targetId);
+    setDragOverPos(pos);
+  }
+
+  function handleDropOnTask(e: React.DragEvent, targetId: string, qId: QuadrantId) {
+    e.preventDefault();
+    e.stopPropagation();
+    const draggedId = draggingId.current;
+    if (!draggedId || draggedId === targetId) { setDragOverTaskId(null); return; }
+
+    // If moving to a different quadrant, also update the quadrant map
+    const draggedQ = getTaskQuadrant(tasks.find(t => t.id === draggedId)!);
+    if (draggedQ !== qId) {
+      const newMap = { ...quadrantMap, [draggedId]: qId };
+      onQuadrantMapChange(newMap);
+      const newPriority = quadrantToPriority(qId);
+      onTasksChange(tasks.map(t => t.id === draggedId ? { ...t, priority: newPriority } : t));
+    }
+
+    // Reorder within the quadrant
+    const qTaskIds = activeTasks
+      .filter(t => (quadrantMap[t.id] ?? priorityToQuadrant(t.priority)) === qId || t.id === draggedId)
+      .sort((a, b) => (taskOrder[a.id] ?? 0) - (taskOrder[b.id] ?? 0))
+      .map(t => t.id)
+      .filter(id => id !== draggedId);
+
+    const targetIdx = qTaskIds.indexOf(targetId);
+    const insertIdx = dragOverPos === "before" ? targetIdx : targetIdx + 1;
+    qTaskIds.splice(insertIdx, 0, draggedId);
+
+    const newOrder = { ...taskOrder };
+    qTaskIds.forEach((id, i) => { newOrder[id] = i; });
+    setTaskOrder(newOrder);
+    setDragOverTaskId(null);
     setDragOverQ(null);
   }
 
@@ -217,7 +263,9 @@ export function EisenhowerMatrix({
           minHeight: 390,
         }}>
           {QUADRANTS.map((q) => {
-            const qTasks = activeTasks.filter((t) => getTaskQuadrant(t) === q.id);
+            const qTasks = activeTasks
+              .filter((t) => getTaskQuadrant(t) === q.id)
+              .sort((a, b) => (taskOrder[a.id] ?? 0) - (taskOrder[b.id] ?? 0));
             const isOver = dragOverQ === q.id;
 
             return (
@@ -360,6 +408,11 @@ export function EisenhowerMatrix({
                       quadrantBorder={q.border}
                       onDragStart={handleDragStart}
                       onDragEnd={handleDragEnd}
+                      onDragOver={(e) => handleDragOverTask(e, task.id)}
+                      onDragLeave={() => setDragOverTaskId(null)}
+                      onDrop={(e) => handleDropOnTask(e, task.id, q.id)}
+                      isDragOver={dragOverTaskId === task.id}
+                      dragOverPos={dragOverPos}
                     />
                   ))}
                 </div>
@@ -398,12 +451,24 @@ function TaskChip({
   quadrantBorder: string;
   onDragStart: (e: React.DragEvent, id: string) => void;
   onDragEnd: (e: React.DragEvent) => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDragLeave?: () => void;
+  onDrop?: (e: React.DragEvent) => void;
+  isDragOver?: boolean;
+  dragOverPos?: "before" | "after";
 }) {
   return (
+    <div style={{ position: "relative" }}>
+      {isDragOver && dragOverPos === "before" && (
+        <div style={{ height: 2, background: "oklch(0.55 0.18 340)", borderRadius: 1, marginBottom: 2 }} />
+      )}
     <div
       draggable
       onDragStart={(e) => onDragStart(e, task.id)}
       onDragEnd={onDragEnd}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
       title={task.text}
       style={{
         background: "oklch(1 0 0 / 0.80)",
@@ -470,6 +535,10 @@ function TaskChip({
         opacity: 0.50,
         flexShrink: 0,
       }} />
+    </div>
+      {isDragOver && dragOverPos === "after" && (
+        <div style={{ height: 2, background: "oklch(0.55 0.18 340)", borderRadius: 1, marginTop: 2 }} />
+      )}
     </div>
   );
 }
