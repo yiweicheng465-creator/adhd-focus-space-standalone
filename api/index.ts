@@ -1,0 +1,311 @@
+import { createServer } from "http";
+import { Pool } from "pg";
+import { SignJWT, jwtVerify } from "jose";
+import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
+import OpenAI from "openai";
+
+// ─── Config ────────────────────────────────────────────────────────────────
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET ?? "dev-secret-change-me"
+);
+const ENC_KEY_HEX = process.env.ENCRYPTION_KEY;
+const ENC_KEY = ENC_KEY_HEX ? Buffer.from(ENC_KEY_HEX, "hex") : randomBytes(32);
+const FREE_LIMIT = 5;
+
+// ─── Database ───────────────────────────────────────────────────────────────
+function getDb() {
+  const connectionString =
+    process.env.DATABASE_URL ??
+    process.env.POSTGRES_URL ??
+    process.env.DATABASE_URL_UNPOOLED ??
+    process.env.POSTGRES_URL_NON_POOLING;
+  if (!connectionString) throw new Error("No DATABASE_URL set");
+  return new Pool({ connectionString, ssl: { rejectUnauthorized: false } });
+}
+
+// ─── JWT ────────────────────────────────────────────────────────────────────
+async function signToken(sub: string, name: string | null): Promise<string> {
+  return new SignJWT({ sub, name })
+    .setProtectedHeader({ alg: "HS256" })
+    .setExpirationTime("30d")
+    .sign(JWT_SECRET);
+}
+
+async function verifyToken(token: string): Promise<{ sub: string; name: string | null } | null> {
+  try {
+    const { payload } = await jwtVerify(token, JWT_SECRET);
+    return { sub: payload.sub as string, name: (payload.name ?? null) as string | null };
+  } catch { return null; }
+}
+
+function parseCookies(header: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const part of header.split(";")) {
+    const idx = part.indexOf("=");
+    if (idx < 0) continue;
+    out[part.slice(0, idx).trim()] = decodeURIComponent(part.slice(idx + 1).trim());
+  }
+  return out;
+}
+
+async function getUser(req: any) {
+  const cookies = parseCookies(req.headers?.cookie ?? "");
+  const token = cookies["adhd_token"];
+  if (!token) return null;
+  return verifyToken(token);
+}
+
+function setAuthCookie(res: any, token: string) {
+  const isProd = process.env.NODE_ENV === "production";
+  res.setHeader("Set-Cookie",
+    `adhd_token=${token}; HttpOnly; Path=/; Max-Age=${30 * 24 * 3600}; SameSite=Lax${isProd ? "; Secure" : ""}`);
+}
+
+function clearAuthCookie(res: any) {
+  const isProd = process.env.NODE_ENV === "production";
+  res.setHeader("Set-Cookie",
+    `adhd_token=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax${isProd ? "; Secure" : ""}`);
+}
+
+// ─── Encryption ─────────────────────────────────────────────────────────────
+function encrypt(text: string): { encrypted: string; iv: string } {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", ENC_KEY, iv);
+  const enc = Buffer.concat([cipher.update(text, "utf8"), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return { encrypted: Buffer.concat([enc, tag]).toString("base64"), iv: iv.toString("base64") };
+}
+
+function decrypt(encB64: string, ivB64: string): string {
+  const iv = Buffer.from(ivB64, "base64");
+  const combined = Buffer.from(encB64, "base64");
+  const tag = combined.subarray(combined.length - 16);
+  const enc = combined.subarray(0, combined.length - 16);
+  const d = createDecipheriv("aes-256-gcm", ENC_KEY, iv);
+  d.setAuthTag(tag);
+  return d.update(enc) + d.final("utf8");
+}
+
+// ─── Response helpers ────────────────────────────────────────────────────────
+function json(res: any, status: number, data: unknown) {
+  res.statusCode = status;
+  res.setHeader("Content-Type", "application/json");
+  res.end(JSON.stringify(data));
+}
+
+async function readBody(req: any): Promise<any> {
+  return new Promise((resolve) => {
+    let body = "";
+    req.on("data", (chunk: Buffer) => { body += chunk.toString(); });
+    req.on("end", () => {
+      try { resolve(JSON.parse(body)); } catch { resolve({}); }
+    });
+  });
+}
+
+// ─── Main handler ────────────────────────────────────────────────────────────
+export default async function handler(req: any, res: any) {
+  const origin = req.headers?.origin ?? "*";
+  res.setHeader("Access-Control-Allow-Origin", origin);
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") { res.statusCode = 200; res.end(); return; }
+
+  const url = req.url?.split("?")[0] ?? "/";
+
+  // ── GET /api/ping ──────────────────────────────────────────────────────────
+  if (url === "/api/ping") {
+    json(res, 200, { ok: true, time: new Date().toISOString() });
+    return;
+  }
+
+  // ── GET /api/health ────────────────────────────────────────────────────────
+  if (url === "/api/health") {
+    const env = {
+      hasDatabaseUrl: !!(process.env.DATABASE_URL ?? process.env.POSTGRES_URL),
+      hasJwtSecret: !!process.env.JWT_SECRET,
+      hasEncryptionKey: !!process.env.ENCRYPTION_KEY,
+      hasOwnerKey: !!process.env.OWNER_OPENAI_KEY,
+    };
+    try {
+      const db = getDb();
+      await db.query("SELECT 1");
+      await db.end();
+      json(res, 200, { ok: true, db: "connected", env });
+    } catch (err: any) {
+      json(res, 500, { ok: false, error: err?.message, env });
+    }
+    return;
+  }
+
+  // ── POST /api/auth/login ───────────────────────────────────────────────────
+  if (url === "/api/auth/login" && req.method === "POST") {
+    try {
+      const body = await readBody(req);
+      const { email, name } = body;
+      if (!email || !email.includes("@")) {
+        json(res, 400, { error: "Valid email required" }); return;
+      }
+      const id = email.trim().toLowerCase();
+      const db = getDb();
+      const { rows } = await db.query("SELECT id, name FROM users WHERE id = $1", [id]);
+      let userName: string | null = null;
+
+      if (rows.length === 0) {
+        userName = name?.trim() || null;
+        await db.query("INSERT INTO users (id, name) VALUES ($1, $2)", [id, userName]);
+      } else {
+        userName = rows[0].name;
+        const newName = name?.trim();
+        if (newName && newName !== userName) {
+          userName = newName;
+          await db.query("UPDATE users SET name = $1 WHERE id = $2", [userName, id]);
+        }
+      }
+      await db.end();
+
+      const token = await signToken(id, userName);
+      setAuthCookie(res, token);
+      json(res, 200, { user: { id, name: userName } });
+    } catch (err: any) {
+      console.error("Login error:", err);
+      json(res, 500, { error: "Login failed: " + (err?.message ?? "unknown") });
+    }
+    return;
+  }
+
+  // ── POST /api/auth/logout ──────────────────────────────────────────────────
+  if (url === "/api/auth/logout" && req.method === "POST") {
+    clearAuthCookie(res);
+    json(res, 200, { ok: true });
+    return;
+  }
+
+  // ── GET /api/auth/me ───────────────────────────────────────────────────────
+  if (url === "/api/auth/me") {
+    const user = await getUser(req);
+    if (!user) { json(res, 401, { error: "Not authenticated" }); return; }
+    json(res, 200, { user: { id: user.sub, name: user.name } });
+    return;
+  }
+
+  // ── /api/key (GET status / POST save / DELETE remove) ─────────────────────
+  if (url === "/api/key") {
+    const user = await getUser(req);
+    if (!user) { json(res, 401, { error: "Not authenticated" }); return; }
+    const db = getDb();
+
+    if (req.method === "GET") {
+      try {
+        const { rows } = await db.query("SELECT api_key_encrypted FROM users WHERE id = $1", [user.sub]);
+        await db.end();
+        json(res, 200, { hasKey: !!(rows[0]?.api_key_encrypted) });
+      } catch (err: any) {
+        json(res, 500, { error: err?.message });
+      }
+      return;
+    }
+
+    if (req.method === "POST") {
+      try {
+        const { key } = await readBody(req);
+        if (!key) { json(res, 400, { error: "API key required" }); return; }
+        const { encrypted, iv } = encrypt(key.trim());
+        await db.query("UPDATE users SET api_key_encrypted = $1, api_key_iv = $2 WHERE id = $3",
+          [encrypted, iv, user.sub]);
+        await db.end();
+        json(res, 200, { ok: true });
+      } catch (err: any) {
+        json(res, 500, { error: err?.message });
+      }
+      return;
+    }
+
+    if (req.method === "DELETE") {
+      try {
+        await db.query("UPDATE users SET api_key_encrypted = NULL, api_key_iv = NULL WHERE id = $1", [user.sub]);
+        await db.end();
+        json(res, 200, { ok: true });
+      } catch (err: any) {
+        json(res, 500, { error: err?.message });
+      }
+      return;
+    }
+  }
+
+  // ── POST /api/ai/complete ──────────────────────────────────────────────────
+  if (url === "/api/ai/complete" && req.method === "POST") {
+    const user = await getUser(req);
+    if (!user) { json(res, 401, { error: "Not authenticated" }); return; }
+
+    try {
+      const body = await readBody(req);
+      const { systemPrompt, userMessage, model = "gpt-4o-mini" } = body;
+      if (!userMessage) { json(res, 400, { error: "userMessage required" }); return; }
+
+      const db = getDb();
+      const { rows } = await db.query(
+        "SELECT api_key_encrypted, api_key_iv, ai_usage_count FROM users WHERE id = $1", [user.sub]);
+      const row = rows[0];
+      await db.end();
+
+      let apiKey: string;
+      let usingOwnerKey = false;
+
+      if (row?.api_key_encrypted && row?.api_key_iv) {
+        apiKey = decrypt(row.api_key_encrypted, row.api_key_iv);
+      } else {
+        const usageCount = Number(row?.ai_usage_count ?? 0);
+        if (usageCount >= FREE_LIMIT) {
+          json(res, 402, {
+            error: `You've used your ${FREE_LIMIT} free AI requests. Add your OpenAI key in Settings (⚙ bottom-left) to continue.`,
+            usageCount, freeLimit: FREE_LIMIT,
+          });
+          return;
+        }
+        const ownerKey = process.env.OWNER_OPENAI_KEY;
+        if (!ownerKey) {
+          json(res, 402, { error: "No API key configured. Add your OpenAI key in Settings (⚙)." });
+          return;
+        }
+        apiKey = ownerKey;
+        usingOwnerKey = true;
+      }
+
+      const openai = new OpenAI({ apiKey });
+      const completion = await openai.chat.completions.create({
+        model,
+        messages: [
+          ...(systemPrompt ? [{ role: "system" as const, content: systemPrompt }] : []),
+          { role: "user" as const, content: userMessage },
+        ],
+        max_tokens: 1000,
+      });
+      const content = completion.choices[0]?.message?.content ?? "";
+
+      if (usingOwnerKey) {
+        const db2 = getDb();
+        await db2.query(
+          "UPDATE users SET ai_usage_count = COALESCE(ai_usage_count,0)+1 WHERE id=$1", [user.sub]);
+        const { rows: r2 } = await db2.query("SELECT ai_usage_count FROM users WHERE id=$1", [user.sub]);
+        await db2.end();
+        const newCount = Number(r2[0]?.ai_usage_count ?? 0);
+        json(res, 200, { content, usageCount: newCount, freeLimit: FREE_LIMIT, remaining: FREE_LIMIT - newCount });
+        return;
+      }
+
+      json(res, 200, { content });
+    } catch (err: any) {
+      console.error("AI error:", err);
+      if (err?.status === 401) { json(res, 401, { error: "Invalid OpenAI API key." }); return; }
+      if (err?.status === 429) { json(res, 429, { error: "OpenAI rate limit. Try again soon." }); return; }
+      json(res, 500, { error: "AI request failed: " + (err?.message ?? "unknown") });
+    }
+    return;
+  }
+
+  // 404
+  json(res, 404, { error: "Not found" });
+}
