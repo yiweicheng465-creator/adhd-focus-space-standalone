@@ -209,8 +209,14 @@ export function DailyCheckIn({ onComplete, onSkip, onClose, displayName, existin
     }
   };
 
-  // Fetch existing goals from DB so user can link tasks to them
-  const existingGoals: unknown[] = [];
+  // Read existing goals from localStorage
+  const existingGoals = (() => {
+    try {
+      const raw = localStorage.getItem("adhd-goals");
+      if (!raw) return [] as { id: string; text: string; context: string; progress: number }[];
+      return JSON.parse(raw) as { id: string; text: string; context: string; progress: number }[];
+    } catch { return [] as { id: string; text: string; context: string; progress: number }[]; }
+  })();
 
   const goNext = () => {
     const idx = STEP_ORDER.indexOf(step);
@@ -552,8 +558,8 @@ export function DailyCheckIn({ onComplete, onSkip, onClose, displayName, existin
                   value={taskInput}
                   onChange={(e) => setTaskInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && addTask()}
-                  placeholder="e.g. Reply to Alice's email…"
-                  autoComplete="off"
+                  placeholder="e.g. Reply to messages, finish report…"
+                  autoComplete="new-password"
                   autoCorrect="off"
                   autoCapitalize="off"
                   spellCheck={false}
@@ -650,6 +656,7 @@ export function DailyCheckIn({ onComplete, onSkip, onClose, displayName, existin
                   onChange={(e) => setAgentName(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && addAgent()}
                   placeholder="Agent name (e.g. Manus, Claude…)"
+                  autoComplete="off"
                   className="flex-1 px-3 py-2 text-sm bg-transparent focus:outline-none"
                   style={{ border: `1px solid ${M.border}`, color: M.ink }}
                 />
