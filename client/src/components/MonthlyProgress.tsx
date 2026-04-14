@@ -6,7 +6,9 @@
    ============================================================ */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Sparkles, Brain, CheckCircle2, Flame } from "lucide-react";
+import { ChevronLeft, ChevronRight, Sparkles, Brain, CheckCircle2, Flame, Loader2 } from "lucide-react";
+import { callAI } from "@/lib/ai";
+import { toast } from "sonner";
 import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
 import type { Win } from "./DailyWins";
 import type { Task } from "./TaskManager";
@@ -689,6 +691,111 @@ export function MonthlyProgress({ wins, tasks, blockHistory = {}, blockStreak = 
         />
       )}
 
+      {/* AI Monthly Review */}
+      <MonthlyAIReview
+        viewYear={viewYear}
+        viewMonth={viewMonth}
+        logs={logs}
+        daysInMonth={daysInMonth}
+        streak={streak}
+        monthStats={monthStats}
+      />
+
+    </div>
+  );
+}
+
+function MonthlyAIReview({ viewYear, viewMonth, logs, daysInMonth, streak, monthStats }: {
+  viewYear: number; viewMonth: number;
+  logs: Record<string, DailyLog>; daysInMonth: number;
+  streak: number;
+  monthStats: { activeDays: number; wrapDays: number; dumpDays: number; totalWins: number; totalTasks: number };
+}) {
+  const [review, setReview] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+
+  const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+  const handleGenerate = async () => {
+    setGenerating(true);
+    try {
+      // Gather mood data for the month
+      const moodSum = Object.values(logs).reduce((s, l) => s + (l.mood ?? 0), 0);
+      const moodCount = Object.values(logs).filter((l) => l.mood).length;
+      const avgMood = moodCount > 0 ? Math.round((moodSum / moodCount) * 10) / 10 : null;
+
+      const result = await callAI(
+        `You write warm, personal monthly review summaries for people with ADHD. Be specific, encouraging and concise (3-4 short paragraphs). Mention patterns and give one concrete suggestion for next month.`,
+        `Month: ${MONTHS[viewMonth]} ${viewYear}
+Active days: ${monthStats.activeDays}/${daysInMonth}
+Wrap-up days: ${monthStats.wrapDays}
+Brain dump days: ${monthStats.dumpDays}
+Wins logged: ${monthStats.totalWins}
+Tasks completed: ${monthStats.totalTasks}
+Streak: ${streak} days
+Average mood: ${avgMood ?? "not tracked"}/5`
+      );
+      setReview(result);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to generate review";
+      toast.error(msg, { duration: 5000 });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const M2 = {
+    coral: "oklch(0.58 0.18 340)", coralBg: "oklch(0.58 0.18 340 / 0.08)",
+    coralBdr: "oklch(0.58 0.18 340 / 0.25)", ink: "oklch(0.22 0.040 320)",
+    muted: "oklch(0.52 0.040 330)", border: "oklch(0.88 0.025 340)", card: "oklch(0.975 0.018 355)",
+  };
+
+  return (
+    <div style={{ marginTop: 16, background: M2.card, border: `1px solid ${M2.border}`, borderRadius: 10, overflow: "hidden", boxShadow: "3px 3px 0 oklch(0.72 0.08 310)" }}>
+      <div style={{ background: "#F9D6E8", padding: "5px 10px", display: "flex", alignItems: "center", gap: 6, borderBottom: "1.5px solid oklch(0.78 0.08 330)" }}>
+        <div style={{ display: "flex", gap: 4 }}>
+          <div style={{ width: 10, height: 10, borderRadius: "50%", background: "oklch(0.62 0.18 340)" }} />
+          <div style={{ width: 10, height: 10, borderRadius: "50%", background: "oklch(0.72 0.10 310)" }} />
+          <div style={{ width: 10, height: 10, borderRadius: "50%", background: "oklch(0.78 0.10 290)" }} />
+        </div>
+        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#8A3060", marginLeft: 4 }}>ai_review.exe</span>
+      </div>
+      <div style={{ padding: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+          <Sparkles size={15} style={{ color: M2.coral }} />
+          <span style={{ fontSize: 13, fontWeight: 600, color: M2.ink, fontFamily: "'DM Sans', sans-serif" }}>AI Monthly Review</span>
+        </div>
+        {!review ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <p style={{ fontSize: 12, color: M2.muted, margin: 0, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>
+              Get a personalised narrative review of your month — patterns, insights, and one thing to try next month.
+            </p>
+            <button
+              onClick={handleGenerate}
+              disabled={generating}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                background: generating ? M2.border : M2.coralBg,
+                border: `1px solid ${M2.coralBdr}`, color: M2.coral,
+                borderRadius: 6, padding: "8px 14px", fontSize: 11,
+                cursor: generating ? "not-allowed" : "pointer",
+                fontFamily: "'DM Sans', sans-serif", fontWeight: 500, alignSelf: "flex-start",
+              }}
+            >
+              {generating ? <><Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} /> Generating…</> : <><Sparkles size={12} /> Generate review</>}
+            </button>
+          </div>
+        ) : (
+          <div>
+            <div style={{ padding: "12px 14px", background: M2.coralBg, border: `1px solid ${M2.coralBdr}`, borderRadius: 8, fontSize: 13, color: M2.ink, lineHeight: 1.7, fontFamily: "'DM Sans', sans-serif", whiteSpace: "pre-wrap" }}>
+              {review}
+            </div>
+            <button onClick={() => setReview(null)} style={{ marginTop: 8, fontSize: 11, color: M2.muted, background: "none", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+              Regenerate
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
