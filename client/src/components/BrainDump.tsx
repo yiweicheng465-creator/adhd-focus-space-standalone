@@ -90,6 +90,13 @@ export function BrainDump({ onConvertToTask, onCreateAgent, onAddGoal, onDump, i
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [initialTextHandled, setInitialTextHandled] = useState(false);
   const [aiSorting, setAiSorting] = useState(false);
+  const [aiResults, setAiResults] = useState<Array<{
+    id: string;
+    original: string;
+    rewritten: string;
+    category: string;
+    emoji: string;
+  }> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // localStorage-backed entries
@@ -177,32 +184,23 @@ export function BrainDump({ onConvertToTask, onCreateAgent, onAddGoal, onDump, i
     const active = entries.filter((e) => !e.converted);
     if (active.length === 0) { toast.info("Nothing to sort."); return; }
     setAiSorting(true);
+    setAiResults(null);
     try {
       const result = await callAI(
-        `You categorize brain dump entries. Return ONLY valid JSON with this shape:
-{ "items": [{ "original": string, "category": string, "action": string, "rewritten": string, "emoji": string }] }
-Categories: task, idea, worry, reference, someday. Keep it brief.`,
+        `Categorize each brain dump entry. Return ONLY valid JSON:
+{"items":[{"original":"exact original text","rewritten":"clean action version","category":"task|goal|idea|worry","emoji":"one emoji"}]}
+- task: something to do. goal: something to achieve over time. idea: creative thought. worry: concern/anxiety.
+- rewritten: make it a clear, actionable sentence. Keep short.`,
         active.map((e) => e.text).join("\n")
       );
-      // Try to parse JSON from the response
       const jsonMatch = result.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]) as { items: { original: string; category: string; action: string; rewritten: string; emoji: string }[] };
+        const parsed = JSON.parse(jsonMatch[0]) as { items: { original: string; category: string; rewritten: string; emoji: string }[] };
         if (parsed.items?.length) {
-          toast.success(`AI sorted ${parsed.items.length} entries. Tags auto-applied.`);
-          // Re-tag entries with AI category as a hashtag
-          parsed.items.forEach((item) => {
-            const entry = active.find((e) => e.text.includes(item.original.slice(0, 20)));
-            if (entry) {
-              const newTag = item.category.replace(/\s+/g, "_").toLowerCase();
-              if (!entry.tags.includes(newTag)) {
-                setRawEntries((prev) => prev.map((e) => e.id === entry.id ? { ...e, tags: [...e.tags, newTag] } : e));
-              }
-            }
-          });
+          setAiResults(parsed.items.map((item, i) => ({ ...item, id: String(i) })));
+        } else {
+          toast.info("Nothing to categorize.");
         }
-      } else {
-        toast.info("AI sorted your dump — check the console for details.");
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "AI sort failed";
@@ -210,6 +208,22 @@ Categories: task, idea, worry, reference, someday. Keep it brief.`,
     } finally {
       setAiSorting(false);
     }
+  };
+
+  const applyAiItem = (item: NonNullable<typeof aiResults>[0], action: "task" | "goal") => {
+    const entry = entries.find((e) => e.text.trim() === item.original.trim()
+      || e.text.includes(item.original.slice(0, 30)));
+    if (action === "task") {
+      onConvertToTask({
+        id: nanoid(), text: item.rewritten || item.original,
+        priority: "focus", context: "work", done: false, createdAt: new Date(),
+      });
+      if (entry) updateMutation.mutate({ id: entry.id, converted: true });
+    } else if (action === "goal") {
+      onAddGoal?.(item.rewritten || item.original);
+      if (entry) updateMutation.mutate({ id: entry.id, converted: true });
+    }
+    setAiResults((prev) => prev ? prev.filter((r) => r.id !== item.id) : null);
   };
 
   // Auto-dump initialText once on mount
@@ -334,6 +348,64 @@ Categories: task, idea, worry, reference, someday. Keep it brief.`,
             <button onClick={clearAll} disabled={deleteAllMutation.isPending} className="m-btn-link">
               Clear all
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* AI Sort Results Panel */}
+      {aiResults && aiResults.length > 0 && (
+        <div style={{
+          background: "oklch(0.975 0.018 355)",
+          border: "1.5px solid oklch(0.75 0.14 340)",
+          borderRadius: 6,
+          overflow: "hidden",
+          boxShadow: "3px 3px 0 oklch(0.75 0.14 340 / 0.25)",
+        }}>
+          {/* Title bar */}
+          <div style={{
+            background: "oklch(0.90 0.045 340)",
+            borderBottom: "1px solid oklch(0.80 0.08 340)",
+            padding: "4px 10px",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+          }}>
+            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.58rem", letterSpacing: "0.10em", color: "oklch(0.35 0.08 330)" }}>
+              ✦ AI_SORT.EXE — {aiResults.length} item{aiResults.length !== 1 ? "s" : ""}
+            </span>
+            <button onClick={() => setAiResults(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "0.65rem", color: "oklch(0.52 0.06 330)", lineHeight: 1 }}>✕</button>
+          </div>
+          {/* Items */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            {aiResults.map((item, i) => (
+              <div key={item.id} style={{
+                display: "flex", alignItems: "center", gap: 8,
+                padding: "7px 10px",
+                borderBottom: i < aiResults.length - 1 ? "1px solid oklch(0.88 0.025 340)" : "none",
+              }}>
+                <span style={{ fontSize: "0.85rem", flexShrink: 0 }}>{item.emoji}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.72rem", color: "oklch(0.28 0.040 320)", lineHeight: 1.35, margin: 0 }}>
+                    {item.rewritten || item.original}
+                  </p>
+                  <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.48rem", letterSpacing: "0.08em", color: "oklch(0.60 0.08 340)", textTransform: "uppercase" as const }}>
+                    {item.category}
+                  </span>
+                </div>
+                <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                  <button
+                    onClick={() => applyAiItem(item, "task")}
+                    style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.48rem", letterSpacing: "0.08em", padding: "2px 7px", borderRadius: 3, border: "1px solid oklch(0.72 0.14 290)", background: "oklch(0.72 0.14 290 / 0.10)", color: "oklch(0.40 0.14 290)", cursor: "pointer" }}
+                  >
+                    + TASK
+                  </button>
+                  <button
+                    onClick={() => applyAiItem(item, "goal")}
+                    style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.48rem", letterSpacing: "0.08em", padding: "2px 7px", borderRadius: 3, border: "1px solid oklch(0.72 0.10 168)", background: "oklch(0.72 0.10 168 / 0.10)", color: "oklch(0.35 0.10 168)", cursor: "pointer" }}
+                  >
+                    + GOAL
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

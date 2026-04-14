@@ -226,15 +226,16 @@ export default function Home() {
   React.useEffect(() => {
     const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
     const now = Date.now();
-    // On first visit, seed the backup timestamp so 7-day clock starts now (no immediate nudge)
-    if (!localStorage.getItem("adhd-last-backup")) {
-      localStorage.setItem("adhd-last-backup", String(now));
+    // Track first visit separately — never touch adhd-last-backup (that's only set on real backups)
+    if (!localStorage.getItem("adhd-first-visit")) {
+      localStorage.setItem("adhd-first-visit", String(now));
     }
-    const lastBackup = Number(localStorage.getItem("adhd-last-backup"));
+    const firstVisit = Number(localStorage.getItem("adhd-first-visit"));
+    const lastBackup = Number(localStorage.getItem("adhd-last-backup") ?? 0);
     const lastReminder = Number(localStorage.getItem("adhd-backup-reminder-shown") ?? 0);
-    // Only show if more than 7 days since last backup AND reminder not shown in last 24h
-    const overdueBackup = (now - lastBackup) > SEVEN_DAYS;
-    const needsReminder = overdueBackup;
+    // Only nudge after 7 days since first visit (or 7 days since last backup if they've backed up)
+    const daysSinceReference = lastBackup > 0 ? now - lastBackup : now - firstVisit;
+    const needsReminder = daysSinceReference > SEVEN_DAYS;
     const shownRecently = (now - lastReminder) < 24 * 60 * 60 * 1000;
     if (needsReminder && !shownRecently) {
       const delay = 4000;

@@ -136,7 +136,7 @@ export function ContextSwitcher({ active, onChange, counts, contexts, label }: C
           >
             <Icon className="w-2.5 h-2.5" />
             {optLabel}
-            {count !== undefined && (
+            {count !== undefined && count > 0 && (
               <span>{count}</span>
             )}
           </button>

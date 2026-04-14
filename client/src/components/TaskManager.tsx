@@ -164,11 +164,16 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
   const deleteTask = (id: string) => onTasksChange(tasks.filter((t) => t.id !== id));
 
   // Open inline edit popover for a task
-  const openEdit = (task: Task) => {
+  const openEdit = (task: Task, e?: React.MouseEvent) => {
     setEditingTaskId(task.id);
     setEditContext(task.context);
     setEditGoalId(task.goalId ?? null);
     setEditPriority(task.priority);
+    if (e) {
+      const rect = (e.currentTarget as HTMLElement).closest('.retro-task-row')?.getBoundingClientRect()
+        ?? (e.currentTarget as HTMLElement).getBoundingClientRect();
+      setEditPopoverPos({ top: rect.bottom + 4, left: rect.left });
+    }
   };
 
   // Save inline edits
@@ -446,10 +451,10 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
                   <div
                     ref={editPopoverRef}
                     style={{
-                      position: "absolute",
-                      top: "100%",
-                      left: 0,
-                      zIndex: 50,
+                      position: "fixed",
+                      top: editPopoverPos?.top ?? 0,
+                      left: editPopoverPos?.left ?? 0,
+                      zIndex: 9999,
                       background: M.card,
                       border: `1.5px solid ${M.border}`,
                       borderRadius: 6,
