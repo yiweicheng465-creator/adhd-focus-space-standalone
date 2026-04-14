@@ -15,7 +15,6 @@ import { DailyWins, type Win } from "@/components/DailyWins";
 import { BrainDump } from "@/components/BrainDump";
 import { Goals, type Goal } from "@/components/Goals";
 import { AgentTracker, type Agent } from "@/components/AgentTracker";
-import { AIHub } from "@/components/AIHub";
 import { RetroPageWrapper } from "@/components/RetroPageWrapper";
 import { GlobalQuickAdd } from "@/components/GlobalQuickAdd";
 import { ConfettiCelebration } from "@/components/ConfettiCelebration";
@@ -43,7 +42,6 @@ import { Bot, Brain, Clock, LayoutDashboard, Moon, Sparkles, Star } from "lucide
 import { PixelDump } from "@/components/PixelIcons";
 import { NamePrompt } from "@/components/NamePrompt";
 import StorageBackup from "@/pages/StorageBackup";
-import { ApiKeyDialog } from "@/components/ApiKeyDialog";
 
 
 /* ── Compact mood pill SVG faces (same as MoodCheckIn) ── */
@@ -987,8 +985,6 @@ export default function Home() {
           onSkip={handleNameSkip}
         />
       )}
-      {/* ApiKeyDialog — auto-opens on AI 401/quota errors via openApiKeyDialog event */}
-      <ApiKeyDialog />
     </div>
   );
 }

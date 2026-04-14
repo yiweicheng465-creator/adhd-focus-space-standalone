@@ -7,12 +7,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { PixelBrain } from "@/components/PixelIcons";
 import { cn } from "@/lib/utils";
-import { ArrowRight, Hash, Sparkles, Tag, Trash2, X } from "lucide-react";
+import { ArrowRight, Hash, Tag, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { nanoid } from "nanoid";
 import type { Task } from "./TaskManager";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
-// AI features not available in standalone mode
 
 interface BrainDumpEntry {
   id: string;
@@ -172,71 +171,6 @@ export function BrainDump({ onConvertToTask, onCreateAgent, onAddGoal, onDump, i
     toast.info("Brain dump cleared.", { duration: 2000 });
   };
 
-  // ── AI Categorise ──
-  const [aiResults, setAiResults] = useState<Array<{
-    original: string;
-    category: "task" | "goal" | "worry" | "idea" | "reminder" | "other";
-    action: "add_to_tasks" | "add_to_goals" | "archive" | "keep";
-    rewritten: string;
-    emoji: string;
-  }> | null>(null);
-  const [aiDismissed, setAiDismissed] = useState(false);
-
-  const categorizeMutation = { mutate: () => {}, isPending: false };
-
-  const handleAiCategorise = () => {
-    toast.info("AI features require a server setup. Use manual tagging with #hashtags.", { duration: 3500 });
-  };
-
-  const applyAiAction = (item: typeof aiResults extends Array<infer T> | null ? T : never) => {
-    if (!item) return;
-    if (item.action === "add_to_tasks") {
-      onConvertToTask({
-        id: nanoid(), text: item.rewritten, priority: "focus",
-        context: "work", done: false, createdAt: new Date(),
-      });
-      const orig = entries.find((e) => e.text === item.original);
-      if (orig) updateMutation.mutate({ id: orig.id, converted: true });
-          } else if (item.action === "archive") {
-      const orig = entries.find((e) => e.text === item.original);
-      if (orig) deleteMutation.mutate({ id: orig.id });
-      toast.info("Archived.", { duration: 1500 });
-    }
-    setAiResults((prev) => prev ? prev.filter((r) => r.original !== item.original) : null);
-  };
-
-  const pushItemToTask = (item: typeof aiResults extends Array<infer T> | null ? T : never) => {
-    if (!item) return;
-    const rawText = item.rewritten || item.original;
-    const text = rawText.replace(/(?:^|\s)#[a-zA-Z0-9\u4e00-\u9fa5_-]+/g, " ").replace(/\s{2,}/g, " ").trim() || rawText.trim();
-    onConvertToTask({ id: nanoid(), text, priority: "focus", context: "work", done: false, createdAt: new Date() });
-    const orig = entries.find((e) => e.text === item.original);
-    if (orig) updateMutation.mutate({ id: orig.id, converted: true });
-    setAiResults((prev) => prev ? prev.filter((r) => r.original !== item.original) : null);
-      };
-
-  const pushAllToTasks = () => {
-    if (!aiResults) return;
-    const taskItems = aiResults.filter((r) => r.action === "add_to_tasks" || r.category === "task");
-    taskItems.forEach((item) => {
-      const rawText = item.rewritten || item.original;
-      const text = rawText.replace(/(?:^|\s)#[a-zA-Z0-9\u4e00-\u9fa5_-]+/g, " ").replace(/\s{2,}/g, " ").trim() || rawText.trim();
-      onConvertToTask({ id: nanoid(), text, priority: "focus", context: "work", done: false, createdAt: new Date() });
-      const orig = entries.find((e) => e.text === item.original);
-      if (orig) updateMutation.mutate({ id: orig.id, converted: true });
-    });
-    setAiResults((prev) => prev ? prev.filter((r) => r.action !== "add_to_tasks" && r.category !== "task") : null);
-      };
-
-  const pushItemToGoal = (item: typeof aiResults extends Array<infer T> | null ? T : never) => {
-    if (!item) return;
-    const text = item.rewritten || item.original;
-    onAddGoal?.(text);
-    const orig = entries.find((e) => e.text === item.original);
-    if (orig) updateMutation.mutate({ id: orig.id, converted: true });
-    setAiResults((prev) => prev ? prev.filter((r) => r.original !== item.original) : null);
-      };
-
   // Auto-dump initialText once on mount
   useEffect(() => {
     if (initialText && initialText.trim() && !initialTextHandled) {
@@ -302,134 +236,6 @@ export function BrainDump({ onConvertToTask, onCreateAgent, onAddGoal, onDump, i
       </div>
 
       {/* AI Results Panel */}
-      {aiResults && !aiDismissed && aiResults.length > 0 && (
-        <div style={{
-          border: `2px solid ${M.border}`,
-          boxShadow: `3px 3px 0 ${M.border}`,
-          background: M.card,
-          overflow: "hidden",
-          marginTop: 4,
-        }}>
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            background: "oklch(0.88 0.060 340)",
-            borderBottom: `2px solid ${M.border}`,
-            padding: "0 10px",
-            height: 28,
-            userSelect: "none",
-          }}>
-            <Sparkles style={{ width: 10, height: 10, color: M.coral, marginRight: 6, flexShrink: 0 }} />
-            <span style={{
-              flex: 1, fontSize: 8, letterSpacing: "0.20em", textTransform: "uppercase",
-              color: M.ink, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
-            }}>ai_sort.exe</span>
-            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              {aiResults.filter((r) => r.action === "add_to_tasks" || r.category === "task").length > 1 && (
-                <button
-                  onClick={pushAllToTasks}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 4, padding: "2px 8px",
-                    background: "transparent", border: `1px solid ${M.border}`, color: M.ink,
-                    cursor: "pointer", fontFamily: "'JetBrains Mono', monospace",
-                    fontSize: 7, letterSpacing: "0.12em", boxShadow: `1px 1px 0 ${M.border}`,
-                  }}
-                >
-                  <ArrowRight style={{ width: 8, height: 8 }} /> ALL TASKS
-                </button>
-              )}
-              <button
-                onClick={() => setAiDismissed(true)}
-                style={{ background: "none", border: "none", cursor: "pointer", color: M.muted, padding: 0, display: "flex" }}
-              >
-                <X style={{ width: 12, height: 12 }} />
-              </button>
-            </div>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            {aiResults.map((item, i) => (
-              <div
-                key={i}
-                style={{
-                  display: "flex", alignItems: "center", gap: 8, padding: "7px 10px",
-                  borderBottom: i < aiResults.length - 1 ? `1px solid ${M.border}` : "none",
-                  background: M.card,
-                }}
-              >
-                <span style={{ fontSize: 13, flexShrink: 0, lineHeight: 1 }}>{item.emoji}</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{
-                    margin: 0, fontSize: 9, color: M.ink, fontFamily: "'JetBrains Mono', monospace",
-                    letterSpacing: "0.04em", lineHeight: 1.4, overflow: "hidden",
-                    textOverflow: "ellipsis", whiteSpace: "nowrap",
-                  }}>
-                    {item.action === "add_to_tasks" || item.action === "add_to_goals" ? item.rewritten : item.original}
-                  </p>
-                  <span style={{
-                    display: "inline-block", marginTop: 2, padding: "1px 5px",
-                    fontSize: 7, letterSpacing: "0.12em", textTransform: "uppercase",
-                    fontFamily: "'JetBrains Mono', monospace",
-                    background: item.category === "task" ? "oklch(0.93 0.030 168)" : item.category === "goal" ? "oklch(0.93 0.030 290)" : item.category === "worry" ? "oklch(0.93 0.030 355)" : "oklch(0.93 0.020 340)",
-                    color: item.category === "task" ? "oklch(0.40 0.10 168)" : item.category === "goal" ? "oklch(0.40 0.10 290)" : item.category === "worry" ? "oklch(0.40 0.10 355)" : M.muted,
-                    border: `1px solid ${item.category === "task" ? "oklch(0.75 0.08 168)" : item.category === "goal" ? "oklch(0.75 0.08 290)" : item.category === "worry" ? "oklch(0.75 0.08 355)" : M.border}`,
-                  }}>
-                    {item.category}
-                  </span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
-                  <button
-                    onClick={() => pushItemToTask(item)}
-                    title="Add to tasks"
-                    style={{
-                      display: "flex", alignItems: "center", gap: 3, padding: "3px 8px",
-                      background: "oklch(0.88 0.060 340)", border: `1px solid ${M.border}`,
-                      color: M.ink, cursor: "pointer", fontFamily: "'JetBrains Mono', monospace",
-                      fontSize: 7, letterSpacing: "0.10em", boxShadow: `1px 1px 0 ${M.border}`,
-                    }}
-                  >
-                    <ArrowRight style={{ width: 8, height: 8 }} /> TASK
-                  </button>
-                  {onAddGoal && (
-                    <button
-                      onClick={() => pushItemToGoal(item)}
-                      title="Add to goals"
-                      style={{
-                        display: "flex", alignItems: "center", gap: 3, padding: "3px 8px",
-                        background: "oklch(0.88 0.060 340)", border: `1px solid ${M.border}`,
-                        color: M.ink, cursor: "pointer", fontFamily: "'JetBrains Mono', monospace",
-                        fontSize: 7, letterSpacing: "0.10em", boxShadow: `1px 1px 0 ${M.border}`,
-                      }}
-                    >
-                      <Sparkles style={{ width: 8, height: 8 }} /> GOAL
-                    </button>
-                  )}
-                  {item.action === "archive" && (
-                    <button
-                      onClick={() => applyAiAction(item)}
-                      style={{
-                        display: "flex", alignItems: "center", gap: 3, padding: "3px 8px",
-                        background: "transparent", border: `1px solid ${M.border}`,
-                        color: M.muted, cursor: "pointer", fontFamily: "'JetBrains Mono', monospace",
-                        fontSize: 7, letterSpacing: "0.10em",
-                      }}
-                    >
-                      ARCHIVE
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setAiResults((prev) => prev ? prev.filter((_, j) => j !== i) : null)}
-                    style={{ background: "none", border: "none", cursor: "pointer", padding: 2, color: M.muted, display: "flex" }}
-                  >
-                    <X style={{ width: 10, height: 10 }} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Tag filter bar */}
       {allTags.length > 0 && (
         <div className="flex flex-col gap-2">
@@ -480,21 +286,7 @@ export function BrainDump({ onConvertToTask, onCreateAgent, onAddGoal, onDump, i
             <span style={{ color: M.muted }}>({visibleEntries.length})</span>
           </p>
           <div className="flex items-center gap-2">
-            <button
-              onClick={handleAiCategorise}
-              disabled={categorizeMutation.isPending}
-              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium transition-all"
-              style={{
-                background: categorizeMutation.isPending ? "oklch(0.88 0.060 340)" : "oklch(0.58 0.18 340 / 0.10)",
-                border: `1px solid oklch(0.58 0.18 340 / 0.28)`,
-                color: M.coral, fontFamily: "'DM Sans', sans-serif", borderRadius: 6,
-                cursor: categorizeMutation.isPending ? "not-allowed" : "pointer",
-              }}
-            >
-              <Sparkles className="w-3 h-3" />
-              {categorizeMutation.isPending ? "Sorting…" : "AI Sort"}
-            </button>
-            <button onClick={clearAll} disabled={deleteAllMutation.isPending} className="m-btn-link">
+                        <button onClick={clearAll} disabled={deleteAllMutation.isPending} className="m-btn-link">
               Clear all
             </button>
           </div>

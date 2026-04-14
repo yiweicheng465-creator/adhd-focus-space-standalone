@@ -12,14 +12,12 @@ import { toast } from "sonner";
    ============================================================ */
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Flame, Loader2, SkipForward, Sparkles, Star, X, Zap } from "lucide-react";
+import { ArrowLeft, ArrowRight, Flame, SkipForward, Star, X, Zap } from "lucide-react";
 import { nanoid } from "nanoid";
 import type { Task } from "./TaskManager";
 import type { Win } from "./DailyWins";
 import type { Agent } from "./AgentTracker";
 import type { Goal } from "./Goals";
-import { trpc } from "@/lib/trpc";
-import { handleAiError } from "@/lib/aiErrorHandler";
 
 /* ── localStorage keys ── */
 function getTodayKey() {
@@ -125,7 +123,6 @@ const FACE_COMPONENTS = [FaceDrained, FaceLow, FaceOkay, FaceGood, FaceGlowing];
 /* ── Main component ── */
 export function DailyCheckIn({ onComplete, onSkip, onClose, displayName, existingTasks = [] }: DailyCheckInProps) {
   const [step, setStep] = useState<Step>("greeting");
-  const [mitSuggestion, setMitSuggestion] = useState<string | null>(null);
   const [mood, setMood] = useState<number | null>(null);
 
   // Goals
@@ -213,37 +210,14 @@ export function DailyCheckIn({ onComplete, onSkip, onClose, displayName, existin
   };
 
   // Fetch existing goals from DB so user can link tasks to them
-  const { data: existingGoals = [] } = trpc.goals.list.useQuery(undefined, { staleTime: 60_000 });
-
-  const mitMutation = trpc.ai.mitSuggestion.useMutation({
-    onSuccess: (data) => {
-      setMitSuggestion(data.mit ?? "");
-    },
-    onError: (err) => {
-      const wasNoKey = handleAiError(err, "Couldn't load AI suggestion right now.");
-      if (!wasNoKey) setMitSuggestion("Couldn't load AI suggestion right now.");
-    },
-  });
+  const existingGoals: unknown[] = [];
 
   const goNext = () => {
     const idx = STEP_ORDER.indexOf(step);
     if (idx < STEP_ORDER.length - 1) {
       const nextStep = STEP_ORDER[idx + 1];
       setStep(nextStep);
-      // When entering done step, auto-generate MIT suggestion
-      if (nextStep === "done" && tasks.length > 0) {
-        mitMutation.mutate({
-          pendingTasks: tasks.map((t) => ({
-            text: t.text,
-            priority: "focus",
-            context: t.context,
-            createdAt: new Date().toISOString(),
-          })),
-          goals: newGoals.map((g) => ({ text: g.text, progress: 0, context: g.context })),
-          mood: mood,
-          focusSessionsToday: 0,
-        });
-      }
+
     }
   };
 
@@ -336,7 +310,6 @@ export function DailyCheckIn({ onComplete, onSkip, onClose, displayName, existin
           position: "relative",
         }}
       >
-
 
         {/* Retro title bar */}
         <div className="relative z-10" style={{
@@ -808,30 +781,6 @@ export function DailyCheckIn({ onComplete, onSkip, onClose, displayName, existin
                 </div>
               </div>
 
-              {/* MIT Suggestion */}
-              {(tasks.length > 0 || newGoals.length > 0) && (
-                <div
-                  className="mt-4 p-3 rounded-lg"
-                  style={{ background: "oklch(0.58 0.18 340 / 0.07)", border: "1px solid oklch(0.58 0.18 340 / 0.22)" }}
-                >
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <Sparkles className="w-3.5 h-3.5" style={{ color: M.accent }} />
-                    <span className="text-xs font-semibold" style={{ color: M.accent, fontFamily: "'DM Sans', sans-serif" }}>Most Important Thing today</span>
-                  </div>
-                  {mitMutation.isPending ? (
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="w-3 h-3 animate-spin" style={{ color: M.muted }} />
-                      <span className="text-xs italic" style={{ color: M.muted, fontFamily: "'DM Sans', sans-serif" }}>AI is thinking…</span>
-                    </div>
-                  ) : mitSuggestion ? (
-                    <p className="text-sm leading-relaxed" style={{ color: M.ink, fontFamily: "'DM Sans', sans-serif" }}>
-                      {mitSuggestion}
-                    </p>
-                  ) : (
-                    <p className="text-xs italic" style={{ color: M.muted, fontFamily: "'DM Sans', sans-serif" }}>Add tasks to get your MIT suggestion.</p>
-                  )}
-                </div>
-              )}
             </>
           )}
         </div>

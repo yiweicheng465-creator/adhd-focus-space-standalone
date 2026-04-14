@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
-  CheckCircle2, Clock, Flame, Loader2,
+  CheckCircle2, Clock, Flame,
   Link2, Pause, Play, Plus, RefreshCw, Sparkles, Trash2, X, XCircle,
 } from "lucide-react";
 import { PixelAgents } from "@/components/PixelIcons";
@@ -23,8 +23,6 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { trpc } from "@/lib/trpc";
-import { handleAiError } from "@/lib/aiErrorHandler";
 
 /* ── URL-aware task text renderer ── */
 const URL_RE = /(https?:\/\/[^\s]+)/g;
@@ -135,21 +133,11 @@ export function AgentTracker({ agents, onAgentsChange, tasks, defaultContext = "
   const [popupBrief,     setPopupBrief]    = useState("");
   const [popupFirstStep, setPopupFirstStep] = useState("");
 
-  const createBriefMutation = trpc.ai.createAgentBrief.useMutation({
-    onSuccess: (data) => {
-      setPopupName(data.name);
-      setPopupBrief(data.brief);
-      setPopupFirstStep(data.firstStep);
-    },
-    onError: (err) => { handleAiError(err, "AI couldn't generate a brief. You can fill it in manually."); },
-  });
-
   const openCreatePopup = (task: Task) => {
     setPopupTask(task);
     setPopupName(task.text.slice(0, 40));
     setPopupBrief("");
     setPopupFirstStep("");
-    createBriefMutation.mutate({ taskText: task.text, context: (task.context as string) ?? "work" });
   };
 
   const confirmCreateAgent = () => {
@@ -615,12 +603,6 @@ export function AgentTracker({ agents, onAgentsChange, tasks, defaultContext = "
             <span className="font-semibold">Task: </span>{popupTask?.text}
           </div>
 
-          {createBriefMutation.isPending ? (
-            <div className="flex items-center gap-2 py-4 justify-center" style={{ color: "oklch(0.52 0.040 330)" }}>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span className="text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>AI is drafting your agent brief…</span>
-            </div>
-          ) : (
             <div className="flex flex-col gap-3">
               <div>
                 <label className="text-xs font-semibold mb-1 block" style={{ color: "oklch(0.52 0.040 330)", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.06em", textTransform: "uppercase" }}>Agent Name</label>
@@ -641,14 +623,7 @@ export function AgentTracker({ agents, onAgentsChange, tasks, defaultContext = "
                   style={{ fontFamily: "'DM Sans', sans-serif", resize: "none" }}
                 />
               </div>
-              {createBriefMutation.isSuccess && (
-                <div className="flex items-center gap-1.5 text-xs" style={{ color: "oklch(0.55 0.14 290)", fontFamily: "'DM Sans', sans-serif" }}>
-                  <Sparkles className="w-3 h-3" />
-                  AI-generated — edit freely before creating
-                </div>
-              )}
             </div>
-          )}
 
           <DialogFooter>
             <button
@@ -659,9 +634,7 @@ export function AgentTracker({ agents, onAgentsChange, tasks, defaultContext = "
             </button>
             <button
               onClick={confirmCreateAgent}
-              disabled={createBriefMutation.isPending}
               className="m-btn-primary"
-              style={{ opacity: createBriefMutation.isPending ? 0.5 : 1 }}
             >
               <Plus className="w-3.5 h-3.5" /> Create Agent
             </button>

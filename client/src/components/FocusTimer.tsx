@@ -14,12 +14,10 @@ import { toast } from "sonner";
    ============================================================ */
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Loader2, RotateCcw, Play, Pause, Settings, Check, X, Plus, Trash2, Pencil, Coffee, Volume2, VolumeX } from "lucide-react";
+import { RotateCcw, Play, Pause, Settings, Check, X, Plus, Trash2, Pencil, Coffee, Volume2, VolumeX } from "lucide-react";
 import { useTimer, MODE_LABELS, MODE_COLORS, PRESETS, DEFAULT_STRIPS, type TimerMode } from "@/contexts/TimerContext";
 import { useSoundContext } from "@/contexts/SoundContext";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
-import { trpc } from "@/lib/trpc";
-import { handleAiError } from "@/lib/aiErrorHandler";
 
 // ── Palette (dreamy pink/lavender/mint — SukiSketch reference) ───────────────
 const BG = "#F9D6E8";       // dreamy bubblegum pink
@@ -420,25 +418,6 @@ function CompleteWrapUp({ sessions, mode, onNewSession }: {
 
   const [intention, setIntention] = useState("");
   const [outcome, setOutcome] = useState("");
-  const [reflection, setReflection] = useState<string | null>(null);
-  const [showReflect, setShowReflect] = useState(false);
-
-  const reflectMutation = trpc.ai.focusReflection.useMutation({
-    onSuccess: (data) => {
-      const m = data.message;
-      setReflection(typeof m === "string" ? m : "");
-    },
-    onError: (err) => { handleAiError(err); },
-  });
-
-  const handleReflect = () => {
-    reflectMutation.mutate({
-      phase: "after",
-      sessionNumber: sessions,
-      intention: intention || undefined,
-      outcome: outcome || undefined,
-    });
-  };
 
   return (
     <div className="ft-fade-in" style={{
@@ -459,43 +438,6 @@ function CompleteWrapUp({ sessions, mode, onNewSession }: {
         <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 18, fontWeight: 700, color: accentColor, lineHeight: 1 }}>{sessions}</span>
         <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 6, color: BORDER, letterSpacing: "0.14em", textTransform: "uppercase", marginTop: 2 }}>SESSION{sessions !== 1 ? "S" : ""}</span>
       </div>
-
-      {!showReflect && !reflection && (
-        <button onClick={() => setShowReflect(true)} style={{
-          background: `${ACCENT}20`, border: `1px solid ${ACCENT}60`,
-          color: ACCENT, padding: "5px 12px", fontSize: 8,
-          cursor: "pointer", fontFamily: "'JetBrains Mono', monospace",
-          letterSpacing: "0.08em",
-        }}>✦ REFLECT WITH AI</button>
-      )}
-
-      {showReflect && !reflection && (
-        <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 6, textAlign: "left" }}>
-          <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 8, color: BORDER, margin: 0 }}>What did you intend to do?</p>
-          <input value={intention} onChange={(e) => setIntention(e.target.value)}
-            placeholder="e.g. finish the report intro"
-            style={{ border: `1px solid ${BORDER}`, padding: "4px 7px", fontSize: 8, fontFamily: "'JetBrains Mono', monospace", color: DARK, background: PANEL, outline: "none", width: "100%" }} />
-          <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 8, color: BORDER, margin: 0 }}>What actually happened?</p>
-          <input value={outcome} onChange={(e) => setOutcome(e.target.value)}
-            placeholder="e.g. got distracted but wrote 2 paragraphs"
-            style={{ border: `1px solid ${BORDER}`, padding: "4px 7px", fontSize: 8, fontFamily: "'JetBrains Mono', monospace", color: DARK, background: PANEL, outline: "none", width: "100%" }} />
-          <button onClick={handleReflect} disabled={reflectMutation.isPending}
-            style={{
-              background: reflectMutation.isPending ? BORDER : DARK, border: "none", color: "#FAF6F1",
-              padding: "6px 12px", fontSize: 8, cursor: reflectMutation.isPending ? "not-allowed" : "pointer",
-              fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.10em",
-              display: "flex", alignItems: "center", gap: 5, alignSelf: "flex-end",
-            }}>
-            {reflectMutation.isPending ? <><Loader2 style={{ width: 10, height: 10, animation: "spin 1s linear infinite" }} /> THINKING…</> : "✦ GET REFLECTION"}
-          </button>
-        </div>
-      )}
-
-      {reflection && (
-        <div style={{ background: PANEL, border: `1px solid ${BORDER}`, padding: "8px 10px", fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: DARK, lineHeight: 1.6, textAlign: "left", width: "100%" }}>
-          {reflection}
-        </div>
-      )}
 
       <button onClick={onNewSession} style={{
         background: DARK, border: "none", color: "#FAF6F1",
@@ -1260,7 +1202,6 @@ export function FocusTimer({ onSessionComplete, onBlockComplete, onQuit, fillHei
               <span style={{ fontSize: 7, letterSpacing: "0.10em", color: BORDER, marginLeft: 3, fontFamily: "'JetBrains Mono', monospace" }}>{sessions}/4</span>
             </div>
           </div>
-
 
         </div>
       )}

@@ -6,10 +6,7 @@
    ============================================================ */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Sparkles, Brain, CheckCircle2, Flame, Loader2 } from "lucide-react";
-import { trpc } from "@/lib/trpc";
-import { handleAiError } from "@/lib/aiErrorHandler";
-import { Streamdown } from "streamdown";
+import { ChevronLeft, ChevronRight, Sparkles, Brain, CheckCircle2, Flame } from "lucide-react";
 import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
 import type { Win } from "./DailyWins";
 import type { Task } from "./TaskManager";
@@ -276,11 +273,6 @@ const WIN_CAT_LABELS = ["Health","Study","Work","Social","Creative","Mindful","F
 
 /* ── Day detail panel ── */
 function DayDetail({ log, dateStr, dateKey: dk, onClose, isPast }: { log?: DailyLog; dateStr: string; dateKey: string; onClose: () => void; isPast?: boolean }) {
-  const [reflection, setReflection] = useState<string | null>(null);
-  const reflectMutation = trpc.ai.dayReflection.useMutation({
-    onSuccess: (data) => setReflection(data.reflection),
-    onError: (err) => handleAiError(err),
-  });
   const hasAny = log && (log.wrapUpDone || log.dumpCount > 0 || log.winsCount > 0 || log.tasksCompleted > 0 || (log.focusSessions ?? 0) > 0);
 
   // Read detailed wins for this day from localStorage
@@ -398,8 +390,6 @@ function DayDetail({ log, dateStr, dateKey: dk, onClose, isPast }: { log?: Daily
               </div>
             )}
 
-
-
             {/* Wins list */}
             {dayWins.length > 0 && (
               <div>
@@ -451,54 +441,6 @@ function DayDetail({ log, dateStr, dateKey: dk, onClose, isPast }: { log?: Daily
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <CheckCircle2 size={13} style={{ color: M.pink, flexShrink: 0 }} />
                 <span style={{ fontSize: 12, color: M.ink }}>{log!.tasksCompleted} {log!.tasksCompleted === 1 ? "task" : "tasks"} completed</span>
-              </div>
-            )}
-
-            {/* AI Reflection — only for past days */}
-            {isPast && (
-              <div style={{ borderTop: `1px dashed ${M.border}`, paddingTop: 12, marginTop: 2 }}>
-                {!reflection && (
-                  <button
-                    onClick={() => reflectMutation.mutate({
-                      dateStr,
-                      mood: log?.mood ?? undefined,
-                      focusSessions: focusCount > 0 ? focusCount : undefined,
-                      wins: dayWins.map(w => w.text),
-                      brainDumps: dayDumps.map(d => d.text),
-                      tasksCompleted: log?.tasksCompleted ?? undefined,
-                      wrapUpDone: log?.wrapUpDone ?? undefined,
-                      score: log?.score ?? undefined,
-                    })}
-                    disabled={reflectMutation.isPending}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 6,
-                      background: "none", border: `1px solid ${M.border}`,
-                      borderRadius: 6, padding: "5px 10px", cursor: reflectMutation.isPending ? "default" : "pointer",
-                      fontFamily: "'Space Mono', monospace", fontSize: 10, color: M.coral,
-                      opacity: reflectMutation.isPending ? 0.6 : 1, transition: "opacity 0.2s",
-                    }}
-                  >
-                    {reflectMutation.isPending ? (
-                      <><Loader2 size={11} style={{ animation: "spin 1s linear infinite" }} /> generating reflection...</>
-                    ) : (
-                      <><Sparkles size={11} /> AI reflect on this day</>
-                    )}
-                  </button>
-                )}
-                {reflection && (
-                  <div style={{ background: M.pinkBg, borderRadius: 8, padding: "10px 12px", border: `1px solid ${M.border}` }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                      <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: M.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                        <Sparkles size={9} style={{ display: "inline", marginRight: 3, color: M.coral }} />
-                        AI Reflection
-                      </span>
-                      <button onClick={() => setReflection(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, color: M.muted, lineHeight: 1, padding: 0 }}>×</button>
-                    </div>
-                    <div style={{ fontSize: 12, color: M.ink, lineHeight: 1.6 }}>
-                      <Streamdown>{reflection}</Streamdown>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </>
@@ -747,154 +689,10 @@ export function MonthlyProgress({ wins, tasks, blockHistory = {}, blockStreak = 
         />
       )}
 
-      {/* AI Monthly Review */}
-      <MonthlyAIReview
-        viewYear={viewYear}
-        viewMonth={viewMonth}
-        logs={logs}
-        daysInMonth={daysInMonth}
-        streak={streak}
-        monthStats={monthStats}
-      />
     </div>
   );
 }
 
-/* ── AI Monthly Review Component ── */
-function MonthlyAIReview({
-  viewYear, viewMonth, logs, daysInMonth, streak, monthStats
-}: {
-  viewYear: number;
-  viewMonth: number;
-  logs: Record<string, DailyLog>;
-  daysInMonth: number;
-  streak: number;
-  monthStats: { activeDays: number; wrapDays: number; dumpDays: number; totalWins: number; totalTasks: number };
-}) {
-  const [review, setReview] = useState<string | null>(null);
-
-  const reviewMutation = trpc.ai.monthlyReview.useMutation({
-    onSuccess: (data) => setReview(typeof data.review === "string" ? data.review : ""),
-    onError: (err) => { handleAiError(err, "AI review failed. Try again."); },
-  });
-
-  const handleGenerate = () => {
-    // Compute extra stats
-    let totalFocusSessions = 0, totalBlocks = 0;
-    let moodSum = 0, moodCount = 0;
-    const topWins: string[] = [];
-    for (let d = 1; d <= daysInMonth; d++) {
-      const k = new Date(viewYear, viewMonth, d).toDateString();
-      const log = logs[k];
-      if (!log) continue;
-      totalFocusSessions += log.focusSessions ?? 0;
-      totalBlocks += log.blocksCompleted ?? 0;
-      if (log.mood) { moodSum += log.mood; moodCount++; }
-    }
-    // Get top wins from localStorage
-    try {
-      const raw = localStorage.getItem("adhd-wins");
-      if (raw) {
-        const wins = JSON.parse(raw) as Array<{ text: string; createdAt: string }>;
-        const monthWins = wins.filter((w) => {
-          const d = new Date(w.createdAt);
-          return d.getFullYear() === viewYear && d.getMonth() === viewMonth;
-        });
-        topWins.push(...monthWins.slice(0, 5).map((w) => w.text));
-      }
-    } catch { /* ignore */ }
-
-    reviewMutation.mutate({
-      month: `${["January","February","March","April","May","June","July","August","September","October","November","December"][viewMonth]} ${viewYear}`,
-      totalDays: daysInMonth,
-      activeDays: monthStats.activeDays,
-      wrapUpDays: monthStats.wrapDays,
-      totalWins: monthStats.totalWins,
-      totalFocusSessions,
-      totalBlocks,
-      totalTasks: monthStats.totalTasks,
-      avgMood: moodCount > 0 ? moodSum / moodCount : null,
-      streakMax: streak,
-      topWins,
-    });
-  };
-
-  const M2 = {
-    coral:   "oklch(0.58 0.18 340)",
-    coralBg: "oklch(0.58 0.18 340 / 0.08)",
-    coralBdr:"oklch(0.58 0.18 340 / 0.25)",
-    ink:     "oklch(0.22 0.040 320)",
-    muted:   "oklch(0.52 0.040 330)",
-    border:  "oklch(0.88 0.025 340)",
-    card:    "oklch(0.975 0.018 355)",
-  };
-
-  return (
-    <div style={{ marginTop: 16, background: M2.card, border: `1px solid ${M2.border}`, borderRadius: 10, overflow: "hidden", boxShadow: "3px 3px 0 oklch(0.72 0.08 310)" }}>
-      {/* Retro titlebar */}
-      <div style={{ background: "#F9D6E8", padding: "5px 10px", display: "flex", alignItems: "center", gap: 6, borderBottom: "1.5px solid oklch(0.78 0.08 330)" }}>
-        <div style={{ display: "flex", gap: 4 }}>
-          <div style={{ width: 10, height: 10, borderRadius: "50%", background: "oklch(0.62 0.18 340)", boxShadow: "0 1px 0 oklch(0.40 0.18 340), inset 0 1px 1px rgba(255,255,255,0.55)", position: "relative" }} />
-          <div style={{ width: 10, height: 10, borderRadius: "50%", background: "oklch(0.72 0.10 310)", boxShadow: "0 1px 0 oklch(0.50 0.10 310), inset 0 1px 1px rgba(255,255,255,0.55)", position: "relative" }} />
-          <div style={{ width: 10, height: 10, borderRadius: "50%", background: "oklch(0.78 0.10 290)", boxShadow: "0 1px 0 oklch(0.55 0.10 290), inset 0 1px 1px rgba(255,255,255,0.55)", position: "relative" }} />
-        </div>
-        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#8A3060", marginLeft: 4 }}>ai_review.exe</span>
-      </div>
-      <div style={{ padding: "16px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-        <Sparkles size={15} style={{ color: M2.coral }} />
-        <span style={{ fontSize: 13, fontWeight: 600, color: M2.ink, fontFamily: "'DM Sans', sans-serif" }}>AI Monthly Review</span>
-      </div>
-
-      {!review ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <p style={{ fontSize: 12, color: M2.muted, margin: 0, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>
-            Get a personalised narrative review of your month — patterns, insights, and one thing to try next month.
-          </p>
-          <button
-            onClick={handleGenerate}
-            disabled={reviewMutation.isPending}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 6,
-              background: reviewMutation.isPending ? M2.border : M2.coralBg,
-              border: `1px solid ${M2.coralBdr}`,
-              color: M2.coral, borderRadius: 6, padding: "8px 14px",
-              fontSize: 11, cursor: reviewMutation.isPending ? "not-allowed" : "pointer",
-              fontFamily: "'DM Sans', sans-serif", fontWeight: 500,
-              alignSelf: "flex-start",
-            }}
-          >
-            {reviewMutation.isPending ? (
-              <><Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} /> Generating…</>
-            ) : (
-              <><Sparkles size={12} /> Generate review</>
-            )}
-          </button>
-        </div>
-      ) : (
-        <div>
-          <div style={{
-            padding: "12px 14px", background: M2.coralBg,
-            border: `1px solid ${M2.coralBdr}`, borderRadius: 8,
-            fontSize: 13, color: M2.ink, lineHeight: 1.7,
-            fontFamily: "'DM Sans', sans-serif",
-          }}>
-            <Streamdown>{review}</Streamdown>
-          </div>
-          <button
-            onClick={() => setReview(null)}
-            style={{ marginTop: 8, fontSize: 11, color: M2.muted, background: "none", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}
-          >
-            Regenerate
-          </button>
-        </div>
-      )}
-      </div>{/* end padding wrapper */}
-    </div>
-  );
-}
-
-/* ── Exported helper to record a wrap-up completion ── */
 export function recordWrapUp(mood?: number | null, score?: number) {
   const today = new Date().toDateString();
   try {

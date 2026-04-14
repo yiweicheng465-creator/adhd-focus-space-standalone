@@ -5,15 +5,12 @@
    ============================================================ */
 
 import { useState } from "react";
-import { CheckCircle2, ClipboardCopy, Loader2, Sparkles, X } from "lucide-react";
+import { CheckCircle2, ClipboardCopy, Sparkles, X } from "lucide-react";
 import { PixelAgents } from "@/components/PixelIcons";
 import { toast } from "sonner";
 import type { Task } from "./TaskManager";
 import type { Win } from "./DailyWins";
 import type { Agent } from "./AgentTracker";
-import { trpc } from "@/lib/trpc";
-import { handleAiError } from "@/lib/aiErrorHandler";
-import { Streamdown } from "streamdown";
 
 // ── Win category colours (must match DailyWins WIN_ICONS order) ──
 const WIN_CAT_COLORS = [
@@ -307,60 +304,6 @@ interface DailyWrapUpProps {
 
 export function DailyWrapUp({ tasks, wins, agents, quitCount = 0, onClose }: DailyWrapUpProps) {
   const [copied, setCopied] = useState(false);
-  const [aiSummary, setAiSummary] = useState<string | null>(null);
-
-  const summaryMutation = trpc.ai.dailySummary.useMutation({
-    onSuccess: (data) => setAiSummary(typeof data.summary === "string" ? data.summary : ""),
-    onError: (err) => { handleAiError(err, "AI summary failed. Try again."); },
-  });
-
-  const handleGenerateSummary = () => {
-    const today = new Date().toDateString();
-    const todayWinsLocal = wins.filter((w) => new Date(w.createdAt).toDateString() === today);
-    const doneTasksLocal = tasks.filter((t) => t.done);
-    const pendingTasksLocal = tasks.filter((t) => !t.done);
-    // Read brain dump entries from localStorage
-    let dumpEntries: string[] = [];
-    try {
-      const raw = localStorage.getItem("adhd_braindump_entries");
-      if (raw) {
-        const parsed = JSON.parse(raw) as Array<{ text: string; createdAt: string }>;
-        dumpEntries = parsed
-          .filter((e) => new Date(e.createdAt).toDateString() === today)
-          .map((e) => e.text);
-      }
-    } catch { /* ignore */ }
-    // Read focus sessions from monthly log
-    let focusSessions = 0;
-    let blocksCompleted = 0;
-    try {
-      const raw = localStorage.getItem("adhd-daily-logs");
-      if (raw) {
-        const logs = JSON.parse(raw) as Record<string, { focusSessions?: number; blocksCompleted?: number }>;
-        const todayLog = logs[today];
-        focusSessions = todayLog?.focusSessions ?? 0;
-        blocksCompleted = todayLog?.blocksCompleted ?? 0;
-      }
-    } catch { /* ignore */ }
-    // Read mood
-    let mood: number | null = null;
-    try {
-      const raw = localStorage.getItem("adhd-mood");
-      if (raw) mood = JSON.parse(raw) as number | null;
-    } catch { /* ignore */ }
-
-    summaryMutation.mutate({
-      date: new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }),
-      wins: todayWinsLocal.map((w) => w.text),
-      tasksCompleted: doneTasksLocal.map((t) => t.text),
-      tasksPending: pendingTasksLocal.map((t) => t.text),
-      dumpEntries,
-      focusSessions,
-      blocksCompleted,
-      mood,
-      quitCount,
-    });
-  };
 
   const today    = new Date().toDateString();
   const todayStr = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
@@ -428,7 +371,6 @@ export function DailyWrapUp({ tasks, wins, agents, quitCount = 0, onClose }: Dai
         }}
         onClick={(e) => e.stopPropagation()}
       >
-
 
         {/* Retro title bar */}
         <div className="relative z-10" style={{
@@ -555,51 +497,6 @@ export function DailyWrapUp({ tasks, wins, agents, quitCount = 0, onClose }: Dai
             </Section>
           )}
 
-          {/* AI Daily Summary */}
-          <Section icon={<Sparkles className="w-4 h-4" />} title="AI Day Summary" color={M.coral}>
-            {!aiSummary ? (
-              <div className="flex flex-col gap-2">
-                <p className="text-xs italic" style={{ color: M.muted, fontFamily: "'DM Sans', sans-serif" }}>
-                  Let AI reflect on your day — a personal note based on what you actually did.
-                </p>
-                <button
-                  onClick={handleGenerateSummary}
-                  disabled={summaryMutation.isPending}
-                  className="flex items-center gap-2 px-3 py-2 text-xs font-medium self-start"
-                  style={{
-                    background: summaryMutation.isPending ? "oklch(0.88 0.025 340)" : M.coralBg,
-                    border: `1px solid ${M.coralBdr}`,
-                    color: M.coral,
-                    fontFamily: "'DM Sans', sans-serif",
-                    borderRadius: 6,
-                    cursor: summaryMutation.isPending ? "not-allowed" : "pointer",
-                  }}
-                >
-                  {summaryMutation.isPending ? (
-                    <><Loader2 className="w-3 h-3 animate-spin" /> Thinking…</>
-                  ) : (
-                    <><Sparkles className="w-3 h-3" /> Generate summary</>
-                  )}
-                </button>
-              </div>
-            ) : (
-              <div
-                className="p-3"
-                style={{ background: M.coralBg, border: `1px solid ${M.coralBdr}`, borderRadius: 8 }}
-              >
-                <div className="text-sm leading-relaxed" style={{ color: M.ink, fontFamily: "'DM Sans', sans-serif" }}>
-                  <Streamdown>{aiSummary}</Streamdown>
-                </div>
-                <button
-                  onClick={() => setAiSummary(null)}
-                  className="mt-2 text-xs"
-                  style={{ color: M.muted, background: "none", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}
-                >
-                  Regenerate
-                </button>
-              </div>
-            )}
-          </Section>
         </div>
 
         {/* Footer */}

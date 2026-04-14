@@ -9,10 +9,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useFilmGrain } from "@/components/FilmGrain";
 import { useWorkMode } from "@/components/WorkModeToggle";
 import { useHue, HUE_PRESETS } from "@/components/HueShift";
-import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-
-type Tab = "effects" | "apikey";
 
 /* ─── Horizontal range slider ─────────────────────────────── */
 function HSlider({
@@ -94,143 +91,22 @@ function TitleDots() {
 /* ─── Main SettingsPanel ─────────────────────────────────────── */
 export function EffectsPanel() {
   const [open, setOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<Tab>("effects");
   const panelRef = useRef<HTMLDivElement>(null);
-  const apiKeyInputRef = useRef<HTMLInputElement>(null);
   const { intensity, setIntensity, speed, setSpeed } = useFilmGrain();
   const { enabled: workMode, toggle: toggleWorkMode } = useWorkMode();
   const { hue, setHue, reset: resetHue } = useHue();
 
   // API key state (OpenAI only — Manus built-in is the default, OpenAI is optional fallback)
-  const [apiKeyInput, setApiKeyInput] = useState("");
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [apiKeySaved, setApiKeySaved] = useState(false);
-  const [showSavedTick, setShowSavedTick] = useState(false);
-  const [apiKeyValidating, setApiKeyValidating] = useState(false);
-  const [apiKeyError, setApiKeyError] = useState<string | null>(null);
-  const [dbSynced, setDbSynced] = useState(false);
   // AI signal: green = working (built-in or user key), red = credits exhausted + no key
   // Persisted in localStorage so it survives navigation
   const [aiAvailable, setAiAvailable] = useState<boolean>(() => {
     return localStorage.getItem("adhd-ai-available") !== "false";
   });
-  const utils = trpc.useUtils();
-
-  // Fetch existing key info from DB on mount to sync keyType + show masked key
-  const { data: savedKeyData } = trpc.profile.getApiKey.useQuery(undefined, {
-    staleTime: 30_000,
-  });
-  // Usage stats
-  const { data: usageStats } = trpc.profile.getUsageStats.useQuery(undefined, {
-    staleTime: 60_000,
-    enabled: open && activeTab === "apikey",
-  });
-
-  // Sync from DB once on first load (just mark as synced — no keyType to set)
-  useEffect(() => {
-    if (savedKeyData && !dbSynced) {
-      setDbSynced(true);
-      // If user has their own OpenAI key, AI is definitely available — restore green
-      if (savedKeyData.hasKey) {
-        setAiAvailable(true);
-        localStorage.setItem("adhd-ai-available", "true");
-      }
-    }
-  }, [savedKeyData, dbSynced]);
-
-  // Listen for aiCreditsExhausted event — flip dot red
-  useEffect(() => {
-    function onCreditsExhausted() {
-      // Only go red if user has no OpenAI key saved as fallback
-      if (!savedKeyData?.hasKey) {
-        setAiAvailable(false);
-        localStorage.setItem("adhd-ai-available", "false");
-      }
-    }
-    window.addEventListener("aiCreditsExhausted", onCreditsExhausted);
-    return () => window.removeEventListener("aiCreditsExhausted", onCreditsExhausted);
-  }, [savedKeyData?.hasKey]);
-
-  // Listen for aiKeyRestored event — flip dot back to green (key saved via ApiKeyDialog)
-  useEffect(() => {
-    function onKeyRestored() {
-      setAiAvailable(true);
-      localStorage.setItem("adhd-ai-available", "true");
-    }
-    window.addEventListener("aiKeyRestored", onKeyRestored);
-    return () => window.removeEventListener("aiKeyRestored", onKeyRestored);
-  }, []);
-
-  const updateApiKey = trpc.profile.updateApiKey.useMutation({
-    onSuccess: () => {
-      setApiKeySaved(true);
-      setApiKeyError(null);
-      setApiKeyInput("");
-      setApiKeyValidating(false);
-      setShowSavedTick(true);
-      setTimeout(() => { setApiKeySaved(false); setShowSavedTick(false); }, 1500);
-      utils.profile.getApiKey.invalidate();
-      // User saved their own OpenAI key — restore green signal
-      setAiAvailable(true);
-      localStorage.setItem("adhd-ai-available", "true");
-    },
-    onError: () => { setApiKeyValidating(false); toast.error("Failed to save API key."); },
-  });
-
-  const removeApiKey = trpc.profile.updateApiKey.useMutation({
-    onSuccess: () => {
-      utils.profile.getApiKey.invalidate();
-      // Back to built-in AI — keep green (assume built-in still works)
-    },
-    onError: () => toast.error("Failed to remove API key."),
-  });
-
-  const handleRemoveKey = useCallback(() => {
-    removeApiKey.mutate({ apiKey: "", keyType: "openai" });
-  }, [removeApiKey]);
-
-  const validateApiKey = trpc.profile.validateApiKey.useMutation({
-    onSuccess: () => {
-      updateApiKey.mutate({ apiKey: apiKeyInput.trim(), keyType: "openai" });
-    },
-    onError: (err) => {
-      setApiKeyValidating(false);
-      if (err.message === "INVALID_API_KEY") {
-        setApiKeyError("Invalid API key — please check and try again.");
-        toast.error("Invalid API key. Please check it and try again.", { duration: 4000 });
-      } else {
-        setApiKeyError(null);
-          updateApiKey.mutate({ apiKey: apiKeyInput.trim(), keyType: "openai" });
-        toast("Couldn't verify key (network issue) — saved anyway.", { duration: 3000 });
-      }
-    },
-  });
-
-  const handleSaveApiKey = useCallback(() => {
-    const key = apiKeyInput.trim();
-    if (!key) return;
-    setApiKeyError(null);
-    setApiKeyValidating(true);
-    validateApiKey.mutate({ apiKey: key, keyType: "openai" });
-  }, [apiKeyInput, validateApiKey, updateApiKey]);
-
-  const isSaving = apiKeyValidating || validateApiKey.isPending || updateApiKey.isPending;
 
   const grainOn = intensity > 0;
   const iconColor = (open || grainOn || workMode)
     ? "oklch(0.48 0.18 340)"
     : "oklch(0.60 0.060 330)";
-
-  // Listen for global openFxPanel event — auto-open on API KEY tab
-  useEffect(() => {
-    function onOpenFx() {
-      setOpen(true);
-      setActiveTab("apikey");
-      setTimeout(() => apiKeyInputRef.current?.focus(), 150);
-    }
-    window.addEventListener("openFxPanel", onOpenFx);
-    return () => window.removeEventListener("openFxPanel", onOpenFx);
-  }, []);
 
   // Close on outside click or Escape key
   useEffect(() => {
@@ -324,42 +200,6 @@ export function EffectsPanel() {
             >×</button>
           </div>
 
-          {/* Tab bar */}
-          <div style={{
-            display: "flex",
-            background: "oklch(0.96 0.020 340)",
-            border: "1.5px solid oklch(0.82 0.08 340)",
-            borderTop: "none",
-            borderBottom: "none",
-          }}>
-            {(["effects", "apikey"] as Tab[]).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                style={{
-                  flex: 1,
-                  padding: "5px 0",
-                  fontSize: "0.44rem",
-                  letterSpacing: "0.12em",
-                  textTransform: "uppercase",
-                  fontFamily: "'Space Mono', monospace",
-                  border: "none",
-                  borderBottom: activeTab === tab
-                    ? "2px solid oklch(0.55 0.18 340)"
-                    : "2px solid transparent",
-                  borderRight: tab === "effects" ? "1px solid oklch(0.88 0.06 340)" : "none",
-                  background: activeTab === tab ? "oklch(0.98 0.015 340)" : "transparent",
-                  color: activeTab === tab ? "oklch(0.45 0.14 340)" : "oklch(0.62 0.060 330)",
-                  cursor: "pointer",
-                  fontWeight: activeTab === tab ? 700 : 400,
-                  transition: "all 0.12s",
-                }}
-              >
-                {tab === "effects" ? "Effects" : "API Key"}
-              </button>
-            ))}
-          </div>
-
           {/* Body */}
           <div style={{
             background: "oklch(0.98 0.015 340)",
@@ -372,8 +212,6 @@ export function EffectsPanel() {
             gap: 14,
           }}>
 
-            {/* ── EFFECTS TAB ── */}
-            {activeTab === "effects" && (
               <>
                 {/* Film Grain section */}
                 <div>
@@ -542,179 +380,6 @@ export function EffectsPanel() {
                   </div>
                 </div>
               </>
-            )}
-
-            {/* ── API KEY TAB ── */}
-            {activeTab === "apikey" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <span style={{ fontSize: "0.55rem", color: "oklch(0.45 0.12 340)", letterSpacing: "0.12em", textTransform: "uppercase", display: "block" }}>
-                  ⬡ OpenAI Key (optional)
-                </span>
-
-                {/* AI status notice — changes based on whether user has a key saved */}
-                <div style={{
-                  background: savedKeyData?.hasKey ? "oklch(0.95 0.025 260)" : "oklch(0.95 0.030 168)",
-                  border: `1px solid ${savedKeyData?.hasKey ? "oklch(0.70 0.10 260)" : "oklch(0.70 0.12 168)"}`,
-                  padding: "5px 7px",
-                  fontSize: "0.40rem",
-                  color: savedKeyData?.hasKey ? "oklch(0.30 0.12 260)" : "oklch(0.35 0.12 168)",
-                  letterSpacing: "0.03em",
-                  lineHeight: 1.6,
-                  fontFamily: "'Space Mono', monospace",
-                }}>
-                  {savedKeyData?.hasKey
-                    ? "✓ Using your OpenAI key — AI calls are billed to your OpenAI account."
-                    : "✓ AI is already active — powered by built-in credits. Add your own OpenAI key below only if the built-in AI stops working."}
-                </div>
-
-                {/* Usage stats */}
-                {(usageStats?.total ?? 0) > 0 && (
-                  <div style={{
-                    display: "flex",
-                    gap: 8,
-                    padding: "4px 7px",
-                    background: "oklch(0.96 0.015 330)",
-                    border: "1px solid oklch(0.85 0.04 330)",
-                    fontSize: "0.38rem",
-                    fontFamily: "'Space Mono', monospace",
-                    color: "oklch(0.50 0.06 330)",
-                    letterSpacing: "0.04em",
-                  }}>
-                    <span style={{ opacity: 0.7 }}>AI calls</span>
-                    <span style={{ opacity: 0.4 }}>|</span>
-                    <span>total: <strong style={{ color: "oklch(0.40 0.10 340)" }}>{usageStats?.total ?? 0}</strong></span>
-                    <span style={{ opacity: 0.4 }}>|</span>
-                    <span>this month: <strong style={{ color: "oklch(0.40 0.10 340)" }}>{usageStats?.thisMonth ?? 0}</strong></span>
-                  </div>
-                )}
-                {/* OpenAI key input */}
-                <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                  <input
-                    ref={apiKeyInputRef}
-                    type={showApiKey ? "text" : "password"}
-                    value={apiKeyInput}
-                    onChange={(e) => { setApiKeyInput(e.target.value); setApiKeyError(null); }}
-                    placeholder="sk-..."
-                    style={{
-                      flex: 1,
-                      fontSize: "0.50rem",
-                      fontFamily: "'Space Mono', monospace",
-                      padding: "4px 6px",
-                      borderRadius: 3,
-                      border: `1px solid ${apiKeyError ? "oklch(0.52 0.20 25)" : "oklch(0.80 0.06 340)"}`,
-                      background: "oklch(0.97 0.010 340)",
-                      color: "oklch(0.35 0.10 340)",
-                      outline: "none",
-                      minWidth: 0,
-                    }}
-                  />
-                  <button
-                    onClick={() => setShowApiKey(v => !v)}
-                    style={{ fontSize: "0.42rem", fontFamily: "'Space Mono', monospace", padding: "3px 5px", borderRadius: 3, border: "1px solid oklch(0.80 0.06 340)", background: "transparent", color: "oklch(0.55 0.08 340)", cursor: "pointer", flexShrink: 0 }}
-                  >
-                    {showApiKey ? "hide" : "show"}
-                  </button>
-                </div>
-
-                {apiKeyError && (
-                  <p style={{ fontSize: "0.42rem", color: "oklch(0.52 0.20 25)", fontFamily: "'Space Mono', monospace", margin: 0, lineHeight: 1.4 }}>
-                    ⚠ {apiKeyError}
-                  </p>
-                )}
-
-                {savedKeyData?.hasKey ? (
-                  /* Masked key preview — shown when a key is already saved */
-                  <p style={{
-                    fontSize: "0.40rem",
-                    fontFamily: "'Space Mono', monospace",
-                    color: "oklch(0.50 0.08 260)",
-                    margin: 0,
-                    lineHeight: 1.5,
-                    letterSpacing: "0.04em",
-                  }}>
-                    active key: <span style={{ letterSpacing: "0.06em" }}>{savedKeyData.maskedKey}</span>
-                  </p>
-                ) : (
-                  /* Payment reminder + link — only shown when no key is saved */
-                  <>
-                    <p style={{
-                      fontSize: "0.40rem",
-                      fontFamily: "'Space Mono', monospace",
-                      color: "oklch(0.52 0.10 50)",
-                      margin: 0,
-                      lineHeight: 1.5,
-                      letterSpacing: "0.02em",
-                    }}>
-                      ⚠ Your OpenAI account must have a paid plan / credits — free-tier keys won't work.
-                    </p>
-                    <a
-                      href="https://platform.openai.com/api-keys"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        display: "block",
-                        fontSize: "0.42rem",
-                        fontFamily: "'Space Mono', monospace",
-                        color: "oklch(0.55 0.14 340)",
-                        textDecoration: "underline",
-                        textAlign: "center",
-                        letterSpacing: "0.04em",
-                      }}
-                    >
-                      → platform.openai.com/api-keys
-                    </a>
-                  </>
-                )}
-
-
-
-
-                {/* Save button — full width, tick shown inside */}
-                <button
-                  onClick={handleSaveApiKey}
-                  disabled={!apiKeyInput.trim() || isSaving}
-                  style={{
-                    width: "100%",
-                    fontSize: "0.50rem",
-                    fontFamily: "'Space Mono', monospace",
-                    letterSpacing: "0.08em",
-                    padding: "5px 0",
-                    borderRadius: 3,
-                    border: `1.5px solid ${showSavedTick ? "oklch(0.52 0.16 145)" : apiKeyError ? "oklch(0.52 0.20 25)" : "oklch(0.55 0.18 340)"}`,
-                    background: showSavedTick ? "oklch(0.52 0.16 145)" : apiKeyError ? "oklch(0.52 0.20 25)" : "oklch(0.55 0.18 340)",
-                    color: "white",
-                    cursor: (apiKeyInput.trim() && !isSaving) ? "pointer" : "not-allowed",
-                    opacity: (apiKeyInput.trim() && !isSaving) ? 1 : 0.5,
-                    transition: "background 0.2s, border-color 0.2s",
-                    textAlign: "center",
-                  }}
-                >
-                  {showSavedTick ? "✓ SAVED" : isSaving ? "SAVING..." : "SAVE"}
-                </button>
-                {/* Remove key link — only shown when a key is already saved */}
-                {savedKeyData?.hasKey && (
-                  <button
-                    onClick={handleRemoveKey}
-                    disabled={removeApiKey.isPending}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      padding: 0,
-                      fontSize: "0.40rem",
-                      fontFamily: "'Space Mono', monospace",
-                      color: "oklch(0.55 0.08 25)",
-                      textDecoration: "underline",
-                      cursor: "pointer",
-                      letterSpacing: "0.04em",
-                      opacity: removeApiKey.isPending ? 0.5 : 0.7,
-                    }}
-                  >
-                    {removeApiKey.isPending ? "removing..." : "× remove key → use built-in AI"}
-                  </button>
-                )}
-              </div>
-            )}
-
           </div>
         </div>
       )}

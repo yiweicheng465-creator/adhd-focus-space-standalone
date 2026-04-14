@@ -8,7 +8,6 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { Sidebar } from "@/components/Sidebar";
 import { toast } from "sonner";
-import { trpc } from "@/lib/trpc";
 
 const M = {
   bg:       "oklch(0.975 0.012 355)",
@@ -164,26 +163,12 @@ function FeedbackModal({ onClose }: { onClose: () => void }) {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
 
-  const submitFeedback = trpc.feedback.submit.useMutation({
-    onSuccess: (data) => {
-      if (data.success) {
-        toast.success("Feedback sent! Thank you ♥");
-      } else {
-        toast.error("Could not send feedback — please try again.");
-      }
-      onClose();
-    },
-    onError: () => {
-      toast.error("Something went wrong. Please try again.");
-    },
-  });
-
   const handleSend = () => {
     if (!title.trim()) { toast.error("Please enter a title."); return; }
-    submitFeedback.mutate({ type, title: title.trim(), details: body.trim() || undefined });
+    toast.success('Thanks for your feedback!'); setTitle(''); setBody('');
   };
 
-  const sending = submitFeedback.isPending;
+  const sending = false;
 
   return (
     <div
