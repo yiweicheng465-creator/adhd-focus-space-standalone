@@ -107,7 +107,7 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
   const [filter,          setFilter]          = useState<"all" | "active" | "done">("active");
   // Inline editing state
   const [editingTaskId,   setEditingTaskId]   = useState<string | null>(null);
-  const [editPopoverPos,  setEditPopoverPos]  = useState<{ top: number; left: number } | null>(null);
+  const [editPopoverPos,  setEditPopoverPos]  = useState<{ top: number; left: number; width?: number } | null>(null);
   const [editContext,     setEditContext]      = useState<ItemContext>("work");
   const [editGoalId,      setEditGoalId]       = useState<string | null>(null);
   const [editPriority,    setEditPriority]     = useState<TaskPriority>("focus");
@@ -170,10 +170,14 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
     setEditContext(task.context);
     setEditGoalId(task.goalId ?? null);
     setEditPriority(task.priority);
+    setEditPopoverPos(null); // reset first to avoid flash at 0,0
     if (e) {
-      const rect = (e.currentTarget as HTMLElement).closest('.retro-task-row')?.getBoundingClientRect()
-        ?? (e.currentTarget as HTMLElement).getBoundingClientRect();
-      setEditPopoverPos({ top: rect.bottom + 4, left: rect.left });
+      // Use rAF so the popover only renders after position is known
+      requestAnimationFrame(() => {
+        const row = (e.currentTarget as HTMLElement).closest('.retro-task-row');
+        const rect = row?.getBoundingClientRect() ?? (e.currentTarget as HTMLElement).getBoundingClientRect();
+        setEditPopoverPos({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+      });
     }
   };
 
@@ -448,25 +452,23 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
                 })()}
 
                 {/* Inline edit popover */}
-                {isEditing && (
+                {isEditing && editPopoverPos && (
                   <div
                     ref={editPopoverRef}
                     style={{
                       position: "fixed",
-                      top: editPopoverPos?.top ?? 0,
-                      left: editPopoverPos?.left ?? 0,
+                      top: editPopoverPos.top,
+                      left: editPopoverPos.left,
+                      width: editPopoverPos.width ?? 280,
                       zIndex: 9999,
                       background: "#fdf4f8",
                       border: "1.5px solid #d4a0c0",
                       borderRadius: 6,
                       padding: "10px 12px",
-                      minWidth: 280,
-                      maxWidth: "min(340px, 90vw)",
-                      boxShadow: "0 8px 24px rgba(180,60,120,0.18), 0 2px 0 #d4a0c0",
+                      boxShadow: "0 8px 24px rgba(180,60,120,0.22), 0 2px 0 #d4a0c0",
                       display: "flex",
                       flexDirection: "column",
                       gap: 8,
-                      isolation: "isolate",
                     }}
                   >
                     {/* Priority row */}
