@@ -345,6 +345,7 @@ export function BrainDump({ onConvertToTask, onCreateAgent, onAddGoal, onDump, i
               <Sparkles className="w-3 h-3" />
               {aiSorting ? "Sorting…" : "AI Sort"}
             </button>
+            <div style={{ width: 1, height: 12, background: "oklch(0.75 0.040 330)", alignSelf: "center" }} />
             <button onClick={clearAll} disabled={deleteAllMutation.isPending} className="m-btn-link">
               Clear all
             </button>
