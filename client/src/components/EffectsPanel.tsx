@@ -524,6 +524,9 @@ export function EffectsPanel() {
                       <p style={{ fontSize: "0.44rem", color: "oklch(0.58 0.040 330)", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5, marginBottom: 2 }}>
                         Add your OpenAI key for unlimited AI features (brain dump sorting, daily summaries, focus reflections…)
                       </p>
+                      <p style={{ fontSize: "0.42rem", color: "oklch(0.52 0.14 25)", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5, marginBottom: 2 }}>
+                        ⚠ Your OpenAI account must have billing set up — free accounts cannot make API calls from external apps. Add credits at <span style={{ fontFamily: "'Space Mono', monospace" }}>platform.openai.com/settings/billing</span>.
+                      </p>
                       <div style={{ position: "relative" }}>
                         <input
                           type={showKey ? "text" : "password"}
