@@ -407,7 +407,7 @@ export default function Guide() {
                 <tbody>
                   {[
                     { key: "D",       action: "Focus the \"What's on your mind?\" input", where: "Dashboard" },
-                    { key: "/",       action: "Focus the AI chat input",                  where: "Dashboard" },
+                    { key: "C",       action: "Focus the AI chat input",                  where: "Dashboard" },
                     { key: "+",       action: "Open Quick Capture modal",                 where: "Anywhere" },
                     { key: "Space",   action: "Start or pause the Focus Timer",           where: "Focus page" },
                     { key: "↵ Enter", action: "Submit Quick Capture / Brain Dump",        where: "Modal / Dump" },
