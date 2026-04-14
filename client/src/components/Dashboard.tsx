@@ -605,13 +605,33 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
           </div>
           <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", padding: "10px 12px 8px" }}>
             {/* Messages area */}
+            
+            {/* Sub-header: AI ASSISTANT label + CLEAR button */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, flexShrink: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <Bot size={12} style={{ color: AI_ACCENT, opacity: 0.7 }} />
+                <span style={{ fontSize: 9, color: MUTED, fontFamily: "'Space Mono', monospace", letterSpacing: "0.06em" }}>AI ASSISTANT</span>
+              </div>
+              {chatHistory.length > 0 && (
+                <button
+                  onClick={() => { setChatHistory([]); localStorage.removeItem(CHAT_HISTORY_KEY); }}
+                  style={{
+                    fontSize: "0.50rem", fontFamily: "'Space Mono', monospace", letterSpacing: "0.10em",
+                    padding: "2px 8px", borderRadius: 3,
+                    border: "1.5px solid oklch(0.65 0.10 330)",
+                    background: "oklch(0.92 0.025 340)", color: "oklch(0.38 0.10 330)",
+                    cursor: "pointer", fontWeight: 700,
+                  }}
+                >
+                  CLEAR
+                </button>
+              )}
+            </div>
+
             <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6, minHeight: 0, paddingBottom: 4 }}>
               {chatHistory.length === 0 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 5, padding: "6px 0" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
-                    <Bot size={12} style={{ color: AI_ACCENT, opacity: 0.7 }} />
-                    <span style={{ fontSize: 9, color: MUTED, fontFamily: "'Space Mono', monospace", letterSpacing: "0.06em" }}>AI ASSISTANT</span>
-                  </div>
                   {CHAT_SUGGESTIONS.map((s) => (
                     <button
                       key={s}
@@ -670,20 +690,7 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
 
             {/* Input area */}
             <div style={{ display: "flex", gap: 5, alignItems: "center", paddingTop: 6, borderTop: `1px solid ${AI_BORDER}`, flexShrink: 0 }}>
-              {chatHistory.length > 0 && (
-                <button
-                  onClick={() => { setChatHistory([]); localStorage.removeItem(CHAT_HISTORY_KEY); }}
-                  title="Clear chat"
-                  style={{
-                    flexShrink: 0, padding: "5px 7px", borderRadius: 4,
-                    border: `1px solid ${AI_BORDER}`, background: "transparent",
-                    color: MUTED, cursor: "pointer", fontSize: 9,
-                    fontFamily: "'Space Mono', monospace", letterSpacing: "0.08em",
-                  }}
-                >
-                  CLR
-                </button>
-              )}
+
               <input
                 ref={(el) => { (window as Window & { __adhd_ai_input?: HTMLInputElement | null }).__adhd_ai_input = el; chatInputRef.current = el; }}
                 value={chatInput}
