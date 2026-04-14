@@ -8,9 +8,8 @@ import { useState, useRef, useEffect } from "react";
 import { EisenhowerMatrix, priorityToQuadrant, type QuadrantId } from "./EisenhowerMatrix";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Circle, Flame, Loader2, Plus, Sparkles, Star, Trash2, Zap, Pencil, X, Check } from "lucide-react";
+import { CheckCircle2, Circle, Flame, Plus, Star, Trash2, Zap } from "lucide-react";
 import { toast } from "sonner";
-import { callAI } from "@/lib/ai";
 import { nanoid } from "nanoid";
 import {
   ContextSwitcher, ContextBadge, getContextConfig,
@@ -107,14 +106,6 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
   const [activeContext,   setActiveContext]   = useState<ActiveContext>(defaultContext);
   const [filter,          setFilter]          = useState<"all" | "active" | "done">("active");
   // Inline editing state
-  const [editingTaskId,   setEditingTaskId]   = useState<string | null>(null);
-  const [editPopoverPos,  setEditPopoverPos]  = useState<{ top: number; left: number; width?: number } | null>(null);
-  const [aiEditInput,    setAiEditInput]    = useState("");
-  const [aiEditing,      setAiEditing]      = useState(false);
-  const [editContext,     setEditContext]      = useState<ItemContext>("work");
-  const [editGoalId,      setEditGoalId]       = useState<string | null>(null);
-  const [editPriority,    setEditPriority]     = useState<TaskPriority>("focus");
-  const editPopoverRef = useRef<HTMLDivElement>(null);
   // Quadrant map: taskId → quadrantId (persisted in component state)
   const [quadrantMap, setQuadrantMap]         = useState<Record<string, QuadrantId>>(() => {
     try {
@@ -424,7 +415,6 @@ Instruction: ${aiEditInput.trim()}`
           const pcfg        = PRIORITY_CONFIG[task.priority];
           const PIcon       = pcfg.icon;
           const isCompleting = completingId === task.id;
-          const isEditing    = editingTaskId === task.id;
           const cleanText = task.text.replace(/(?:^|\s)#[a-zA-Z0-9\u4e00-\u9fa5_-]+/g, " ").replace(/\s{2,}/g, " ").trim() || task.text;
 
           return (
@@ -486,93 +476,12 @@ Instruction: ${aiEditInput.trim()}`
                   ) : null;
                 })()}
 
-                {/* Inline edit popover */}
-                {isEditing && editPopoverPos && (
-                  <div
-                    ref={editPopoverRef}
-                    style={{
-                      position: "fixed",
-                      top: editPopoverPos.top,
-                      left: editPopoverPos.left,
-                      width: editPopoverPos.width ?? 280,
-                      zIndex: 9999,
-                      background: "#fdf4f8",
-                      border: "1.5px solid #d4a0c0",
-                      borderRadius: 6,
-                      padding: "10px 12px",
-                      boxShadow: "0 8px 24px rgba(180,60,120,0.22), 0 2px 0 #d4a0c0",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 8,
-                    }}
-                  >
-                    {/* Task text (read-only) */}
-                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem", color: M.ink, fontWeight: 500, marginBottom: 2 }}>{task.text}</p>
-
-                    {/* AI edit input */}
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <input
-                        autoFocus
-                        value={aiEditInput}
-                        onChange={(e) => setAiEditInput(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleAiEdit(task.id); } if (e.key === "Escape") closeEdit(); }}
-                        placeholder='e.g. "make urgent" · "change to personal" · "link to goal X"'
-                        autoComplete="off"
-                        style={{
-                          flex: 1, padding: "5px 9px",
-                          border: `1.5px solid #d4a0c0`,
-                          borderRadius: 4, background: "white",
-                          fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem",
-                          color: M.ink, outline: "none",
-                        }}
-                      />
-                      <button
-                        onClick={() => handleAiEdit(task.id)}
-                        disabled={aiEditing || !aiEditInput.trim()}
-                        style={{
-                          flexShrink: 0, padding: "5px 10px", borderRadius: 4,
-                          background: aiEditInput.trim() ? M.coral : "transparent",
-                          border: `1.5px solid ${aiEditInput.trim() ? M.coral : "#d4a0c0"}`,
-                          color: aiEditInput.trim() ? "white" : M.muted,
-                          cursor: aiEditing || !aiEditInput.trim() ? "not-allowed" : "pointer",
-                          display: "flex", alignItems: "center", gap: 4,
-                          fontFamily: "'Space Mono', monospace", fontSize: "0.55rem", letterSpacing: "0.08em",
-                        }}
-                      >
-                        {aiEditing ? <Loader2 size={10} style={{ animation: "spin 1s linear infinite" }} /> : <Sparkles size={10} />}
-                        {aiEditing ? "…" : "Apply"}
-                      </button>
-                      <button
-                        onClick={closeEdit}
-                        style={{
-                          flexShrink: 0, padding: "5px 7px", borderRadius: 4,
-                          background: "transparent", border: `1px solid #d4a0c0`,
-                          color: M.muted, cursor: "pointer",
-                        }}
-                      >
-                        <X size={12} />
-                      </button>
-                    </div>
-                    <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.50rem", color: M.muted, opacity: 0.7 }}>Press Enter to apply · Esc to cancel</p>
-                  </div>
-                )}
               </div>
 
               {/* Right side: context badge + edit button + checkbox + delete */}
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0, marginTop: 2 }}>
                 {/* Context badge */}
                 <ContextBadge context={task.context} />
-                {/* Edit button — appears on hover */}
-                {!task.done && (
-                  <button
-                    onClick={() => isEditing ? closeEdit() : openEdit(task)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Edit task details"
-                    style={{ color: isEditing ? M.coral : M.muted }}
-                  >
-                    <Pencil className="w-3 h-3" />
-                  </button>
-                )}
                 {/* Checkbox */}
                 <button
                   onClick={() => toggleTask(task.id)}
