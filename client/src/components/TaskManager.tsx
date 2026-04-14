@@ -107,6 +107,7 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
   const [filter,          setFilter]          = useState<"all" | "active" | "done">("active");
   // Inline editing state
   const [editingTaskId,   setEditingTaskId]   = useState<string | null>(null);
+  const [editPopoverPos,  setEditPopoverPos]  = useState<{ top: number; left: number } | null>(null);
   const [editContext,     setEditContext]      = useState<ItemContext>("work");
   const [editGoalId,      setEditGoalId]       = useState<string | null>(null);
   const [editPriority,    setEditPriority]     = useState<TaskPriority>("focus");
