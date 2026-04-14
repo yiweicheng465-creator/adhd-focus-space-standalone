@@ -631,7 +631,6 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
             <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6, minHeight: 0, paddingBottom: 4 }}>
               {chatHistory.length === 0 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 5, padding: "6px 0" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
                   {CHAT_SUGGESTIONS.map((s) => (
                     <button
                       key={s}
