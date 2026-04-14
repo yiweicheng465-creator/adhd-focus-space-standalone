@@ -18,6 +18,9 @@ import {
 import { toast } from "sonner";
 import { AlertTriangle, CheckCircle2, CloudDownload, CloudUpload, Download, HardDrive, RefreshCw, Upload } from "lucide-react";
 
+// Cache Google access token in memory — valid for ~1 hour
+let cachedToken: { token: string; expiresAt: number } | null = null;
+
 /* ── Design tokens ── */
 const M = {
   ink:    "oklch(0.28 0.040 320)",
@@ -65,26 +68,33 @@ function loadGapiScripts(): Promise<void> {
   });
 }
 
-/** Get an access token via Google Identity Services popup */
+/** Get an access token via Google Identity Services — reuses cached token if still valid */
 function getGoogleAccessToken(clientId: string): Promise<string> {
+  // Return cached token if still valid (with 2-min buffer)
+  if (cachedToken && cachedToken.expiresAt > Date.now() + 120_000) {
+    return Promise.resolve(cachedToken.token);
+  }
   return new Promise((resolve, reject) => {
     const tokenClient = (window as any).google.accounts.oauth2.initTokenClient({
       client_id: clientId,
       scope: GDRIVE_SCOPE,
       callback: (response: any) => {
         if (response.error) {
-          // access_denied or popup_closed_by_user both mean the user cancelled
           if (response.error === "access_denied" || response.error === "popup_closed_by_user") {
             reject(new Error("CANCELLED"));
           } else {
             reject(new Error(response.error));
           }
         } else {
+          // Cache token for ~55 minutes (Google tokens last 1 hour)
+          cachedToken = {
+            token: response.access_token as string,
+            expiresAt: Date.now() + 55 * 60 * 1000,
+          };
           resolve(response.access_token as string);
         }
       },
       error_callback: (err: any) => {
-        // GIS fires error_callback when the popup is closed without completing
         if (err?.type === "popup_closed" || err?.type === "popup_failed_to_open") {
           reject(new Error("CANCELLED"));
         } else {
@@ -92,7 +102,8 @@ function getGoogleAccessToken(clientId: string): Promise<string> {
         }
       },
     });
-    tokenClient.requestAccessToken({ prompt: "consent" });
+    // No prompt — Google will auto-use previous consent if already granted
+    tokenClient.requestAccessToken({ prompt: "" });
   });
 }
 
