@@ -293,7 +293,7 @@ export function AgentTracker({ agents, onAgentsChange, tasks, defaultContext = "
     <div className="flex flex-col" style={{ gap: 24 }}>
 
       {/* Context switcher — dynamic categories */}
-      <ContextSwitcher active={activeContext} onChange={setActiveContext} counts={counts} contexts={knownCategories} />
+      <ContextSwitcher active={activeContext} onChange={setActiveContext} counts={counts} contexts={knownCategories} label="FILTER BY TAG" />
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4" style={{ gap: 10 }}>
