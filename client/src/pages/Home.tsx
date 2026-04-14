@@ -189,7 +189,7 @@ const SUNSET_WIDE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410012773/WN
 export default function Home() {
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
   const { durations } = useTimer();
-  const { user, loading: authLoading, login } = useAuth();
+  const { user, loading: authLoading, setUser } = useAuth();
   const today = new Date().toDateString();
 
   // ── Name / personalisation (localStorage + auth user) ──
@@ -445,7 +445,7 @@ export default function Home() {
   }
 
   if (!user) {
-    return <LoginScreen onLogin={() => { window.location.reload(); }} login={login} />;
+    return <LoginScreen onLogin={(u) => setUser(u)} />;
   }
 
   return (

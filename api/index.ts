@@ -27,7 +27,7 @@ function getDb() {
 async function signToken(sub: string, name: string | null): Promise<string> {
   return new SignJWT({ sub, name })
     .setProtectedHeader({ alg: "HS256" })
-    .setExpirationTime("30d")
+    .setExpirationTime("365d")
     .sign(JWT_SECRET);
 }
 
@@ -310,6 +310,56 @@ export default async function handler(req: any, res: any) {
       if (err?.status === 401) { json(res, 401, { error: "Invalid OpenAI API key." }); return; }
       if (err?.status === 429) { json(res, 429, { error: "OpenAI rate limit. Try again soon." }); return; }
       json(res, 500, { error: "AI request failed: " + (err?.message ?? "unknown") });
+    }
+    return;
+  }
+
+  // ── GET /api/config — expose public config to frontend ─────────────────────
+  if (url === "/api/config") {
+    json(res, 200, {
+      googleClientId: process.env.GOOGLE_CLIENT_ID ?? "",
+    });
+    return;
+  }
+
+  // ── POST /api/auth/google — verify Google ID token, issue session ──────────
+  if (url === "/api/auth/google" && req.method === "POST") {
+    try {
+      const { credential } = await readBody(req);
+      if (!credential) { json(res, 400, { error: "credential required" }); return; }
+
+      // Verify Google ID token via Google's tokeninfo endpoint
+      const r = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`);
+      if (!r.ok) { json(res, 401, { error: "Invalid Google token" }); return; }
+      const gUser = await r.json() as {
+        sub: string; email: string; given_name?: string; name?: string;
+        aud: string; exp: string;
+      };
+
+      // Validate audience matches our client ID
+      const clientId = process.env.GOOGLE_CLIENT_ID;
+      if (clientId && gUser.aud !== clientId) {
+        json(res, 401, { error: "Token audience mismatch" }); return;
+      }
+
+      const email = gUser.email.toLowerCase();
+      const firstName = gUser.given_name ?? gUser.name?.split(" ")[0] ?? null;
+
+      const db = getDb();
+      const { rows } = await db.query("SELECT id, name FROM users WHERE id = $1", [email]);
+      if (rows.length === 0) {
+        await db.query("INSERT INTO users (id, name) VALUES ($1, $2)", [email, firstName]);
+      } else if (firstName && rows[0].name !== firstName) {
+        await db.query("UPDATE users SET name = $1 WHERE id = $2", [firstName, email]);
+      }
+      await db.end();
+
+      const token = await signToken(email, firstName);
+      setAuthCookie(res, token);
+      json(res, 200, { user: { id: email, name: firstName } });
+    } catch (err: any) {
+      console.error("Google auth error:", err);
+      json(res, 500, { error: "Google login failed: " + (err?.message ?? "unknown") });
     }
     return;
   }
