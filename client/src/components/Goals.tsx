@@ -6,7 +6,8 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { Plus, Trash2, TrendingUp, CheckCircle2, Circle } from "lucide-react";
+import { Plus, Sparkles, Trash2, TrendingUp, CheckCircle2, Circle } from "lucide-react";
+import { callAIStream } from "@/lib/ai";
 import { toast } from "sonner";
 import { nanoid } from "nanoid";
 import {
@@ -29,6 +30,8 @@ export interface Goal {
   progress: number;
   context: ItemContext;
   createdAt: Date;
+  archived?: boolean;
+  archivedAt?: string; // ISO string
 }
 
 const M = {
@@ -69,6 +72,7 @@ interface GoalsProps {
 
 export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategories, onDeleteCategory, tasks = [], onTasksChange }: GoalsProps) {
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
+  const [showLifeCoach, setShowLifeCoach] = useState(false);
   const [dragOverGoalId, setDragOverGoalId] = useState<string | null>(null);
   const [newGoal,       setNewGoal]       = useState("");
   const [newGoalCtx,    setNewGoalCtx]    = useState<ItemContext>("work");
@@ -106,6 +110,9 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
   };
 
   const deleteGoal = (id: string) => onGoalsChange(goals.filter((g) => g.id !== id));
+  const archiveGoal = (id: string) => onGoalsChange(goals.map(g =>
+    g.id === id ? { ...g, archived: true, archivedAt: new Date().toISOString() } : g
+  ));
 
   const avgProgress = visibleGoals.length > 0
     ? Math.round(visibleGoals.reduce((sum, g) => sum + g.progress, 0) / visibleGoals.length) : 0;
@@ -119,6 +126,22 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
     <div className="flex flex-col gap-4 h-full" style={{ position: "relative" }}>
       {/* Cat sticker: salmon sitting cat — bottom-right corner */}
       <img src={CAT_SALMON} alt="" aria-hidden="true" style={{ position: "absolute", bottom: 0, right: 0, width: 70, opacity: 0.38, pointerEvents: "none", zIndex: 5 }} />
+      {/* Life Coach AI button — corner */}
+      <button
+        onClick={() => setShowLifeCoach(true)}
+        style={{
+          position: "absolute", top: 0, right: 0, zIndex: 10,
+          display: "flex", alignItems: "center", gap: 4,
+          background: M.coralBg, border: `1px solid ${M.coralBdr}`,
+          borderRadius: "0 0 0 8px", padding: "5px 10px",
+          fontFamily: "'Space Mono', monospace", fontSize: "0.50rem",
+          letterSpacing: "0.08em", color: M.coral, cursor: "pointer",
+        }}
+      >
+        <Sparkles style={{ width: 10, height: 10 }} />
+        🧭 LIFE COACH
+      </button>
+      {showLifeCoach && <LifeCoachModal onClose={() => setShowLifeCoach(false)} goals={goals} />}
       {/* Overall progress */}
       {visibleGoals.length > 0 && (
         <div className="p-4" style={{ background: M.coralBg, border: `1px solid ${M.coralBdr}` }}>
@@ -189,6 +212,18 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
 
       <ContextSwitcher active={activeContext} onChange={setActiveContext} counts={counts} contexts={knownCategories} onDeleteContext={onDeleteCategory} label="FILTER BY TAG" />
 
+      {/* Archive toggle + stats */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.52rem", color: M.muted, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+          {showArchived ? `Archived (${archivedGoals.length})` : `Active (${activeGoals.length})`}
+          {archivedGoals.length > 0 && !showArchived && <span> · {archivedGoals.length} archived</span>}
+        </span>
+        {archivedGoals.length > 0 && (
+          <button className="m-btn-link" style={{ fontSize: "0.55rem" }} onClick={() => setShowArchived(v => !v)}>
+            {showArchived ? "← Back" : `Archived (${archivedGoals.length})`}
+          </button>
+        )}
+      </div>
       {/* Goals list */}
       <div className="flex-1 overflow-y-auto space-y-3 pr-1">
         {visibleGoals.length === 0 && (
@@ -257,6 +292,25 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
                     allContexts={knownCategories}
                     onChange={(ctx) => onGoalsChange(goals.map(g => g.id === goal.id ? { ...g, context: ctx as import("./ContextSwitcher").ItemContext } : g))}
                   />
+                  {!goal.archived ? (
+                    <button
+                      onClick={() => archiveGoal(goal.id)}
+                      title="Archive goal"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{ color: M.muted }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><rect x="2" y="5" width="16" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><path d="M2 8h16M7 11h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => onGoalsChange(goals.map(g => g.id === goal.id ? { ...g, archived: false, archivedAt: undefined } : g))}
+                      title="Unarchive"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{ color: M.sage, fontSize: "0.55rem", fontFamily: "'Space Mono', monospace" }}
+                    >
+                      Restore
+                    </button>
+                  )}
                   <button
                     onClick={() => deleteGoal(goal.id)}
                     className="opacity-0 group-hover:opacity-100 transition-opacity"
@@ -387,6 +441,144 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+/* ── Life Coach AI Modal ──────────────────────────────────────────────────── */
+function LifeCoachModal({ onClose, goals }: { onClose: () => void; goals: Goal[] }) {
+  const [mode, setMode] = useState<"pick" | "chat">("pick");
+  const [coachType, setCoachType] = useState<"life" | "career">("life");
+  const [messages, setMessages] = useState<{ role: "user" | "coach"; text: string }[]>([]);
+  const [input, setInput] = useState("");
+  const [streaming, setStreaming] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  const goalSummary = goals.filter(g => !g.archived).map(g => `"${g.text}" (${g.progress}%)`).join(", ") || "none yet";
+
+  const SYSTEM_PROMPTS = {
+    life: `You are a warm, wise life coach helping with personal growth and life planning. 
+The user's current goals: ${goalSummary}.
+Guide them through: understanding their values, identifying what matters most, and building a 1/3/10 year vision.
+Ask one question at a time. Be thoughtful, specific, and encouraging. Keep responses concise (2-3 sentences + question).`,
+    career: `You are an expert career coach helping with professional growth and planning.
+The user's current goals: ${goalSummary}.
+Guide them to clarify career direction, identify skill gaps, and create an actionable roadmap.
+Ask one question at a time. Be direct, practical, and encouraging. Keep responses concise (2-3 sentences + question).`,
+  };
+
+  const STARTERS = {
+    life: "Let's explore what matters most to you. What area of your life feels most out of alignment with where you want to be — relationships, health, purpose, or something else?",
+    career: "Let's map out your career direction. What does success look like to you in 3 years — are you looking to go deeper in your current field, pivot to something new, or build something of your own?",
+  };
+
+  const startChat = async (type: "life" | "career") => {
+    setCoachType(type);
+    setMode("chat");
+    const starter = STARTERS[type];
+    setMessages([{ role: "coach", text: starter }]);
+  };
+
+  const send = async () => {
+    if (!input.trim() || streaming) return;
+    const userMsg = input.trim();
+    setInput("");
+    const newMsgs = [...messages, { role: "user" as const, text: userMsg }];
+    setMessages(newMsgs);
+    setStreaming(true);
+
+    const history = newMsgs.map(m => `${m.role === "user" ? "User" : "Coach"}: ${m.text}`).join("\n");
+    setMessages(prev => [...prev, { role: "coach", text: "" }]);
+
+    try {
+      await callAIStream(
+        SYSTEM_PROMPTS[coachType],
+        `Conversation so far:\n${history}\n\nContinue as the coach.`,
+        (delta) => setMessages(prev => {
+          const updated = [...prev];
+          updated[updated.length - 1] = { role: "coach", text: updated[updated.length - 1].text + delta };
+          return updated;
+        }),
+        () => setStreaming(false)
+      );
+    } catch { setStreaming(false); }
+  };
+
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(140,40,90,0.2)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+      onClick={onClose}>
+      <div style={{ background: "#fdf4f8", borderRadius: 16, width: "min(480px, 94vw)", height: "min(560px, 90vh)", display: "flex", flexDirection: "column", boxShadow: "0 24px 60px rgba(140,40,90,0.25)", overflow: "hidden" }}
+        onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div style={{ padding: "12px 16px", borderBottom: "1px solid oklch(0.82 0.050 340 / 0.5)", background: "rgba(249,214,232,0.5)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: "1.1rem" }}>🧭</span>
+            <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "1rem", fontWeight: 700, color: "oklch(0.28 0.040 320)", fontStyle: "italic" }}>
+              {mode === "pick" ? "Life Coach AI" : coachType === "life" ? "Life Planning" : "Career Coaching"}
+            </span>
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1rem", color: "oklch(0.52 0.040 330)" }}>×</button>
+        </div>
+
+        {mode === "pick" ? (
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 20, padding: 24 }}>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.90rem", color: "oklch(0.45 0.040 330)", textAlign: "center", lineHeight: 1.6, maxWidth: 340 }}>
+              AI will guide you through building your life framework — values, vision, and an actionable roadmap.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
+              <button onClick={() => startChat("life")} style={{ padding: "14px 20px", borderRadius: 10, background: "oklch(0.58 0.18 340 / 0.08)", border: "1.5px solid oklch(0.58 0.18 340 / 0.30)", cursor: "pointer", textAlign: "left", display: "flex", gap: 12, alignItems: "center" }}>
+                <span style={{ fontSize: "1.4rem" }}>🌱</span>
+                <div>
+                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 700, color: "oklch(0.28 0.040 320)", margin: 0, fontSize: "0.90rem" }}>Life Planning</p>
+                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.75rem", color: "oklch(0.52 0.040 330)", margin: 0 }}>Values, purpose, 1/3/10 year vision</p>
+                </div>
+              </button>
+              <button onClick={() => startChat("career")} style={{ padding: "14px 20px", borderRadius: 10, background: "oklch(0.52 0.10 168 / 0.08)", border: "1.5px solid oklch(0.52 0.10 168 / 0.30)", cursor: "pointer", textAlign: "left", display: "flex", gap: 12, alignItems: "center" }}>
+                <span style={{ fontSize: "1.4rem" }}>🚀</span>
+                <div>
+                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 700, color: "oklch(0.28 0.040 320)", margin: 0, fontSize: "0.90rem" }}>Career Coaching</p>
+                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.75rem", color: "oklch(0.52 0.040 330)", margin: 0 }}>Direction, roadmap, skill gaps</p>
+                </div>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Messages */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+              {messages.map((m, i) => (
+                <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
+                  <div style={{
+                    maxWidth: "85%", padding: "8px 12px", borderRadius: m.role === "user" ? "12px 12px 2px 12px" : "12px 12px 12px 2px",
+                    background: m.role === "user" ? "oklch(0.58 0.18 340)" : "white",
+                    color: m.role === "user" ? "white" : "oklch(0.28 0.040 320)",
+                    fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", lineHeight: 1.6,
+                    border: m.role === "coach" ? "1px solid oklch(0.82 0.050 340 / 0.5)" : "none",
+                  }}>
+                    {m.text || (streaming && i === messages.length - 1 ? "▊" : "")}
+                  </div>
+                </div>
+              ))}
+              <div ref={bottomRef} />
+            </div>
+            {/* Input */}
+            <div style={{ padding: "10px 14px", borderTop: "1px solid oklch(0.82 0.050 340 / 0.5)", display: "flex", gap: 8 }}>
+              <input
+                value={input} onChange={e => setInput(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+                placeholder="Share your thoughts…"
+                autoComplete="off"
+                style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: "1px solid oklch(0.82 0.050 340)", background: "white", fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", outline: "none" }}
+              />
+              <button onClick={send} disabled={streaming || !input.trim()} style={{ padding: "8px 14px", borderRadius: 8, background: input.trim() ? "oklch(0.58 0.18 340)" : "transparent", border: `1px solid ${input.trim() ? "oklch(0.58 0.18 340)" : "oklch(0.82 0.050 340)"}`, color: input.trim() ? "white" : "oklch(0.52 0.040 330)", cursor: "pointer" }}>
+                →
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
