@@ -206,13 +206,35 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
 
         {visibleGoals.map((goal) => {
           const done = goal.progress === 100;
+          const ctxCfg = getContextConfig(goal.context);
+          // Derive a soft accent color from the context badge color, falling back to coral
+          const accentColor = goal.context === "work"
+            ? M.coral
+            : goal.context === "personal"
+            ? M.sage
+            : ctxCfg.color ?? M.coral;
+
+          // Progress bar gradient: coral at 0% → sage at 100%
+          const progressGradient = done
+            ? `linear-gradient(90deg, ${M.sage}, oklch(0.60 0.12 168))`
+            : `linear-gradient(90deg, ${M.coral}, oklch(0.55 0.13 200))`;
+
+          // Card background: subtle tint based on done state or context
+          const cardBg = done
+            ? "linear-gradient(135deg, oklch(0.975 0.014 168), oklch(0.96 0.022 168 / 0.6))"
+            : `linear-gradient(135deg, oklch(0.985 0.010 355), oklch(0.972 0.018 340))`;
+
           return (
             <div
               key={goal.id}
-              className="group p-4 transition-all relative overflow-hidden"
+              className="group transition-all relative overflow-hidden"
               style={{
-                background: done ? M.sageBg : M.card,
-                border: dragOverGoalId === goal.id ? `2px dashed ${M.coral}` : `1px solid ${done ? M.sageBdr : M.border}`,
+                background: cardBg,
+                border: dragOverGoalId === goal.id
+                  ? `2px dashed ${M.coral}`
+                  : `1px solid ${done ? M.sageBdr : M.border}`,
+                borderRadius: 14,
+                boxShadow: "0 2px 8px oklch(0.28 0.04 320 / 0.06), 0 1px 2px oklch(0.28 0.04 320 / 0.04)",
               }}
               onDragOver={(e) => { e.preventDefault(); setDragOverGoalId(goal.id); }}
               onDragLeave={(e) => {
@@ -229,161 +251,264 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
                 setDraggingTaskId(null);
               }}
               onMouseEnter={(e) => {
-                if (!done && dragOverGoalId !== goal.id) (e.currentTarget as HTMLDivElement).style.borderColor = M.coralBdr;
+                const el = e.currentTarget as HTMLDivElement;
+                el.style.boxShadow = "0 6px 20px oklch(0.28 0.04 320 / 0.12), 0 2px 6px oklch(0.28 0.04 320 / 0.08)";
+                if (!done && dragOverGoalId !== goal.id) el.style.borderColor = M.coralBdr;
               }}
               onMouseLeave={(e) => {
-                if (dragOverGoalId !== goal.id) (e.currentTarget as HTMLDivElement).style.borderColor = done ? M.sageBdr : M.border;
+                const el = e.currentTarget as HTMLDivElement;
+                el.style.boxShadow = "0 2px 8px oklch(0.28 0.04 320 / 0.06), 0 1px 2px oklch(0.28 0.04 320 / 0.04)";
+                if (dragOverGoalId !== goal.id) el.style.borderColor = done ? M.sageBdr : M.border;
               }}
             >
+              {/* Top accent bar */}
+              <div
+                style={{
+                  height: 4,
+                  background: done
+                    ? `linear-gradient(90deg, ${M.sage}, oklch(0.62 0.09 168))`
+                    : `linear-gradient(90deg, ${accentColor}, oklch(0.55 0.13 200))`,
+                  borderRadius: "14px 14px 0 0",
+                  opacity: done ? 0.7 : 1,
+                }}
+              />
 
-
-              <div className="flex items-start justify-between gap-2 mb-3">
-                <div className="flex items-start gap-2 flex-1 min-w-0">
-                  {/* Simple flag icon */}
-                  <svg width="14" height="14" viewBox="0 0 20 20" fill="none" className="mt-0.5 shrink-0">
-                    <line x1="5" y1="2" x2="5" y2="18" stroke={done ? M.sage : M.coral} strokeWidth="1.8" strokeLinecap="round" />
-                    <path d="M5 2 L15 5.5 L5 9 Z" fill={done ? M.sage : M.coral} opacity="0.85" />
-                  </svg>
-                  <p
-                    className={cn("text-sm font-medium leading-snug", done && "line-through")}
-                    style={{ color: done ? M.muted : M.ink, fontFamily: "'DM Sans', sans-serif" }}
-                  >
-                    {goal.text}
-                  </p>
+              <div className="p-4">
+                {/* Header row: flag + text + badge + delete */}
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                    {/* Flag icon */}
+                    <svg width="15" height="15" viewBox="0 0 20 20" fill="none" className="mt-0.5 shrink-0">
+                      <line x1="5" y1="2" x2="5" y2="18" stroke={done ? M.sage : accentColor} strokeWidth="1.8" strokeLinecap="round" />
+                      <path d="M5 2 L15 5.5 L5 9 Z" fill={done ? M.sage : accentColor} opacity="0.85" />
+                    </svg>
+                    <p
+                      className={cn("leading-snug", done && "line-through")}
+                      style={{
+                        fontSize: "0.95rem",
+                        fontWeight: 600,
+                        color: done ? M.muted : M.ink,
+                        fontFamily: "'DM Sans', sans-serif",
+                        letterSpacing: "-0.01em",
+                        opacity: done ? 0.65 : 1,
+                      }}
+                    >
+                      {goal.text}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <ClickableContextBadge
+                      context={goal.context}
+                      allContexts={knownCategories}
+                      onChange={(ctx) => onGoalsChange(goals.map(g => g.id === goal.id ? { ...g, context: ctx as import("./ContextSwitcher").ItemContext } : g))}
+                    />
+                    <button
+                      onClick={() => deleteGoal(goal.id)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full"
+                      style={{ color: M.muted }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-<ClickableContextBadge
-                    context={goal.context}
-                    allContexts={knownCategories}
-                    onChange={(ctx) => onGoalsChange(goals.map(g => g.id === goal.id ? { ...g, context: ctx as import("./ContextSwitcher").ItemContext } : g))}
-                  />
-                  <button
-                    onClick={() => deleteGoal(goal.id)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{ color: M.muted }}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
 
-              {/* Progress bar */}
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-1.5" style={{ background: "oklch(0.88 0.014 75)" }}>
+                {/* Progress row: bar + large % number */}
+                <div className="flex items-center gap-3 mb-2.5">
+                  {/* Taller rounded progress bar */}
                   <div
-                    className="h-full transition-all duration-500"
-                    style={{ width: `${goal.progress}%`, background: done ? M.sage : M.coral }}
-                  />
-                </div>
-                {/* Right side: show ACHIEVED stamp when done, otherwise show % */}
-                {done ? (
-                  <div
-                    className="flex items-center gap-1 px-2 py-0.5 shrink-0"
+                    className="flex-1"
                     style={{
-                      background: M.sageBg,
-                      border: `1px solid ${M.sageBdr}`,
-                      borderRadius: 0,
-                      transform: "rotate(-1deg)",
+                      height: 8,
+                      background: "oklch(0.90 0.010 340 / 0.5)",
+                      borderRadius: 99,
+                      overflow: "hidden",
                     }}
                   >
-                    <svg width="9" height="9" viewBox="0 0 12 12" fill="none">
-                      <path d="M2 6l3 3 5-5" stroke={M.sage} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    <span style={{ fontSize: "0.58rem", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: M.sage, fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap" }}>Achieved</span>
+                    <div
+                      className="h-full transition-all duration-500"
+                      style={{
+                        width: `${goal.progress}%`,
+                        background: progressGradient,
+                        borderRadius: 99,
+                      }}
+                    />
                   </div>
-                ) : (
-                  <span className="text-xs font-medium w-8 text-right shrink-0" style={{ color: M.muted, fontFamily: "'DM Sans', sans-serif" }}>
-                    {goal.progress}%
-                  </span>
-                )}
-              </div>
 
-              {/* Progress buttons */}
-              <div className="flex items-center gap-2 mt-2">
-                {[10, 25, 50].map((delta) => (
-                  <button
-                    key={delta}
-                    onClick={() => updateProgress(goal.id, delta)}
-                    disabled={done}
-                    className="m-chip disabled:opacity-30 disabled:cursor-not-allowed"
-                  >
-                    +{delta}%
-                  </button>
-                ))}
-                <button
-                  onClick={() => updateProgress(goal.id, -10)}
-                  disabled={goal.progress <= 0}
-                  className="m-chip disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  −10%
-                </button>
-              </div>
-
-
-              {/* Linked tasks */}
-              {(() => {
-                const linked = tasks.filter((t) => t.goalId === goal.id);
-                if (linked.length === 0) return null;
-                return (
-                  <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${M.border}` }}>
-                    <p style={{ fontSize: "0.58rem", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.10em", textTransform: "uppercase", color: M.muted, marginBottom: 6 }}>Contributing tasks</p>
-                    <div className="flex flex-col gap-1">
-                      {linked.map((t) => (
-                        <div
-                          key={t.id}
-                          draggable
-                          onDragStart={(e) => {
-                            setDraggingTaskId(t.id);
-                            e.dataTransfer.setData("taskId", t.id);
-                            e.dataTransfer.effectAllowed = "move";
-                          }}
-                          onDragEnd={() => { setDraggingTaskId(null); setDragOverGoalId(null); }}
-                          className="flex items-center gap-2 px-2 py-1.5 transition-all"
-                          style={{
-                            background: t.done ? "oklch(0.97 0.006 78)" : "oklch(0.975 0.010 78)",
-                            border: `1px solid ${t.done ? M.sageBdr : M.border}`,
-                            opacity: t.done ? 0.7 : 1,
-                            cursor: "grab",
-                          }}
-                        >
-                          <button
-                            onClick={() => {
-                              if (!onTasksChange) return;
-                              const updated = tasks.map((task) =>
-                                task.id === t.id ? { ...task, done: !task.done } : task
-                              );
-                              onTasksChange(updated);
-                            }}
-                            className="shrink-0 transition-all hover:scale-110"
-                            style={{ color: t.done ? M.sage : "oklch(0.80 0.012 75)" }}
-                          >
-                            {t.done
-                              ? <CheckCircle2 className="w-3.5 h-3.5" />
-                              : <Circle className="w-3.5 h-3.5" />}
-                          </button>
-                          <span
-                            style={{
-                              fontSize: "0.75rem",
-                              fontFamily: "'DM Sans', sans-serif",
-                              color: t.done ? M.muted : M.ink,
-                              textDecoration: t.done ? "line-through" : "none",
-                              flex: 1,
-                              minWidth: 0,
-                            }}
-                          >
-                            {t.text}
-                          </span>
-                          {t.done && (() => {
-                            const totalLinked = tasks.filter((task) => task.goalId === goal.id).length;
-                            const pct = totalLinked > 0 ? Math.round(100 / totalLinked) : 10;
-                            return <span style={{ fontSize: "0.58rem", color: M.sage, fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.06em" }}>+{pct}%</span>;
-                          })()}
-                        </div>
-                      ))}
+                  {/* Right side: ACHIEVED pill or large % */}
+                  {done ? (
+                    <div
+                      className="flex items-center gap-1 px-2.5 py-1 shrink-0"
+                      style={{
+                        background: M.sageBg,
+                        border: `1px solid ${M.sageBdr}`,
+                        borderRadius: 99,
+                      }}
+                    >
+                      <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                        <path d="M2 6l3 3 5-5" stroke={M.sage} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      <span style={{ fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: M.sage, fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap" }}>
+                        Achieved
+                      </span>
                     </div>
-                  </div>
-                );
-              })()}
+                  ) : (
+                    <span
+                      className="shrink-0 tabular-nums"
+                      style={{
+                        fontSize: "1.15rem",
+                        fontWeight: 700,
+                        color: goal.progress > 0 ? accentColor : M.muted,
+                        fontFamily: "'DM Sans', sans-serif",
+                        minWidth: "2.8rem",
+                        textAlign: "right",
+                        letterSpacing: "-0.02em",
+                        opacity: goal.progress === 0 ? 0.45 : 1,
+                      }}
+                    >
+                      {goal.progress}%
+                    </span>
+                  )}
+                </div>
+
+                {/* Progress buttons */}
+                <div className="flex items-center gap-1.5">
+                  {[10, 25, 50].map((delta) => (
+                    <button
+                      key={delta}
+                      onClick={() => updateProgress(goal.id, delta)}
+                      disabled={done}
+                      className="disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                      style={{
+                        fontSize: "0.68rem",
+                        fontWeight: 600,
+                        fontFamily: "'DM Sans', sans-serif",
+                        letterSpacing: "0.04em",
+                        padding: "2px 9px",
+                        borderRadius: 99,
+                        border: `1px solid ${M.coralBdr}`,
+                        background: M.coralBg,
+                        color: M.coral,
+                        cursor: "pointer",
+                      }}
+                    >
+                      +{delta}%
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => updateProgress(goal.id, -10)}
+                    disabled={goal.progress <= 0}
+                    className="disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    style={{
+                      fontSize: "0.68rem",
+                      fontWeight: 600,
+                      fontFamily: "'DM Sans', sans-serif",
+                      letterSpacing: "0.04em",
+                      padding: "2px 9px",
+                      borderRadius: 99,
+                      border: `1px solid ${M.border}`,
+                      background: "oklch(0.94 0.010 340 / 0.4)",
+                      color: M.muted,
+                      cursor: "pointer",
+                    }}
+                  >
+                    −10%
+                  </button>
+                </div>
+
+                {/* Linked tasks */}
+                {(() => {
+                  const linked = tasks.filter((t) => t.goalId === goal.id);
+                  if (linked.length === 0) return null;
+                  return (
+                    <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${M.border}` }}>
+                      <p style={{ fontSize: "0.58rem", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.10em", textTransform: "uppercase", color: M.muted, marginBottom: 6 }}>
+                        Contributing tasks
+                      </p>
+                      <div className="flex flex-col gap-1.5">
+                        {linked.map((t) => (
+                          <div
+                            key={t.id}
+                            draggable
+                            onDragStart={(e) => {
+                              setDraggingTaskId(t.id);
+                              e.dataTransfer.setData("taskId", t.id);
+                              e.dataTransfer.effectAllowed = "move";
+                            }}
+                            onDragEnd={() => { setDraggingTaskId(null); setDragOverGoalId(null); }}
+                            className="flex items-center gap-2 px-2.5 py-2 transition-all"
+                            style={{
+                              background: t.done ? "oklch(0.97 0.008 168 / 0.5)" : "oklch(0.985 0.008 355)",
+                              border: `1px solid ${t.done ? M.sageBdr : M.border}`,
+                              borderRadius: 8,
+                              opacity: t.done ? 0.72 : 1,
+                              cursor: "grab",
+                            }}
+                          >
+                            {/* Drag handle dots */}
+                            <svg width="8" height="12" viewBox="0 0 8 12" fill="none" className="shrink-0 opacity-30">
+                              <circle cx="2" cy="2.5" r="1.2" fill={M.muted} />
+                              <circle cx="6" cy="2.5" r="1.2" fill={M.muted} />
+                              <circle cx="2" cy="6" r="1.2" fill={M.muted} />
+                              <circle cx="6" cy="6" r="1.2" fill={M.muted} />
+                              <circle cx="2" cy="9.5" r="1.2" fill={M.muted} />
+                              <circle cx="6" cy="9.5" r="1.2" fill={M.muted} />
+                            </svg>
+                            <button
+                              onClick={() => {
+                                if (!onTasksChange) return;
+                                const updated = tasks.map((task) =>
+                                  task.id === t.id ? { ...task, done: !task.done } : task
+                                );
+                                onTasksChange(updated);
+                              }}
+                              className="shrink-0 transition-all hover:scale-110"
+                              style={{ color: t.done ? M.sage : "oklch(0.80 0.012 75)" }}
+                            >
+                              {t.done
+                                ? <CheckCircle2 className="w-3.5 h-3.5" />
+                                : <Circle className="w-3.5 h-3.5" />}
+                            </button>
+                            <span
+                              style={{
+                                fontSize: "0.75rem",
+                                fontFamily: "'DM Sans', sans-serif",
+                                color: t.done ? M.muted : M.ink,
+                                textDecoration: t.done ? "line-through" : "none",
+                                flex: 1,
+                                minWidth: 0,
+                              }}
+                            >
+                              {t.text}
+                            </span>
+                            {t.done && (() => {
+                              const totalLinked = tasks.filter((task) => task.goalId === goal.id).length;
+                              const pct = totalLinked > 0 ? Math.round(100 / totalLinked) : 10;
+                              return (
+                                <span
+                                  style={{
+                                    fontSize: "0.58rem",
+                                    fontWeight: 600,
+                                    color: M.sage,
+                                    fontFamily: "'DM Sans', sans-serif",
+                                    letterSpacing: "0.06em",
+                                    background: M.sageBg,
+                                    border: `1px solid ${M.sageBdr}`,
+                                    borderRadius: 99,
+                                    padding: "1px 6px",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  +{pct}%
+                                </span>
+                              );
+                            })()}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
             </div>
           );
         })}
