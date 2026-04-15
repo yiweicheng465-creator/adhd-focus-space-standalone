@@ -86,31 +86,31 @@ const WIN_CATS = [
 
 /* ── Korean aesthetic blob mood faces (matching Home.tsx) ── */
 const MOODS = [
-  { value: 1, label: "Drained", labelKr: "피곤해", fill: "#8BBDD9", stroke: "#2A5A7A", shadow: "rgba(139,189,217,0.4)" },
-  { value: 2, label: "Low",     labelKr: "별로야", fill: "#B5A8D0", stroke: "#4A3A7A", shadow: "rgba(181,168,208,0.4)" },
-  { value: 3, label: "Okay",    labelKr: "괜찮아", fill: "#C4B8CC", stroke: "#4A3A5A", shadow: "rgba(196,184,204,0.4)" },
-  { value: 4, label: "Good",    labelKr: "좋아!",  fill: "#F0A8C0", stroke: "#7A2050", shadow: "rgba(240,168,192,0.4)" },
-  { value: 5, label: "Glowing", labelKr: "최고!",  fill: "#F4A0B0", stroke: "#7A1840", shadow: "rgba(244,160,176,0.4)" },
+  { value: 1, label: "Drained", labelKr: "피곤해", fill: "#B8CEE8", stroke: "#3A5878", shadow: "rgba(184,206,232,0.35)" },
+  { value: 2, label: "Low",     labelKr: "별로야", fill: "#C4BAE4", stroke: "#4A3A80", shadow: "rgba(196,186,228,0.35)" },
+  { value: 3, label: "Okay",    labelKr: "괜찮아", fill: "#D4C8E8", stroke: "#5A4878", shadow: "rgba(212,200,232,0.35)" },
+  { value: 4, label: "Good",    labelKr: "좋아!",  fill: "#DEC8E8", stroke: "#6A4880", shadow: "rgba(222,200,232,0.35)" },
+  { value: 5, label: "Glowing", labelKr: "최고!",  fill: "#E8C8E4", stroke: "#784870", shadow: "rgba(232,200,228,0.35)" },
 ];
 function FaceDrained({ active }: { active: boolean }) {
-  const bg = active ? "#8BBDD9" : "#B5D4E8";
+  const bg = active ? "#B8CEE8" : "#CCE0F0";
   return <svg viewBox="0 0 80 80" fill="none" width="100%" height="100%"><path d="M40 14C52 12 66 18 70 30C74 42 70 60 58 68C46 76 26 76 16 64C6 52 8 30 18 20C24 14 32 16 40 14Z" fill={bg}/><ellipse cx="30" cy="38" rx="4" ry="5" fill="#2A5A7A" opacity="0.7"/><ellipse cx="50" cy="38" rx="4" ry="5" fill="#2A5A7A" opacity="0.7"/><ellipse cx="31" cy="36" rx="1.5" ry="2" fill="white" opacity="0.6"/><ellipse cx="51" cy="36" rx="1.5" ry="2" fill="white" opacity="0.6"/><path d="M33 52 Q40 48 47 52" stroke="#2A5A7A" strokeWidth="2" strokeLinecap="round" fill="none"/><ellipse cx="54.5" cy="52" rx="2" ry="3" fill="#A8D4F0" opacity="0.7"/></svg>;
 }
 function FaceLow({ active }: { active: boolean }) {
-  const bg = active ? "#B5A8D0" : "#CFC4E4";
+  const bg = active ? "#C4BAE4" : "#D8D0F0";
   return <svg viewBox="0 0 80 80" fill="none" width="100%" height="100%"><path d="M38 13C50 10 66 17 70 30C74 43 68 62 56 69C44 76 24 75 14 63C4 51 6 28 18 19C24 14 30 16 38 13Z" fill={bg}/><path d="M26 32 Q29 28 33 30" stroke="#4A3A7A" strokeWidth="1.8" strokeLinecap="round" fill="none"/><path d="M47 30 Q51 28 54 32" stroke="#4A3A7A" strokeWidth="1.8" strokeLinecap="round" fill="none"/><ellipse cx="30" cy="38" rx="3.5" ry="4" fill="#4A3A7A" opacity="0.65"/><ellipse cx="50" cy="38" rx="3.5" ry="4" fill="#4A3A7A" opacity="0.65"/><ellipse cx="31" cy="36.5" rx="1.2" ry="1.5" fill="white" opacity="0.55"/><ellipse cx="51" cy="36.5" rx="1.2" ry="1.5" fill="white" opacity="0.55"/><path d="M31 52 Q40 48 49 52" stroke="#4A3A7A" strokeWidth="2" strokeLinecap="round" fill="none"/></svg>;
 }
 function FaceOkay({ active }: { active: boolean }) {
-  const bg = active ? "#C4B8CC" : "#D8CEDC";
+  const bg = active ? "#D4C8E8" : "#E4DCEE";
   return <svg viewBox="0 0 80 80" fill="none" width="100%" height="100%"><path d="M40 13C53 11 67 19 70 32C73 45 67 63 54 70C41 77 22 75 13 62C4 49 8 28 20 19C27 14 33 15 40 13Z" fill={bg}/><ellipse cx="30" cy="37" rx="3.5" ry="4" fill="#4A3A5A" opacity="0.65"/><ellipse cx="50" cy="37" rx="3.5" ry="4" fill="#4A3A5A" opacity="0.65"/><ellipse cx="31" cy="35.5" rx="1.2" ry="1.5" fill="white" opacity="0.55"/><ellipse cx="51" cy="35.5" rx="1.2" ry="1.5" fill="white" opacity="0.55"/><line x1="32" y1="51" x2="48" y2="51" stroke="#4A3A5A" strokeWidth="2" strokeLinecap="round"/><ellipse cx="23" cy="46" rx="5" ry="3.5" fill="#E8B0C8" opacity="0.3"/><ellipse cx="57" cy="46" rx="5" ry="3.5" fill="#E8B0C8" opacity="0.3"/></svg>;
 }
 function FaceGood({ active }: { active: boolean }) {
-  const bg = active ? "#F0A8C0" : "#F8C4D4";
+  const bg = active ? "#DEC8E8" : "#EAD8F0";
   return <svg viewBox="0 0 80 80" fill="none" width="100%" height="100%"><path d="M40 12C54 10 68 19 71 33C74 47 67 65 53 71C39 77 20 74 11 61C2 48 6 26 19 18C26 13 33 14 40 12Z" fill={bg}/><circle cx="29" cy="36" r="5" fill="#7A2050"/><circle cx="51" cy="36" r="5" fill="#7A2050"/><circle cx="30.5" cy="34.5" r="2" fill="white"/><circle cx="52.5" cy="34.5" r="2" fill="white"/><path d="M27 50 Q40 62 53 50" stroke="#7A2050" strokeWidth="2.5" strokeLinecap="round" fill="none"/><path d="M27 50 Q40 60 53 50 Q40 53 27 50Z" fill="#7A2050" opacity="0.1"/><ellipse cx="21" cy="47" rx="6" ry="4" fill="#F07090" opacity="0.35"/><ellipse cx="59" cy="47" rx="6" ry="4" fill="#F07090" opacity="0.35"/></svg>;
 }
 
 function FaceGlowing({ active }: { active: boolean }) {
-  const bg = active ? "#F4A0B0" : "#FAC0CC";
+  const bg = active ? "#E8C8E4" : "#F0D8EC";
   return <svg viewBox="0 0 80 80" fill="none" width="100%" height="100%"><path d="M40 11C55 9 70 20 72 35C74 50 66 67 51 73C36 79 17 74 9 59C1 44 6 22 20 15C27 11 33 13 40 11Z" fill={bg}/><path d="M24 38 Q29 31 34 38" stroke="#7A1840" strokeWidth="2.8" strokeLinecap="round" fill="none"/><path d="M46 38 Q51 31 56 38" stroke="#7A1840" strokeWidth="2.8" strokeLinecap="round" fill="none"/><path d="M28 51 Q40 60 52 51" stroke="#7A1840" strokeWidth="2.5" strokeLinecap="round" fill="none"/><ellipse cx="22" cy="48" rx="6" ry="4" fill="#F07090" opacity="0.3"/><ellipse cx="58" cy="48" rx="6" ry="4" fill="#F07090" opacity="0.3"/></svg>;
 }
 

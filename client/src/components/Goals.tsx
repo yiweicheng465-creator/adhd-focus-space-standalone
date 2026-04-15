@@ -119,8 +119,6 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
     <div className="flex flex-col gap-4 h-full" style={{ position: "relative" }}>
       {/* Cat sticker: salmon sitting cat — bottom-right corner */}
       <img src={CAT_SALMON} alt="" aria-hidden="true" style={{ position: "absolute", bottom: 0, right: 0, width: 70, opacity: 0.38, pointerEvents: "none", zIndex: 5 }} />
-      <ContextSwitcher active={activeContext} onChange={setActiveContext} counts={counts} contexts={knownCategories} onDeleteContext={onDeleteCategory} label="FILTER TASKS BY TAG" />
-
       {/* Overall progress */}
       {visibleGoals.length > 0 && (
         <div className="p-4" style={{ background: M.coralBg, border: `1px solid ${M.coralBdr}` }}>
@@ -186,8 +184,10 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
           </div>
         )}
 
-        {/* Category is set via #hashtag in the input or the ContextSwitcher tabs above */}
+        {/* Category is set via #hashtag in the input */}
       </div>
+
+      <ContextSwitcher active={activeContext} onChange={setActiveContext} counts={counts} contexts={knownCategories} onDeleteContext={onDeleteCategory} label="FILTER BY TAG" />
 
       {/* Goals list */}
       <div className="flex-1 overflow-y-auto space-y-3 pr-1">
