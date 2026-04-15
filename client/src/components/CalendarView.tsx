@@ -194,7 +194,7 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle }: Props) {
         {/* Header — click to open day detail */}
         <div
           onClick={() => setSelectedDay(ymd)}
-          style={{ padding: "5px 6px 4px", borderBottom: `1px solid ${M.border}`, flexShrink: 0, cursor: "pointer" }}
+          style={{ padding: "5px 6px 4px", borderBottom: `1px solid ${M.border}`, flexShrink: 0, cursor: "pointer", minHeight: 52 }}
         >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.44rem", letterSpacing: "0.06em", textTransform: "uppercase", color: isToday ? M.coral : isPast ? M.muted : M.ink, margin: 0 }}>
