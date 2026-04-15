@@ -35,17 +35,24 @@ export interface Goal {
 }
 
 const M = {
-  coral:    "oklch(0.58 0.18 340)",
-  coralBg:  "oklch(0.58 0.18 340 / 0.08)",
-  coralBdr: "oklch(0.58 0.18 340 / 0.28)",
-  sage:     "oklch(0.52 0.10 168)",
-  sageBg:   "oklch(0.52 0.10 168 / 0.08)",
-  sageBdr:  "oklch(0.52 0.10 168 / 0.28)",
+  coral:    "oklch(0.55 0.12 270)",   // blue-purple accent
+  coralBg:  "oklch(0.55 0.12 270 / 0.08)",
+  coralBdr: "oklch(0.55 0.12 270 / 0.28)",
+  sage:     "oklch(0.55 0.10 290)",   // purple-sage for done
+  sageBg:   "oklch(0.55 0.10 290 / 0.08)",
+  sageBdr:  "oklch(0.55 0.10 290 / 0.28)",
   ink:      "oklch(0.28 0.040 320)",
   muted:    "oklch(0.52 0.040 330)",
-  border:   "oklch(0.82 0.050 340)",
-  card:     "oklch(0.975 0.018 355)",
+  border:   "oklch(0.86 0.030 300)",
+  card:     "oklch(0.980 0.008 300)",
+  slumber:  "oklch(0.62 0.06 280)",
+  slumBg:   "oklch(0.62 0.06 280 / 0.08)",
+  slumBdr:  "oklch(0.62 0.06 280 / 0.22)",
 };
+// Progress gradient: blue → purple
+const PROGRESS_GRADIENT = (done: boolean) => done
+  ? "linear-gradient(90deg, oklch(0.55 0.10 290), oklch(0.60 0.08 310))"
+  : "linear-gradient(90deg, oklch(0.58 0.14 240), oklch(0.55 0.12 280), oklch(0.52 0.10 300))";
 
 const LABEL: React.CSSProperties = {
   fontFamily: "'DM Sans', sans-serif",
@@ -72,6 +79,13 @@ interface GoalsProps {
 
 export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategories, onDeleteCategory, tasks = [], onTasksChange }: GoalsProps) {
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
+  const [goalTaskOrder, setGoalTaskOrder] = useState<Record<string, string[]>>(() => {
+    try { return JSON.parse(localStorage.getItem("adhd-goal-task-order") ?? "{}"); } catch { return {}; }
+  });
+  const saveGoalTaskOrder = (o: Record<string, string[]>) => {
+    setGoalTaskOrder(o);
+    try { localStorage.setItem("adhd-goal-task-order", JSON.stringify(o)); } catch {}
+  };
   const [showArchived, setShowArchived] = useState(false);
   const activeGoals = goals.filter(g => !g.archived);
   const archivedGoals = goals.filter(g => g.archived);
@@ -215,6 +229,30 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
 
       <ContextSwitcher active={activeContext} onChange={setActiveContext} counts={counts} contexts={knownCategories} onDeleteContext={onDeleteCategory} label="FILTER BY TAG" />
 
+      {/* Life Coach insights (if any) */}
+      {(() => {
+        try {
+          const data = JSON.parse(localStorage.getItem("adhd-life-coach-insights") ?? "null");
+          if (!data) return null;
+          return (
+            <div style={{ padding: "10px 14px", background: "oklch(0.55 0.12 270 / 0.06)", border: "1px solid oklch(0.55 0.12 270 / 0.20)", borderRadius: 8, display: "flex", gap: 10, alignItems: "flex-start" }}>
+              <span style={{ fontSize: "1rem", flexShrink: 0 }}>🧭</span>
+              <div>
+                <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.48rem", letterSpacing: "0.08em", color: "oklch(0.55 0.12 270)", textTransform: "uppercase", marginBottom: 3 }}>
+                  Life Coach · {data.coachType === "career" ? "Career" : "Life Planning"}
+                </p>
+                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem", color: "oklch(0.35 0.040 320)", lineHeight: 1.5, margin: 0 }}>
+                  {data.summary?.slice(0, 160)}{data.summary?.length > 160 ? "…" : ""}
+                </p>
+                <button onClick={() => setShowLifeCoach(true)} style={{ marginTop: 4, fontSize: "0.55rem", fontFamily: "'Space Mono', monospace", color: "oklch(0.55 0.12 270)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 0 }}>
+                  Continue conversation →
+                </button>
+              </div>
+            </div>
+          );
+        } catch { return null; }
+      })()}
+
       {/* Archive toggle + stats */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.52rem", color: M.muted, letterSpacing: "0.08em", textTransform: "uppercase" }}>
@@ -324,12 +362,12 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
                 </div>
               </div>
 
-              {/* Progress bar */}
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-1.5" style={{ background: "oklch(0.88 0.014 75)" }}>
+              {/* Progress bar — thick pill with gradient */}
+              <div className="flex items-center gap-3 mt-2 mb-1">
+                <div className="flex-1" style={{ height: 8, borderRadius: 99, background: "oklch(0.90 0.015 300)", overflow: "hidden" }}>
                   <div
                     className="h-full transition-all duration-500"
-                    style={{ width: `${goal.progress}%`, background: done ? M.sage : M.coral }}
+                    style={{ width: `${goal.progress}%`, background: PROGRESS_GRADIENT(done), borderRadius: 99 }}
                   />
                 </div>
                 {/* Right side: show ACHIEVED stamp when done, otherwise show % */}
@@ -392,17 +430,41 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
                           onDragStart={(e) => {
                             setDraggingTaskId(t.id);
                             e.dataTransfer.setData("taskId", t.id);
+                            e.dataTransfer.setData("sourceGoalId", goal.id);
                             e.dataTransfer.effectAllowed = "move";
                           }}
                           onDragEnd={() => { setDraggingTaskId(null); setDragOverGoalId(null); }}
-                          className="flex items-center gap-2 px-2 py-1.5 transition-all"
+                          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                          onDrop={(e) => {
+                            e.preventDefault(); e.stopPropagation();
+                            const sourceGoalId = e.dataTransfer.getData("sourceGoalId");
+                            const taskId = e.dataTransfer.getData("taskId");
+                            if (!taskId || taskId === t.id || !onTasksChange) return;
+                            if (sourceGoalId === goal.id) {
+                              // Reorder within same goal
+                              const linkedIds = tasks.filter(tk => tk.goalId === goal.id).map(tk => tk.id);
+                              const ordered = goalTaskOrder[goal.id] ?? linkedIds;
+                              const newOrder = [...ordered.filter(id => id !== taskId)];
+                              const targetIdx = newOrder.indexOf(t.id);
+                              newOrder.splice(targetIdx, 0, taskId);
+                              saveGoalTaskOrder({ ...goalTaskOrder, [goal.id]: newOrder });
+                            } else {
+                              onTasksChange(tasks.map(tk => tk.id === taskId ? { ...tk, goalId: goal.id } : tk));
+                              setDraggingTaskId(null);
+                            }
+                          }}
+                          className="flex items-center gap-2 px-3 py-2 transition-all"
                           style={{
-                            background: t.done ? "oklch(0.97 0.006 78)" : "oklch(0.975 0.010 78)",
+                            background: t.done ? "oklch(0.96 0.010 290 / 0.4)" : "white",
                             border: `1px solid ${t.done ? M.sageBdr : M.border}`,
-                            opacity: t.done ? 0.7 : 1,
+                            borderRadius: 8,
+                            opacity: 1,
                             cursor: "grab",
+                            marginBottom: 4,
                           }}
                         >
+                          {/* Drag handle */}
+                          <span style={{ color: "oklch(0.75 0.020 300)", fontSize: "0.60rem", cursor: "grab", flexShrink: 0, letterSpacing: "-2px", opacity: 0.5 }}>⋮⋮</span>
                           <button
                             onClick={() => {
                               if (!onTasksChange) return;
@@ -451,12 +513,39 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
 
 /* ── Life Coach AI Modal ──────────────────────────────────────────────────── */
 function LifeCoachModal({ onClose, goals }: { onClose: () => void; goals: Goal[] }) {
-  const [mode, setMode] = useState<"pick" | "chat">("pick");
-  const [coachType, setCoachType] = useState<"life" | "career">("life");
-  const [messages, setMessages] = useState<{ role: "user" | "coach"; text: string }[]>([]);
+  const STORAGE_KEY = "adhd-life-coach-chat";
+  const [mode, setMode] = useState<"pick" | "chat">(() => {
+    try { const s = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}"); return s.messages?.length ? "chat" : "pick"; } catch { return "pick"; }
+  });
+  const [coachType, setCoachType] = useState<"life" | "career">(() => {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}").coachType ?? "life"; } catch { return "life"; }
+  });
+  const [messages, setMessages] = useState<{ role: "user" | "coach"; text: string }[]>(() => {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}").messages ?? []; } catch { return []; }
+  });
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Persist chat to localStorage
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ coachType, messages }));
+    }
+  }, [messages, coachType]);
+
+  const clearChat = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    setMessages([]); setMode("pick"); setInput("");
+  };
+
+  // Save insights to localStorage for Goals page to read
+  useEffect(() => {
+    if (messages.length > 2) {
+      const coachMsgs = messages.filter(m => m.role === "coach").map(m => m.text);
+      localStorage.setItem("adhd-life-coach-insights", JSON.stringify({ coachType, summary: coachMsgs[coachMsgs.length - 1], updatedAt: new Date().toISOString() }));
+    }
+  }, [messages]);
 
   const goalSummary = goals.filter(g => !g.archived).map(g => `"${g.text}" (${g.progress}%)`).join(", ") || "none yet";
 
@@ -523,7 +612,12 @@ Ask one question at a time. Be direct, practical, and encouraging. Keep response
               {mode === "pick" ? "Life Coach AI" : coachType === "life" ? "Life Planning" : "Career Coaching"}
             </span>
           </div>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1rem", color: "oklch(0.52 0.040 330)" }}>×</button>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            {messages.length > 0 && (
+              <button onClick={clearChat} style={{ fontSize: "0.50rem", fontFamily: "'Space Mono', monospace", letterSpacing: "0.08em", padding: "2px 8px", border: "1px solid oklch(0.72 0.050 330)", borderRadius: 3, background: "transparent", color: "oklch(0.55 0.050 330)", cursor: "pointer" }}>Clear</button>
+            )}
+            <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1rem", color: "oklch(0.52 0.040 330)" }}>×</button>
+          </div>
         </div>
 
         {mode === "pick" ? (
