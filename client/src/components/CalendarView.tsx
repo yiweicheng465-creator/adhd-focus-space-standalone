@@ -214,9 +214,27 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle }: Props) {
           </div>
         </div>
 
-        {/* Tasks — scrollable */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "5px 4px", minHeight: 60, maxHeight: 280 }}>
-          {dayTasks.map(t => <TaskChip key={t.id} task={t} dayYMD={ymd} />)}
+        {/* Tasks — scrollable with time indicators */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "5px 2px 5px 0", minHeight: 60, maxHeight: 280 }}>
+          {dayTasks.map((t, idx) => {
+            const startHour = 9; const endHour = 18;
+            const totalSlots = Math.max(dayTasks.length, 1);
+            const minPerSlot = ((endHour - startHour) * 60) / totalSlots;
+            const slotMin = Math.round(startHour * 60 + idx * minPerSlot);
+            const h = Math.floor(slotMin / 60);
+            const m = slotMin % 60;
+            const timeStr = `${h > 12 ? h - 12 : h}:${m.toString().padStart(2,"0")}${h >= 12 ? "pm" : "am"}`;
+            return (
+              <div key={t.id} style={{ display: "flex", alignItems: "flex-start", gap: 3, marginBottom: 3 }}>
+                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.38rem", color: isToday ? M.coral : M.muted, opacity: 0.7, minWidth: 28, paddingTop: 4, textAlign: "right", flexShrink: 0 }}>
+                  {timeStr}
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <TaskChip task={t} dayYMD={ymd} />
+                </div>
+              </div>
+            );
+          })}
           {isOver && dragId && (
             <div style={{ textAlign: "center", fontSize: "0.48rem", fontFamily: "'Space Mono', monospace", color: M.coral, opacity: 0.8 }}>
               drop here
@@ -404,7 +422,33 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle }: Props) {
                 {filtered.length === 0
                   ? <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", color: M.muted, fontStyle: "italic" }}>No tasks for this day.</p>
                   : filtered.map((task, i) => (
-                    <div key={task.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: i < filtered.length - 1 ? `1px solid ${M.border}` : "none" }}>
+                    <div
+                      key={task.id}
+                      draggable
+                      onDragStart={() => setDragId(task.id)}
+                      onDragEnd={() => { setDragId(null); setDragOverTask(null); }}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                        const pos = e.clientY < rect.top + rect.height / 2 ? "before" : "after";
+                        setDragOverTask({ id: task.id, pos });
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        if (!dragId || dragId === task.id || !selectedDay) return;
+                        const curOrder = getTasksForDay(selectedDay).map(t => t.id).filter(id => id !== dragId);
+                        const targetIdx = curOrder.indexOf(task.id);
+                        const insertIdx = dragOverTask?.pos === "before" ? targetIdx : targetIdx + 1;
+                        curOrder.splice(Math.max(0, insertIdx), 0, dragId);
+                        saveDayOrder({ ...dayOrder, [selectedDay]: curOrder });
+                        setDragId(null); setDragOverTask(null);
+                      }}
+                      style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: i < filtered.length - 1 ? `1px solid ${M.border}` : "none", cursor: "grab",
+                        borderTop: dragOverTask?.id === task.id && dragOverTask.pos === "before" ? `2px solid ${M.coral}` : "none",
+                        borderBottomWidth: dragOverTask?.id === task.id && dragOverTask.pos === "after" ? 2 : undefined,
+                        borderBottomColor: dragOverTask?.id === task.id && dragOverTask.pos === "after" ? M.coral : M.border,
+                      }}
+                    >
                       <button onClick={() => { onTaskToggle(task.id); }} style={{ flexShrink: 0, width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${PRIORITY_COLOR[task.priority] ?? M.coral}`, background: "transparent", cursor: "pointer", padding: 0 }} />
                       <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", color: M.ink, flex: 1 }}>{task.text}</span>
                       <span style={{ fontSize: "0.48rem", fontFamily: "'Space Mono', monospace", color: M.muted, textTransform: "uppercase" as const }}>{task.context}</span>

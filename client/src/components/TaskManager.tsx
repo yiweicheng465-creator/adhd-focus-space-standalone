@@ -324,6 +324,17 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
         </div>
       </div>
 
+      {/* ── Eisenhower Matrix ── */}
+      <EisenhowerMatrix
+        tasks={tasks.filter(t => activeContext === "all" ? true : t.context === activeContext)}
+        onTasksChange={(filtered) => {
+          // Merge filtered changes back into full task list
+          onTasksChange(tasks.map(t => filtered.find(f => f.id === t.id) ?? t));
+        }}
+        quadrantMap={quadrantMap}
+        onQuadrantMapChange={handleQuadrantMapChange}
+      />
+
       {/* Filter tabs + sort selector */}
       <div className="flex items-center justify-between" style={{ borderBottom: `1px solid ${M.border}` }}>
         <div className="flex gap-0 text-xs">
@@ -515,13 +526,6 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
         })}
       </div>}
 
-      {/* ── Eisenhower Matrix ── */}
-      <EisenhowerMatrix
-        tasks={tasks}
-        onTasksChange={onTasksChange}
-        quadrantMap={quadrantMap}
-        onQuadrantMapChange={handleQuadrantMapChange}
-      />
     </div>
   );
 }
