@@ -4,7 +4,8 @@
    ============================================================ */
 
 import { useEffect, useRef, useState } from "react";
-import { Flame, Plus, Settings, Star, Trash2, X, Zap } from "lucide-react";
+import { Flame, Loader2, Plus, Settings, Sparkles, Star, Trash2, X, Zap } from "lucide-react";
+import { callAI } from "@/lib/ai";
 import { toast } from "sonner";
 import { nanoid } from "nanoid";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
@@ -45,6 +46,7 @@ export function GlobalQuickAdd({ onAddTask }: GlobalQuickAddProps) {
   const [open, setOpen]           = useState(false);
   const [configMode, setConfigMode] = useState(false);
   const [text, setText]           = useState("");
+  const [aiGenerating, setAiGenerating] = useState(false);
   const [priority, setPriority]   = useState<Priority>("focus");
   const [newChip, setNewChip]     = useState("");
   const inputRef    = useRef<HTMLInputElement>(null);
@@ -88,6 +90,25 @@ export function GlobalQuickAdd({ onAddTask }: GlobalQuickAddProps) {
   }, [open, configMode]);
 
   // ── Submit task ───────────────────────────────────────────────────────────
+  const handleAiRefine = async () => {
+    if (!text.trim()) return;
+    setAiGenerating(true);
+    try {
+      const result = await callAI(
+        `Convert the user's rough note into a clean, actionable task name. Max 60 chars, start with a verb, be specific. Return ONLY the task name.`,
+        text.trim()
+      );
+      setText(result.trim().replace(/^["']|["']$/g, ""));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg !== "no-key" && msg !== "invalid-key") {
+        import("sonner").then(({ toast }) => toast.error("AI unavailable", { duration: 2000 }));
+      }
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
   const submit = () => {
     const trimmed = text.trim();
     if (!trimmed) return;
@@ -268,8 +289,25 @@ export function GlobalQuickAdd({ onAddTask }: GlobalQuickAddProps) {
                   onBlur={(e)  => { (e.target as HTMLInputElement).style.borderColor = M.border; }}
                 />
 
+                {/* AI refine button */}
+                <button
+                  onClick={handleAiRefine}
+                  disabled={aiGenerating || !text.trim()}
+                  title="AI: refine into a clean task name"
+                  className="flex items-center gap-1.5 mt-2"
+                  style={{
+                    background: "none", border: "none", cursor: aiGenerating || !text.trim() ? "not-allowed" : "pointer",
+                    color: text.trim() ? M.coral : M.muted, padding: "2px 0",
+                    fontFamily: "'Space Mono', monospace", fontSize: "0.55rem", letterSpacing: "0.08em",
+                    opacity: text.trim() ? 1 : 0.4,
+                  }}
+                >
+                  {aiGenerating ? <Loader2 size={11} style={{ animation: "spin 1s linear infinite" }} /> : <Sparkles size={11} />}
+                  <span>{aiGenerating ? "Refining…" : "✦ AI refine"}</span>
+                </button>
+
                 {/* Priority row */}
-                <div className="flex items-center gap-1.5 mt-3">
+                <div className="flex items-center gap-1.5 mt-2">
                   {(["urgent", "focus", "normal"] as Priority[]).map((p) => {
                     const { label, Icon, color, bg, border } = PRIORITY_CFG[p];
                     const isActive = priority === p;

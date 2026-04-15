@@ -92,32 +92,34 @@ function PillFaceOkay({ active }: { active: boolean }) {
   );
 }
 function PillFaceGood({ active }: { active: boolean }) {
+  // 기쁨 style: big round dot eyes, wide open smile
   const bg = active ? "#F0A8C0" : "#F8C4D4";
   return (
     <svg viewBox="0 0 80 80" fill="none" width="100%" height="100%">
       <path d="M40 12C54 10 68 19 71 33C74 47 67 65 53 71C39 77 20 74 11 61C2 48 6 26 19 18C26 13 33 14 40 12Z" fill={bg}/>
-      <path d="M25 38 Q29 33 33 38" stroke="#7A2050" strokeWidth="2.2" strokeLinecap="round" fill="none"/>
-      <path d="M47 38 Q51 33 55 38" stroke="#7A2050" strokeWidth="2.2" strokeLinecap="round" fill="none"/>
-      <path d="M29 51 Q40 60 51 51" stroke="#7A2050" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-      <ellipse cx="22" cy="47" rx="5.5" ry="3.5" fill="#F07090" opacity="0.3"/>
-      <ellipse cx="58" cy="47" rx="5.5" ry="3.5" fill="#F07090" opacity="0.3"/>
+      <circle cx="29" cy="36" r="5" fill="#7A2050"/>
+      <circle cx="51" cy="36" r="5" fill="#7A2050"/>
+      <circle cx="30.5" cy="34.5" r="2" fill="white"/>
+      <circle cx="52.5" cy="34.5" r="2" fill="white"/>
+      <path d="M27 50 Q40 62 53 50" stroke="#7A2050" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+      <path d="M27 50 Q40 60 53 50 Q40 53 27 50Z" fill="#7A2050" opacity="0.1"/>
+      <ellipse cx="21" cy="47" rx="6" ry="4" fill="#F07090" opacity="0.35"/>
+      <ellipse cx="59" cy="47" rx="6" ry="4" fill="#F07090" opacity="0.35"/>
     </svg>
   );
 }
+
 function PillFaceGlowing({ active }: { active: boolean }) {
+  // 상쾌 style: crescent squinting happy eyes, gentle smile
   const bg = active ? "#F4A0B0" : "#FAC0CC";
   return (
     <svg viewBox="0 0 80 80" fill="none" width="100%" height="100%">
       <path d="M40 11C55 9 70 20 72 35C74 50 66 67 51 73C36 79 17 74 9 59C1 44 6 22 20 15C27 11 33 13 40 11Z" fill={bg}/>
-      <path d="M24 38 Q28 32 33 36" stroke="#7A1840" strokeWidth="2.2" strokeLinecap="round" fill="none"/>
-      <path d="M47 36 Q52 32 56 38" stroke="#7A1840" strokeWidth="2.2" strokeLinecap="round" fill="none"/>
-      <ellipse cx="28.5" cy="37" rx="2" ry="2.5" fill="#7A1840" opacity="0.5"/>
-      <ellipse cx="51.5" cy="37" rx="2" ry="2.5" fill="#7A1840" opacity="0.5"/>
-      <path d="M27 51 Q40 63 53 51" stroke="#7A1840" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-      <path d="M27 51 Q40 60 53 51 Q40 54 27 51Z" fill="#7A1840" opacity="0.08"/>
-      <ellipse cx="21" cy="48" rx="6" ry="4" fill="#F07090" opacity="0.35"/>
-      <ellipse cx="59" cy="48" rx="6" ry="4" fill="#F07090" opacity="0.35"/>
-      <path d="M63 18 L64 14 L65 18 L69 19 L65 20 L64 24 L63 20 L59 19 Z" fill="#FAC0CC" stroke="#7A1840" strokeWidth="0.8"/>
+      <path d="M24 38 Q29 31 34 38" stroke="#7A1840" strokeWidth="2.8" strokeLinecap="round" fill="none"/>
+      <path d="M46 38 Q51 31 56 38" stroke="#7A1840" strokeWidth="2.8" strokeLinecap="round" fill="none"/>
+      <path d="M28 51 Q40 60 52 51" stroke="#7A1840" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+      <ellipse cx="22" cy="48" rx="6" ry="4" fill="#F07090" opacity="0.3"/>
+      <ellipse cx="58" cy="48" rx="6" ry="4" fill="#F07090" opacity="0.3"/>
     </svg>
   );
 }
