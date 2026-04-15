@@ -320,7 +320,14 @@ export default function Home() {
       const win: Win = {
         id: `task-${Date.now()}`,
         text: newlyDone[0].text.length > 40 ? newlyDone[0].text.slice(0, 40) + "…" : newlyDone[0].text,
-        iconIdx: 5,
+        iconIdx: (() => {
+          const ctx = newlyDone[0]?.context ?? "work";
+          const map: Record<string, number> = {
+            work: 2, personal: 5, health: 0, fitness: 6,
+            study: 1, creative: 4, social: 3, nutrition: 7,
+          };
+          return map[ctx] ?? 2; // default to work
+        })(),
         createdAt: new Date(),
       };
       setWins((prev) => [win, ...prev]);

@@ -510,7 +510,8 @@ export function DailyWins({ wins, onWinsChange }: DailyWinsProps) {
   };
 
   const todayStr = new Date().toDateString();
-  const todayWins = activeWins.filter((w) => new Date(w.createdAt).toDateString() === todayStr);
+  // Today = ALL wins from today (including archived) so archiving doesn't reduce the count
+  const todayWins = wins.filter((w) => new Date(w.createdAt).toDateString() === todayStr);
 
   const SelectedIconDef = WIN_ICONS[selectedIcon] ?? WIN_ICONS[0];
 

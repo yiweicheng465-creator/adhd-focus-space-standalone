@@ -164,7 +164,14 @@ export function useTimerSound(): TimerSoundControls {
         audio.src = COFFEE_SHOP_URL;
       }
       const ctx = ensureCtx();
-      if (ctx && !gainRef.current) {
+      // Resume suspended AudioContext (required for Safari PWA)
+      if (ctx && ctx.state === "suspended") {
+        ctx.resume().catch(() => {});
+      }
+      // Safari standalone: skip Web Audio API routing (causes silence in PWA mode)
+      const isSafariPWA = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+        && window.matchMedia("(display-mode: standalone)").matches;
+      if (ctx && !gainRef.current && !isSafariPWA) {
         try {
           const source = ctx.createMediaElementSource(audio);
           const gain = ctx.createGain();
@@ -176,9 +183,9 @@ export function useTimerSound(): TimerSoundControls {
           // Already connected — ignore
         }
       }
-      audio.volume = gainRef.current ? 1 : musicVolume;
+      audio.volume = musicVolume; // Always set volume directly for Safari compatibility
       audio.play()
-        .then(() => setMusicLoading(false))
+        .then(() => { if (ctx?.state === "suspended") ctx.resume().catch(() => {}); setMusicLoading(false); })
         .catch(() => setMusicLoading(false));
     } else {
       audio.pause();
