@@ -55,60 +55,115 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle }: Props) {
   const [monthStart, setMonthStart] = useState(() => startOfMonth(today));
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
+  // dragOverTask: when hovering over a specific task (for within-day reorder)
+  const [dragOverTask, setDragOverTask] = useState<{ id: string; pos: "before" | "after" } | null>(null);
+  // dayOrder: persisted per-day task ordering (date → ordered task IDs)
+  const [dayOrder, setDayOrder] = useState<Record<string, string[]>>(() => {
+    try { return JSON.parse(localStorage.getItem("adhd-calendar-day-order") ?? "{}"); } catch { return {}; }
+  });
+
+  function saveDayOrder(newOrder: Record<string, string[]>) {
+    setDayOrder(newOrder);
+    try { localStorage.setItem("adhd-calendar-day-order", JSON.stringify(newOrder)); } catch {}
+  }
 
   function getTasksForDay(ymd: string): Task[] {
-    return tasks
+    const base = tasks
       .filter(t => !t.done)
-      .filter(t => (t.dueDate ?? todayYMD) === ymd)
-      .sort((a, b) => {
+      .filter(t => (t.dueDate ?? todayYMD) === ymd);
+    const order = dayOrder[ymd];
+    if (!order || !order.length) {
+      return base.sort((a, b) => {
         const o = ["urgent","focus","normal","someday"];
         return o.indexOf(a.priority) - o.indexOf(b.priority);
       });
+    }
+    // Apply saved order, append any new tasks not yet in order
+    const ordered = order.map(id => base.find(t => t.id === id)).filter(Boolean) as Task[];
+    const unordered = base.filter(t => !order.includes(t.id));
+    return [...ordered, ...unordered];
   }
 
-  function handleDrop(targetYMD: string) {
+  function handleDrop(targetYMD: string, targetTaskId?: string) {
     if (!dragId) return;
     const task = tasks.find(t => t.id === dragId);
     if (!task) return;
-    const newDue = (targetYMD === todayYMD && !task.dueDate) ? undefined : targetYMD;
-    onTasksChange(tasks.map(t => t.id === dragId ? { ...t, dueDate: newDue } : t));
-    setDragId(null); setDragOverDate(null);
+
+    const sourceYMD = task.dueDate ?? todayYMD;
+
+    if (targetTaskId && targetTaskId !== dragId) {
+      // Within-day or cross-day reorder onto a specific task
+      const finalYMD = targetYMD;
+      // Move task to targetYMD if different
+      if (sourceYMD !== finalYMD) {
+        const newDue = (finalYMD === todayYMD && !task.dueDate) ? undefined : finalYMD;
+        onTasksChange(tasks.map(t => t.id === dragId ? { ...t, dueDate: newDue } : t));
+      }
+      // Reorder within that day
+      const dayTasks = getTasksForDay(finalYMD).map(t => t.id).filter(id => id !== dragId);
+      const targetIdx = dayTasks.indexOf(targetTaskId);
+      const insertIdx = dragOverTask?.pos === "before" ? targetIdx : targetIdx + 1;
+      dayTasks.splice(Math.max(0, insertIdx), 0, dragId);
+      saveDayOrder({ ...dayOrder, [finalYMD]: dayTasks });
+    } else if (!targetTaskId) {
+      // Dropped on empty column area — just move to that day, append at end
+      const newDue = (targetYMD === todayYMD && !task.dueDate) ? undefined : targetYMD;
+      onTasksChange(tasks.map(t => t.id === dragId ? { ...t, dueDate: newDue } : t));
+    }
+
+    setDragId(null); setDragOverDate(null); setDragOverTask(null);
   }
 
   // ── Compact task chip ───────────────────────────────────────────────────────
-  function TaskChip({ task }: { task: Task }) {
+  function TaskChip({ task, dayYMD }: { task: Task; dayYMD: string }) {
+    const isOver = dragOverTask?.id === task.id;
     return (
-      <div
-        draggable
-        onDragStart={() => setDragId(task.id)}
-        onDragEnd={() => { setDragId(null); setDragOverDate(null); }}
-        title={task.text}
-        style={{
-          background: "#fff",
-          border: `1px solid ${M.border}`,
-          borderLeft: `3px solid ${PRIORITY_COLOR[task.priority] ?? M.coral}`,
-          borderRadius: 3, padding: "2px 5px",
-          cursor: "grab", opacity: dragId === task.id ? 0.4 : 1,
-          display: "flex", alignItems: "center", gap: 4,
-          marginBottom: 3,
-        }}
-      >
-        <button
-          onClick={() => onTaskToggle(task.id)}
-          style={{
-            flexShrink: 0, width: 10, height: 10, borderRadius: "50%",
-            border: `1.5px solid ${PRIORITY_COLOR[task.priority] ?? M.muted}`,
-            background: "transparent", cursor: "pointer", padding: 0,
+      <div style={{ position: "relative" }}>
+        {isOver && dragOverTask?.pos === "before" && (
+          <div style={{ height: 2, background: M.coral, borderRadius: 1, marginBottom: 2 }} />
+        )}
+        <div
+          draggable
+          onDragStart={(e) => { e.stopPropagation(); setDragId(task.id); }}
+          onDragEnd={() => { setDragId(null); setDragOverDate(null); setDragOverTask(null); }}
+          onDragOver={(e) => {
+            e.preventDefault(); e.stopPropagation();
+            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+            const pos = e.clientY < rect.top + rect.height / 2 ? "before" : "after";
+            setDragOverTask({ id: task.id, pos });
+            setDragOverDate(dayYMD);
           }}
-        />
-        <span style={{
-          fontFamily: "'DM Sans', sans-serif", fontSize: "0.60rem",
-          color: M.ink, lineHeight: 1.3,
-          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-          flex: 1,
-        }}>
-          {task.text}
-        </span>
+          onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleDrop(dayYMD, task.id); }}
+          title={task.text}
+          style={{
+            background: "#fff",
+            border: `1px solid ${isOver ? M.coral : M.border}`,
+            borderLeft: `3px solid ${PRIORITY_COLOR[task.priority] ?? M.coral}`,
+            borderRadius: 3, padding: "2px 5px",
+            cursor: "grab", opacity: dragId === task.id ? 0.4 : 1,
+            display: "flex", alignItems: "center", gap: 4,
+          }}
+        >
+          <button
+            onClick={() => onTaskToggle(task.id)}
+            style={{
+              flexShrink: 0, width: 10, height: 10, borderRadius: "50%",
+              border: `1.5px solid ${PRIORITY_COLOR[task.priority] ?? M.muted}`,
+              background: "transparent", cursor: "pointer", padding: 0,
+            }}
+          />
+          <span style={{
+            fontFamily: "'DM Sans', sans-serif", fontSize: "0.60rem",
+            color: M.ink, lineHeight: 1.3,
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            flex: 1,
+          }}>
+            {task.text}
+          </span>
+        </div>
+        {isOver && dragOverTask?.pos === "after" && (
+          <div style={{ height: 2, background: M.coral, borderRadius: 1, marginTop: 2 }} />
+        )}
       </div>
     );
   }
@@ -152,7 +207,7 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle }: Props) {
 
         {/* Tasks — scrollable */}
         <div style={{ flex: 1, overflowY: "auto", padding: "5px 4px", minHeight: 60, maxHeight: 280 }}>
-          {dayTasks.map(t => <TaskChip key={t.id} task={t} />)}
+          {dayTasks.map(t => <TaskChip key={t.id} task={t} dayYMD={ymd} />)}
           {isOver && dragId && (
             <div style={{ textAlign: "center", fontSize: "0.48rem", fontFamily: "'Space Mono', monospace", color: M.coral, opacity: 0.8 }}>
               drop here
