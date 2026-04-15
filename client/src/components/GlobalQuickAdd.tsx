@@ -6,6 +6,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Flame, Loader2, Plus, Settings, Sparkles, Star, Trash2, X, Zap } from "lucide-react";
 import { callAI } from "@/lib/ai";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { toast } from "sonner";
 import { nanoid } from "nanoid";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
@@ -46,7 +47,10 @@ export function GlobalQuickAdd({ onAddTask }: GlobalQuickAddProps) {
   const [open, setOpen]           = useState(false);
   const [configMode, setConfigMode] = useState(false);
   const [text, setText]           = useState("");
+  const [aiMode, setAiMode] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
+  const [goalId, setGoalId] = useState<string | null>(null);
+  const [dueDate, setDueDate] = useState<string>("");
   const [priority, setPriority]   = useState<Priority>("focus");
   const [newChip, setNewChip]     = useState("");
   const inputRef    = useRef<HTMLInputElement>(null);
@@ -90,20 +94,44 @@ export function GlobalQuickAdd({ onAddTask }: GlobalQuickAddProps) {
   }, [open, configMode]);
 
   // ── Submit task ───────────────────────────────────────────────────────────
-  const handleAiRefine = async () => {
+  const handleAiCreate = async () => {
     if (!text.trim()) return;
     setAiGenerating(true);
     try {
+      // Load goals for matching
+      const goals: { id: string; text: string }[] = (() => { try { return JSON.parse(localStorage.getItem("adhd-goals") ?? "[]"); } catch { return []; } })();
+      const goalList = goals.map(g => `"${g.text}"`).join(", ");
+      const today = new Date().toISOString().slice(0,10);
+      const todayName = new Date().toLocaleDateString("en-US", { weekday: "long" });
+
       const result = await callAI(
-        `Convert the user's rough note into a clean, actionable task name. Max 60 chars, start with a verb, be specific. Return ONLY the task name.`,
+        `Parse this task request and return ONLY valid JSON:
+{"text":"clean task name (verb + specific)","priority":"urgent|focus|normal","context":"work|personal","dueDate":"YYYY-MM-DD or today or tomorrow or null","goalName":"partial goal name or null"}
+Today is ${today} (${todayName}). Available goals: ${goalList || "none"}.
+Rules: start text with verb, max 60 chars, match goalName to closest goal if mentioned.`,
         text.trim()
       );
-      setText(result.trim().replace(/^["']|["']$/g, ""));
+      const match = result.match(/\{[\s\S]*\}/);
+      if (match) {
+        const parsed = JSON.parse(match[0]) as { text?: string; priority?: string; context?: string; dueDate?: string; goalName?: string };
+        const taskText = parsed.text?.trim() || text.trim();
+        const taskPriority = (["urgent","focus","normal"].includes(parsed.priority ?? "") ? parsed.priority : "focus") as Priority;
+        const taskContext = (["work","personal"].includes(parsed.context ?? "") ? parsed.context : "personal") as "work" | "personal";
+        let taskDue = parsed.dueDate ?? null;
+        if (taskDue === "today") taskDue = today;
+        if (taskDue === "tomorrow") { const d = new Date(); d.setDate(d.getDate()+1); taskDue = d.toISOString().slice(0,10); }
+        let taskGoalId: string | undefined;
+        if (parsed.goalName) {
+          const gMatch = goals.find(g => g.text.toLowerCase().includes(parsed.goalName!.toLowerCase()));
+          if (gMatch) taskGoalId = gMatch.id;
+        }
+        onAddTask({ id: nanoid(), text: taskText, priority: taskPriority, context: taskContext, done: false, createdAt: new Date(), ...(taskDue ? { dueDate: taskDue } : {}), ...(taskGoalId ? { goalId: taskGoalId } : {}) });
+        toast.success(`✓ ${taskText} · ${taskPriority}${taskDue ? " · " + taskDue : ""}${taskGoalId ? " → goal" : ""}`);
+        setText(""); setAiMode(false); setOpen(false);
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
-      if (msg !== "no-key" && msg !== "invalid-key") {
-        import("sonner").then(({ toast }) => toast.error("AI unavailable", { duration: 2000 }));
-      }
+      if (msg !== "no-key" && msg !== "invalid-key") toast.error("AI unavailable", { duration: 2000 });
     } finally {
       setAiGenerating(false);
     }
@@ -124,10 +152,14 @@ export function GlobalQuickAdd({ onAddTask }: GlobalQuickAddProps) {
       context: (effectiveTag === "work" || effectiveTag === "personal" ? effectiveTag : "personal") as "work" | "personal",
       done: false,
       createdAt: new Date(),
+      ...(dueDate ? { dueDate } : {}),
+      ...(goalId ? { goalId } : {}),
     });
-    toast.success(`Task added · ${priority}${effectiveTag !== "personal" ? ` · #${effectiveTag}` : ""}`);
+    toast.success(`Task added · ${priority}${effectiveTag !== "personal" ? ` · #${effectiveTag}` : ""}${dueDate ? " · " + dueDate : ""}${goalId ? " → goal" : ""}`);
     setText("");
     setPriority("focus");
+    setDueDate("");
+    setGoalId(null);
     setOpen(false);
   };
 
@@ -273,41 +305,40 @@ export function GlobalQuickAdd({ onAddTask }: GlobalQuickAddProps) {
             ) : (
               /* ── Capture mode ── */
               <div className="px-5 pb-5">
+                {/* Mode toggle */}
+                <div className="flex items-center gap-2 mb-2">
+                  <button onClick={() => setAiMode(false)} style={{ fontSize: "0.55rem", fontFamily: "'Space Mono', monospace", letterSpacing: "0.08em", padding: "2px 8px", borderRadius: 10, border: `1px solid ${!aiMode ? M.coral : M.border}`, background: !aiMode ? M.coralBg : "transparent", color: !aiMode ? M.coral : M.muted, cursor: "pointer" }}>
+                    Manual
+                  </button>
+                  <button onClick={() => setAiMode(true)} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "0.55rem", fontFamily: "'Space Mono', monospace", letterSpacing: "0.08em", padding: "2px 8px", borderRadius: 10, border: `1px solid ${aiMode ? M.coral : M.border}`, background: aiMode ? M.coralBg : "transparent", color: aiMode ? M.coral : M.muted, cursor: "pointer" }}>
+                    <Sparkles size={9} /><span>AI</span>
+                  </button>
+                </div>
+
                 <input
                   ref={inputRef}
                   value={text}
                   onChange={(e) => setText(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") submit(); if (e.key === "Escape") closeModal(); }}
-                  placeholder="e.g. Reply message from Alice…"
-                  autoComplete="new-password"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  spellCheck={false}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") { e.preventDefault(); aiMode ? handleAiCreate() : submit(); }
+                    if (e.key === "Escape") closeModal();
+                  }}
+                  placeholder={aiMode ? "e.g. review emails urgent link to work goal due Friday" : "e.g. Reply message from Alice…"}
+                  autoComplete="new-password" autoCorrect="off" autoCapitalize="off" spellCheck={false}
                   className="w-full text-base px-4 py-3 bg-transparent focus:outline-none"
-                  style={{ border: `1px solid ${M.border}`, color: M.ink, fontFamily: "'DM Sans', sans-serif" }}
+                  style={{ border: `1px solid ${aiMode ? M.coralBdr : M.border}`, color: M.ink, fontFamily: "'DM Sans', sans-serif" }}
                   onFocus={(e) => { (e.target as HTMLInputElement).style.borderColor = M.coralBdr; }}
-                  onBlur={(e)  => { (e.target as HTMLInputElement).style.borderColor = M.border; }}
+                  onBlur={(e)  => { (e.target as HTMLInputElement).style.borderColor = aiMode ? M.coralBdr : M.border; }}
                 />
 
-                {/* AI refine button */}
-                <button
-                  onClick={handleAiRefine}
-                  disabled={aiGenerating || !text.trim()}
-                  title="AI: refine into a clean task name"
-                  className="flex items-center gap-1.5 mt-2"
-                  style={{
-                    background: "none", border: "none", cursor: aiGenerating || !text.trim() ? "not-allowed" : "pointer",
-                    color: text.trim() ? M.coral : M.muted, padding: "2px 0",
-                    fontFamily: "'Space Mono', monospace", fontSize: "0.55rem", letterSpacing: "0.08em",
-                    opacity: text.trim() ? 1 : 0.4,
-                  }}
-                >
-                  {aiGenerating ? <Loader2 size={11} style={{ animation: "spin 1s linear infinite" }} /> : <Sparkles size={11} />}
-                  <span>{aiGenerating ? "Refining…" : "✦ AI refine"}</span>
-                </button>
-
-                {/* Priority row */}
-                <div className="flex items-center gap-1.5 mt-2">
+                {aiMode ? (
+                  <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.48rem", color: M.muted, margin: "5px 0 0", lineHeight: 1.5, opacity: 0.8 }}>
+                    Describe the task naturally — AI sets priority, context, goal link and date automatically.
+                  </p>
+                ) : (
+                  <>
+                  {/* Priority row */}
+                  <div className="flex items-center gap-1.5 mt-2">
                   {(["urgent", "focus", "normal"] as Priority[]).map((p) => {
                     const { label, Icon, color, bg, border } = PRIORITY_CFG[p];
                     const isActive = priority === p;
@@ -335,34 +366,59 @@ export function GlobalQuickAdd({ onAddTask }: GlobalQuickAddProps) {
                   })}
                 </div>
 
+                {/* Goal + Date row */}
+                {(() => {
+                  const goals: { id: string; text: string }[] = (() => { try { return JSON.parse(localStorage.getItem("adhd-goals") ?? "[]"); } catch { return []; } })();
+                  const activeGoals = goals.filter((g: any) => !g.archived);
+                  return activeGoals.length > 0 ? (
+                    <div className="flex items-center gap-2 mt-2">
+                      <select value={goalId ?? ""} onChange={e => setGoalId(e.target.value || null)}
+                        style={{ flex: 1, fontSize: "0.62rem", fontFamily: "'DM Sans', sans-serif", padding: "3px 6px", border: `1px solid ${goalId ? M.coralBdr : M.border}`, background: "transparent", color: goalId ? M.coral : M.muted, borderRadius: 0, outline: "none", cursor: "pointer" }}>
+                        <option value="">↳ Link goal (optional)</option>
+                        {activeGoals.map((g: any) => <option key={g.id} value={g.id}>{g.text.length > 35 ? g.text.slice(0,35)+"…" : g.text}</option>)}
+                      </select>
+                      <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} min={new Date().toISOString().slice(0,10)}
+                        style={{ fontSize: "0.62rem", fontFamily: "'DM Sans', sans-serif", padding: "3px 6px", border: `1px solid ${dueDate ? M.coralBdr : M.border}`, background: "transparent", color: dueDate ? M.coral : M.muted, outline: "none", cursor: "pointer" }} />
+                    </div>
+                  ) : (
+                    <div className="flex justify-end mt-2">
+                      <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} min={new Date().toISOString().slice(0,10)}
+                        style={{ fontSize: "0.62rem", fontFamily: "'DM Sans', sans-serif", padding: "3px 6px", border: `1px solid ${dueDate ? M.coralBdr : M.border}`, background: "transparent", color: dueDate ? M.coral : M.muted, outline: "none", cursor: "pointer" }} />
+                    </div>
+                  );
+                })()}
+
                 {/* Quick chips */}
                 <div className="flex flex-wrap gap-2 mt-3">
                   {chips.map((chip) => (
-                    <button
-                      key={chip}
-                      onClick={() => { setText(chip); inputRef.current?.focus(); }}
-                      className="m-chip"
-                    >
+                    <button key={chip} onClick={() => { setText(chip); inputRef.current?.focus(); }} className="m-chip">
                       {chip}
                     </button>
                   ))}
                 </div>
 
-                {/* Submit row */}
-                <div className="flex items-center justify-between mt-4">
-                  <p className="text-xs" style={{ color: M.muted, fontFamily: "'DM Sans', sans-serif" }}>
-                    tip: type <span style={{ color: M.coral }}>#tag</span> in text to categorise
-                  </p>
-                  <button
-                    onClick={submit}
-                    disabled={!text.trim()}
-                    className="m-btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    Add task
-                    <kbd className="text-xs opacity-60 ml-1">↵</kbd>
-                  </button>
-                </div>
+                  {/* Submit row */}
+                  <div className="flex items-center justify-between mt-4">
+                    <p className="text-xs" style={{ color: M.muted, fontFamily: "'DM Sans', sans-serif" }}>
+                      tip: type <span style={{ color: M.coral }}>#tag</span> to categorise
+                    </p>
+                    <button onClick={submit} disabled={!text.trim()} className="m-btn-primary disabled:opacity-40 disabled:cursor-not-allowed">
+                      <Plus className="w-3.5 h-3.5" />Add task<kbd className="text-xs opacity-60 ml-1">↵</kbd>
+                    </button>
+                  </div>
+                  </>
+                )}
+
+                {/* AI mode submit */}
+                {aiMode && (
+                  <div className="flex justify-end mt-3">
+                    <button onClick={handleAiCreate} disabled={aiGenerating || !text.trim()} className="m-btn-primary disabled:opacity-40 disabled:cursor-not-allowed" style={{ gap: 6 }}>
+                      {aiGenerating ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> : <Sparkles size={13} />}
+                      {aiGenerating ? "Creating…" : "Create with AI"}
+                      <kbd className="text-xs opacity-60">↵</kbd>
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
