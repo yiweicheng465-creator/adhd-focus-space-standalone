@@ -90,6 +90,7 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
   const activeGoals = goals.filter(g => !g.archived);
   const archivedGoals = goals.filter(g => g.archived);
   const [showLifeCoach, setShowLifeCoach] = useState(false);
+  const [insightKey, setInsightKey] = useState(0); // bumped to force insights re-read
   const [dragOverGoalId, setDragOverGoalId] = useState<string | null>(null);
   const [newGoal,       setNewGoal]       = useState("");
   const [newGoalCtx,    setNewGoalCtx]    = useState<ItemContext>("work");
@@ -145,11 +146,11 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
       <button data-life-coach-trigger onClick={() => setShowLifeCoach(true)} style={{ display: "none" }} />
       {/* Cat sticker: salmon sitting cat — bottom-right corner */}
       <img src={CAT_SALMON} alt="" aria-hidden="true" style={{ position: "absolute", bottom: 0, right: 0, width: 70, opacity: 0.38, pointerEvents: "none", zIndex: 5 }} />
-      {showLifeCoach && <LifeCoachModal onClose={() => setShowLifeCoach(false)} goals={goals} />}
+      {showLifeCoach && <LifeCoachModal onClose={() => setShowLifeCoach(false)} onClear={() => setInsightKey(k => k + 1)} goals={goals} />}
 
 
       {/* Life Coach insights — top of page */}
-      {(() => {
+      {insightKey >= 0 && (() => {
         try {
           const data = JSON.parse(localStorage.getItem("adhd-life-coach-insights") ?? "null");
           if (!data) return null;
@@ -485,7 +486,7 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
 }
 
 /* ── Life Coach AI Modal ──────────────────────────────────────────────────── */
-function LifeCoachModal({ onClose, goals }: { onClose: () => void; goals: Goal[] }) {
+function LifeCoachModal({ onClose, onClear, goals }: { onClose: () => void; onClear?: () => void; goals: Goal[] }) {
   const STORAGE_KEY = "adhd-life-coach-chat";
   const [mode, setMode] = useState<"pick" | "chat">(() => {
     try { const s = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}"); return s.messages?.length ? "chat" : "pick"; } catch { return "pick"; }
@@ -509,7 +510,9 @@ function LifeCoachModal({ onClose, goals }: { onClose: () => void; goals: Goal[]
 
   const clearChat = () => {
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem("adhd-life-coach-insights");
     setMessages([]); setMode("pick"); setInput("");
+    onClear?.();
   };
 
   // Save insights to localStorage for Goals page to read
