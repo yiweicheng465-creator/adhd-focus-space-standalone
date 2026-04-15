@@ -199,7 +199,6 @@ function MoodPill({ mood, onMoodChange }: { mood: number | null; onMoodChange: (
                   <FaceComp active={mood === m.value} />
                 </span>
                 <span style={{ fontSize: "0.58rem", color: m.color, fontFamily: "'DM Sans', sans-serif", fontWeight: 600, textAlign: "center", lineHeight: 1.1 }}>{m.label}</span>
-                <span style={{ fontSize: "0.50rem", color: m.color, fontFamily: "'Space Mono', monospace", opacity: 0.65, textAlign: "center" }}>{(m as any).label_kr}</span>
               </button>
             );
           })}

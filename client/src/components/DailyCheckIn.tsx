@@ -374,8 +374,8 @@ Be warm but concise. Speak directly to the user. No bullet points.`,
         }}
       >
 
-        {/* Clean close button */}
-        <div className="relative z-10" style={{ position: "absolute", top: 14, right: 14, zIndex: 20 }}>
+        {/* Close (X) button — top right */}
+        <div style={{ position: "absolute", top: 16, right: 16, zIndex: 20 }}>
           
         </div>
 
@@ -504,9 +504,14 @@ Be warm but concise. Speak directly to the user. No bullet points.`,
                       </div>
                       <span
                         className="text-[9px] font-medium tracking-wide"
-                        style={{ color: isSelected ? M.ink : "transparent", fontFamily: "'DM Sans', sans-serif" }}
+                        style={{ color: isSelected ? M.ink : M.muted, fontFamily: "'DM Sans', sans-serif" }}
                       >
                         {m.label}
+                      </span>
+                      <span
+                        style={{ fontSize: "0.58rem", color: isSelected ? M.accent : M.muted, fontFamily: "'Space Mono', monospace", letterSpacing: "0.02em", opacity: isSelected ? 1 : 0.65 }}
+                      >
+                        {m.labelKr}
                       </span>
                     </button>
                   );
