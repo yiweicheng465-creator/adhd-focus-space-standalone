@@ -6,6 +6,7 @@
    Custom → auto-generated Morandi palette from label hash
    ============================================================ */
 
+import React, { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Briefcase, LayoutGrid, User, Hash } from "lucide-react";
 
@@ -178,12 +179,12 @@ export function ClickableContextBadge({ context, allContexts, onChange }: {
   allContexts: string[];
   onChange: (ctx: string) => void;
 }) {
-  const [open, setOpen] = React.useState(false);
-  const ref = React.useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
   const cfg = getContextConfig(context);
   const Icon = cfg.icon;
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
