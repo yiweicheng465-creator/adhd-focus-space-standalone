@@ -352,7 +352,7 @@ export function DailyWrapUp({ tasks, wins, agents, quitCount = 0, onClose }: Dai
       ...doneTasks.map((t) => `  • [${t.context}] ${t.text}`),
       "",
       `🤖 AI Agents today (${todayAgents.length})`,
-      ...todayAgents.map((a) => `  • ${a.name}: ${a.task} [${a.status}]${a.notes ? `\n    → ${a.notes}` : ""}`),
+      ...todayAgents.map((a) => `  • ${a.name}: ${a.task} [${a.status}]`),
       "",
       `🌟 Wins (${todayWins.length})`,
       ...todayWins.map((w) => `  • ${w.text}`),
@@ -505,15 +505,12 @@ export function DailyWrapUp({ tasks, wins, agents, quitCount = 0, onClose }: Dai
                     <div key={a.id} className="flex items-start gap-2 p-2.5" style={{ background: M.bg, border: `1px solid ${M.border}` }}>
                       <div className="w-2 h-2 mt-1.5 shrink-0" style={{ background: sc[a.status] }} />
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-sm font-medium" style={{ color: M.ink, fontFamily: "'DM Sans', sans-serif" }}>{a.name}</span>
                           <span className="text-xs capitalize" style={{ color: sc[a.status], fontFamily: "'DM Sans', sans-serif" }}>{a.status}</span>
                         </div>
-                        <p className="text-xs truncate" style={{ color: M.muted, fontFamily: "'DM Sans', sans-serif" }}>{a.task}</p>
-                        {a.notes && (
-                          <p className="text-xs mt-1 p-1.5" style={{ color: M.ink, background: M.card, border: `1px solid ${M.border}`, fontFamily: "'DM Sans', sans-serif" }}>
-                            → {a.notes}
-                          </p>
+                        {a.task && a.task !== a.name && (
+                          <p className="text-xs truncate" style={{ color: M.muted, fontFamily: "'DM Sans', sans-serif" }}>{a.task}</p>
                         )}
                       </div>
                     </div>
