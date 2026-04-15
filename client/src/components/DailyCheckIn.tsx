@@ -382,11 +382,15 @@ Be direct, warm, specific to their tasks. No generic platitudes. No bullet point
         }}
       >
 
-        {/* Close (X) button — top right */}
-        <button
-          onClick={onClose}
-          style={{ position: "absolute", top: 14, right: 14, zIndex: 20, width: 30, height: 30, borderRadius: "50%", background: "rgba(0,0,0,0.07)", border: "none", cursor: "pointer", color: "oklch(0.45 0.04 320)", fontSize: "1.1rem", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}
-        >×</button>
+        {/* Mac-style title bar with traffic lights */}
+        <div style={{ display: "flex", alignItems: "center", padding: "10px 14px 8px", borderBottom: "1px solid rgba(212,88,152,0.12)", background: "rgba(249,214,232,0.45)", borderRadius: "20px 20px 0 0" }}>
+          <button onClick={onClose} title="Close" style={{ width: 12, height: 12, borderRadius: "50%", background: "#FF5F57", border: "1px solid rgba(0,0,0,0.1)", cursor: "pointer", padding: 0, marginRight: 6, flexShrink: 0 }} />
+          <div style={{ width: 12, height: 12, borderRadius: "50%", background: "#FFBD2E", border: "1px solid rgba(0,0,0,0.1)", marginRight: 6, flexShrink: 0 }} />
+          <div style={{ width: 12, height: 12, borderRadius: "50%", background: "#28C840", border: "1px solid rgba(0,0,0,0.1)", flexShrink: 0 }} />
+          <span style={{ flex: 1, textAlign: "center", fontFamily: "'Space Mono', monospace", fontSize: "0.55rem", letterSpacing: "0.10em", color: "oklch(0.52 0.08 340)", textTransform: "lowercase" }}>
+            daily_checkin.exe
+          </span>
+        </div>
 
         {/* Progress bar */}
         <div className="relative z-10 h-[2px] w-full" style={{ background: "#E8C8DC" }}>
@@ -791,7 +795,7 @@ Be direct, warm, specific to their tasks. No generic platitudes. No bullet point
           {step === "wins" && (
             <div>
               <p className="text-sm mb-3" style={{ color: M.muted }}>
-                What did you accomplish yesterday? Pick a category and describe it.
+                Pick one and describe it.
               </p>
               {/* Category selector */}
               <div className="flex flex-wrap gap-1.5 mb-3">

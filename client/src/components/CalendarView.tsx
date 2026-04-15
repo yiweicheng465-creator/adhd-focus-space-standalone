@@ -55,8 +55,10 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle }: Props) {
   const [monthStart, setMonthStart] = useState(() => startOfMonth(today));
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
   // dragOverTask: when hovering over a specific task (for within-day reorder)
   const [dragOverTask, setDragOverTask] = useState<{ id: string; pos: "before" | "after" } | null>(null);
+  const dragOverTaskRef = React.useRef<{ id: string; pos: "before" | "after" } | null>(null);
   // dayOrder: persisted per-day task ordering (date → ordered task IDs)
   const [dayOrder, setDayOrder] = useState<Record<string, string[]>>(() => {
     try { return JSON.parse(localStorage.getItem("adhd-calendar-day-order") ?? "{}"); } catch { return {}; }
@@ -189,20 +191,27 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle }: Props) {
           transition: "background 0.1s",
         }}
       >
-        {/* Header */}
-        <div style={{ textAlign: "center", padding: "6px 4px 4px", borderBottom: `1px solid ${M.border}`, flexShrink: 0 }}>
-          <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.48rem", letterSpacing: "0.08em", textTransform: "uppercase", color: isToday ? M.coral : isPast ? M.muted : M.ink, margin: 0 }}>
-            {WEEKDAYS_SHORT[(day.getDay() + 6) % 7]}
-          </p>
-          <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "0.95rem", fontWeight: 700, margin: "1px 0 0", color: isToday ? M.coral : isPast ? M.muted : M.ink }}>
-            {day.getDate()}
-          </p>
-          {isToday && <div style={{ width: 4, height: 4, borderRadius: "50%", background: M.coral, margin: "2px auto 0" }} />}
-          {dayTasks.length > 0 && (
-            <div style={{ fontSize: "0.45rem", fontFamily: "'Space Mono', monospace", color: isToday ? M.coral : M.muted, marginTop: 2 }}>
-              {dayTasks.length}
-            </div>
-          )}
+        {/* Header — click to open day detail */}
+        <div
+          onClick={() => setSelectedDay(ymd)}
+          style={{ padding: "5px 6px 4px", borderBottom: `1px solid ${M.border}`, flexShrink: 0, cursor: "pointer" }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.44rem", letterSpacing: "0.06em", textTransform: "uppercase", color: isToday ? M.coral : isPast ? M.muted : M.ink, margin: 0 }}>
+              {WEEKDAYS_SHORT[(day.getDay() + 6) % 7]}
+            </p>
+            {dayTasks.length > 0 && (
+              <span style={{ fontSize: "0.42rem", fontFamily: "'Space Mono', monospace", color: isToday ? M.coral : M.muted, background: isToday ? `${M.coral}15` : `${M.muted}18`, borderRadius: 8, padding: "0 4px", lineHeight: "14px" }}>
+                {dayTasks.length}
+              </span>
+            )}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+            <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "0.90rem", fontWeight: 700, margin: 0, color: isToday ? M.coral : isPast ? M.muted : M.ink }}>
+              {day.getDate()}
+            </p>
+            {isToday && <div style={{ width: 4, height: 4, borderRadius: "50%", background: M.coral, flexShrink: 0 }} />}
+          </div>
         </div>
 
         {/* Tasks — scrollable */}
@@ -359,6 +368,54 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle }: Props) {
       </div>
 
       {calView === "week" ? <WeekView /> : <MonthView />}
+
+      {/* Day Detail Modal */}
+      {selectedDay && (() => {
+        const dayTasks = getTasksForDay(selectedDay);
+        const dayDate = new Date(selectedDay + "T00:00:00");
+        const allContexts = Array.from(new Set(dayTasks.map(t => t.context)));
+        const [filterCtx, setFilterCtx] = React.useState<string>("all");
+        const filtered = filterCtx === "all" ? dayTasks : dayTasks.filter(t => t.context === filterCtx);
+        return (
+          <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(140,40,90,0.18)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+            onClick={() => setSelectedDay(null)}>
+            <div style={{ background: "#fdf4f8", borderRadius: 12, width: "min(380px, 94vw)", maxHeight: "70vh", display: "flex", flexDirection: "column", boxShadow: "0 20px 48px rgba(140,40,90,0.22)", overflow: "hidden" }}
+              onClick={e => e.stopPropagation()}>
+              {/* Header */}
+              <div style={{ padding: "12px 16px 10px", borderBottom: "1px solid oklch(0.82 0.050 340)", background: "#F9D6E8", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "1rem", fontWeight: 700, color: "oklch(0.28 0.040 320)", fontStyle: "italic" }}>
+                  {dayDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+                </span>
+                <button onClick={() => setSelectedDay(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1rem", color: "oklch(0.52 0.040 330)" }}>×</button>
+              </div>
+              {/* Tag filter */}
+              {allContexts.length > 1 && (
+                <div style={{ padding: "8px 14px 0", display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {["all", ...allContexts].map(ctx => (
+                    <button key={ctx} onClick={() => setFilterCtx(ctx)}
+                      style={{ fontSize: "0.58rem", fontFamily: "'Space Mono', monospace", letterSpacing: "0.06em", padding: "2px 8px", borderRadius: 10, border: `1px solid ${filterCtx === ctx ? M.coral : M.border}`, background: filterCtx === ctx ? M.coralBg : "transparent", color: filterCtx === ctx ? M.coral : M.muted, cursor: "pointer", textTransform: "uppercase" as const }}>
+                      {ctx}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {/* Task list */}
+              <div style={{ flex: 1, overflowY: "auto", padding: "10px 14px" }}>
+                {filtered.length === 0
+                  ? <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", color: M.muted, fontStyle: "italic" }}>No tasks for this day.</p>
+                  : filtered.map((task, i) => (
+                    <div key={task.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: i < filtered.length - 1 ? `1px solid ${M.border}` : "none" }}>
+                      <button onClick={() => { onTaskToggle(task.id); }} style={{ flexShrink: 0, width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${PRIORITY_COLOR[task.priority] ?? M.coral}`, background: "transparent", cursor: "pointer", padding: 0 }} />
+                      <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", color: M.ink, flex: 1 }}>{task.text}</span>
+                      <span style={{ fontSize: "0.48rem", fontFamily: "'Space Mono', monospace", color: M.muted, textTransform: "uppercase" as const }}>{task.context}</span>
+                    </div>
+                  ))
+                }
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
