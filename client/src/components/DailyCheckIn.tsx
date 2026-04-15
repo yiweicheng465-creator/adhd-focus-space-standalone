@@ -135,7 +135,8 @@ export function DailyCheckIn({ onComplete, onSkip, onClose, displayName, existin
   const [taskCustomTag, setTaskCustomTag] = useState("");
   const [taskGoalIdx, setTaskGoalIdx] = useState<number | null>(null); // index into newGoals
   const [taskPriority, setTaskPriority] = useState<"urgent" | "focus" | "normal">("focus");
-  const [tasks, setTasks] = useState<{ text: string; context: string; goalIdx: number | null; priority: "urgent" | "focus" | "normal" }[]>([]);
+  const [taskDueDate, setTaskDueDate] = useState<string>("");
+  const [tasks, setTasks] = useState<{ text: string; context: string; goalIdx: number | null; priority: "urgent" | "focus" | "normal"; dueDate?: string }[]>([]);
 
   // Agents
   const [agentName, setAgentName] = useState("");
@@ -178,7 +179,8 @@ export function DailyCheckIn({ onComplete, onSkip, onClose, displayName, existin
     // Custom tag overrides the toggle; hashtag in text overrides custom tag
     const { cleanText, tag: hashTag } = parseHashtag(taskInput);
     const effectiveContext = hashTag ?? (taskCustomTag.trim() ? taskCustomTag.trim().replace(/^#/, "") : taskContext);
-    setTasks((p) => [...p, { text: cleanText || taskInput.trim(), context: effectiveContext, goalIdx: taskGoalIdx, priority: taskPriority }]);
+    setTasks((p) => [...p, { text: cleanText || taskInput.trim(), context: effectiveContext, goalIdx: taskGoalIdx, priority: taskPriority, dueDate: taskDueDate || undefined }]);
+    setTaskDueDate("");
     setTaskInput("");
     setTaskCustomTag("");
   };
@@ -318,6 +320,7 @@ Be direct, warm, specific to their tasks. No generic platitudes. No bullet point
         context: (t.context === "work" || t.context === "personal" ? t.context : "personal") as "work" | "personal",
         done: false,
         createdAt: new Date(),
+        ...(t.dueDate ? { dueDate: t.dueDate } : {}),
         goalId: t.goalIdx !== null
           ? (t.goalIdx >= 0
             ? (goalIds[t.goalIdx] ?? undefined)  // new goal added this session
@@ -542,7 +545,7 @@ Be direct, warm, specific to their tasks. No generic platitudes. No bullet point
           {step === "goals" && (
             <div>
               <p className="text-sm mb-3" style={{ color: M.muted }}>
-                Add goals for today. Use #work or #personal to tag, then press Enter.
+                Use # to add tag, press Enter.
               </p>
               <div className="flex gap-2 mb-2">
                 <input
@@ -577,31 +580,6 @@ Be direct, warm, specific to their tasks. No generic platitudes. No bullet point
           {/* TASKS */}
           {step === "tasks" && (
             <div>
-              {/* AI suggested tasks from Morning Brief */}
-              {topTaskIds.length > 0 && (() => {
-                const allTasks: Task[] = (() => { try { return JSON.parse(localStorage.getItem("adhd-tasks") ?? "[]"); } catch { return []; } })();
-                const suggested = topTaskIds.map(id => allTasks.find(t => t.id === id)).filter(Boolean) as Task[];
-                if (!suggested.length) return null;
-                const PRIORITY_COLOR: Record<string, string> = { urgent: "oklch(0.52 0.10 32)", focus: "oklch(0.52 0.14 290)", normal: "oklch(0.55 0.10 330)", someday: "oklch(0.62 0.04 330)" };
-                return (
-                  <div style={{ marginBottom: 14, padding: "10px 12px", background: `${M.accent}08`, border: `1px solid ${M.accent}30`, borderRadius: 8 }}>
-                    <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.52rem", letterSpacing: "0.10em", color: M.accent, textTransform: "uppercase", marginBottom: 8, display: "flex", alignItems: "center", gap: 5 }}>
-                      <span>✦</span> AI suggested focus today
-                    </p>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                      {suggested.map((task, i) => (
-                        <div key={task.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.50rem", color: M.muted, minWidth: 12 }}>{i + 1}.</span>
-                          <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 6, padding: "5px 8px", background: "white", borderRadius: 5, border: `1px solid ${M.border}`, borderLeft: `3px solid ${PRIORITY_COLOR[task.priority] ?? M.accent}` }}>
-                            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem", color: M.ink, flex: 1 }}>{task.text}</span>
-                            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.46rem", color: PRIORITY_COLOR[task.priority] ?? M.muted, letterSpacing: "0.06em", textTransform: "uppercase" }}>{task.priority}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
               <p className="text-sm mb-3" style={{ color: M.muted }}>
                 Add tasks for today. Press Enter to add each one.
               </p>
@@ -687,9 +665,20 @@ Be direct, warm, specific to their tasks. No generic platitudes. No bullet point
                 />
                 <button onClick={addTask} className="px-3 py-2 text-sm font-bold" style={{ background: M.accent, color: "white" }}>+</button>
               </div>
-              <p className="text-[10px] mb-2" style={{ color: M.muted, fontFamily: "'Space Mono', monospace", opacity: 0.7 }}>
-                tip: add <span style={{ color: M.accent }}>#tag</span> to categorise — e.g. <span style={{ color: M.accent }}>#work</span>, <span style={{ color: M.accent }}>#personal</span>
-              </p>
+              {/* Date + tip row */}
+              <div className="flex items-center gap-3 mb-2">
+                <input
+                  type="date"
+                  value={taskDueDate}
+                  onChange={(e) => setTaskDueDate(e.target.value)}
+                  min={new Date().toISOString().slice(0,10)}
+                  style={{ fontSize: "0.62rem", fontFamily: "'DM Sans', sans-serif", border: `1px solid ${taskDueDate ? M.accent + "60" : M.border}`, borderRadius: 4, padding: "2px 6px", background: "transparent", color: taskDueDate ? M.ink : M.muted, cursor: "pointer", outline: "none" }}
+                  title="Due date (optional)"
+                />
+                <p className="text-[10px]" style={{ color: M.muted, fontFamily: "'Space Mono', monospace", opacity: 0.7 }}>
+                  add <span style={{ color: M.accent }}>#tag</span> to categorise
+                </p>
+              </div>
               {tasks.length > 0 && (
                 <ul className="space-y-1.5 mt-3 max-h-28 overflow-y-auto">
                   {tasks.map((t, i) => (
