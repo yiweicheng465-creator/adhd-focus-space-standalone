@@ -496,7 +496,7 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
       </div>
 
       {/* ── MIDDLE: 3-column grid ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: showAI ? "1fr 1fr 1fr" : "1fr 2fr", gap: 10, alignItems: "start" }}>
 
         {/* Col 1: Focus Timer — FocusTimer has its own CYBER_PET.EXE chrome, no outer title bar */}
         <div style={{ display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
@@ -626,8 +626,8 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
           </div>{/* /inner padding div */}
         </div>{/* /retro-window Col 2 */}
 
-        {/* Col 3: AI Command Center */}
-        <div className="retro-window" style={{ display: "flex", flexDirection: "column", height: "378px", overflow: "hidden" }}>
+        {/* Col 3: AI Command Center (toggleable) */}
+        {showAI && <div className="retro-window" style={{ display: "flex", flexDirection: "column", height: "378px", overflow: "hidden" }}>
           <div className="retro-titlebar">
             <span>ai_assistant.app</span>
             <div style={{ display: "flex", alignItems: "center", gap: 5, marginLeft: "auto", marginRight: 4 }}>
@@ -748,7 +748,7 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
               </button>
             </div>
           </div>{/* /inner padding div */}
-        </div>{/* /retro-window Col 3 */}
+        </div>}{/* /retro-window Col 3 */}
       </div>{/* /grid */}
 
       {/* ── BOTTOM: Today's wins + focus strip ── */}

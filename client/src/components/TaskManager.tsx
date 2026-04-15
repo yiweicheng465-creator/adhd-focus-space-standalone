@@ -183,8 +183,13 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
     if (a.done !== b.done) return a.done ? 1 : -1;
     const aOverdue = !a.done && a.dueDate && a.dueDate < todayYMD;
     const bOverdue = !b.done && b.dueDate && b.dueDate < todayYMD;
+    const aDueToday = !a.done && a.dueDate === todayYMD;
+    const bDueToday = !b.done && b.dueDate === todayYMD;
+    // Red (overdue) first, then yellow (due today), then priority
     if (aOverdue && !bOverdue) return -1;
     if (!aOverdue && bOverdue) return 1;
+    if (aDueToday && !bDueToday && !bOverdue) return -1;
+    if (!aDueToday && bDueToday && !aOverdue) return 1;
     const order: TaskPriority[] = ["urgent", "focus", "normal", "someday"];
     return order.indexOf(a.priority) - order.indexOf(b.priority);
   });
@@ -473,15 +478,20 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
                   const isTomorrow = due.getTime() === today.getTime() + 86400000;
                   const isToday = due.getTime() === today.getTime();
                   const label = isToday ? "today" : isTomorrow ? "tomorrow" : due.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                  const badgeColor = isOverdue
+                    ? { bg: "oklch(0.95 0.06 25)", color: "oklch(0.45 0.20 25)", border: "oklch(0.70 0.15 25)" }
+                    : isToday
+                    ? { bg: "oklch(0.97 0.08 60)", color: "oklch(0.45 0.18 60)", border: "oklch(0.75 0.14 60)" }
+                    : { bg: "oklch(0.97 0.04 290)", color: "oklch(0.42 0.10 290)", border: "oklch(0.80 0.08 290)" };
                   return (
                     <span style={{
                       fontSize: "0.58rem", fontFamily: "'Space Mono', monospace",
                       letterSpacing: "0.06em", padding: "1px 5px", borderRadius: 2,
-                      background: isOverdue ? "oklch(0.55 0.14 25 / 0.12)" : "oklch(0.52 0.10 32 / 0.08)",
-                      color: isOverdue ? "oklch(0.45 0.18 25)" : "oklch(0.42 0.10 32)",
-                      border: `1px solid ${isOverdue ? "oklch(0.55 0.14 25 / 0.35)" : "oklch(0.52 0.10 32 / 0.25)"}`,
+                      background: badgeColor.bg, color: badgeColor.color,
+                      border: `1px solid ${badgeColor.border}`,
+                      fontWeight: (isOverdue || isToday) ? 700 : 400,
                     }}>
-                      {isOverdue ? "● " : "📅 "}{label}
+                      {isOverdue ? "● " : isToday ? "◆ " : "📅 "}{label}
                     </span>
                   );
                 })()}
