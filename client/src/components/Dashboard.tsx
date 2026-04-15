@@ -457,11 +457,16 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
                   value={quickCapture}
                   onChange={(e) => setQuickCapture(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && quickCapture.trim()) {
-                      const text = quickCapture.trim();
-                      setQuickCapture("");
-                      onQuickDump?.(text);
-                      onNavigate("braindump");
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (quickCapture.trim()) {
+                        const text = quickCapture.trim();
+                        setQuickCapture("");
+                        (e.target as HTMLInputElement).blur();
+                        onQuickDump?.(text);
+                        onNavigate("braindump");
+                      }
                     }
                   }}
                   placeholder="what's in your mind?"
