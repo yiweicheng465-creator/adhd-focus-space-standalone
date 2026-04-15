@@ -172,8 +172,13 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
   });
 
   const contextFiltered = tasks.filter((t) => activeContext === "all" ? true : t.context === activeContext);
+  const todayYMD = new Date().toISOString().slice(0, 10);
   const sorted = [...contextFiltered].sort((a, b) => {
     if (a.done !== b.done) return a.done ? 1 : -1;
+    const aOverdue = !a.done && a.dueDate && a.dueDate < todayYMD;
+    const bOverdue = !b.done && b.dueDate && b.dueDate < todayYMD;
+    if (aOverdue && !bOverdue) return -1;
+    if (!aOverdue && bOverdue) return 1;
     const order: TaskPriority[] = ["urgent", "focus", "normal", "someday"];
     return order.indexOf(a.priority) - order.indexOf(b.priority);
   });
