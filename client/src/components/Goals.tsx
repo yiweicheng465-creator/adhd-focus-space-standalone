@@ -3,7 +3,7 @@
    Progress: coral bar, sage completed, slumber neutral
    ============================================================ */
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Plus, Trash2, TrendingUp, CheckCircle2, Circle } from "lucide-react";
@@ -44,7 +44,7 @@ const M = {
   card:     "oklch(0.975 0.018 355)",
 };
 
-const LABEL: React.CSSProperties = {
+const LABEL = {
   fontFamily: "'DM Sans', sans-serif",
   fontSize: "0.65rem",
   fontWeight: 500,
@@ -68,8 +68,8 @@ interface GoalsProps {
 }
 
 export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategories, onDeleteCategory, tasks = [], onTasksChange }: GoalsProps) {
-  const [draggingTaskId, setDraggingTaskId] = React.useState<string | null>(null);
-  const [dragOverGoalId, setDragOverGoalId] = React.useState<string | null>(null);
+  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
+  const [dragOverGoalId, setDragOverGoalId] = useState<string | null>(null);
   const [newGoal,       setNewGoal]       = useState("");
   const [newGoalCtx,    setNewGoalCtx]    = useState<ItemContext>("work");
   const [activeContext, setActiveContext] = useState<ActiveContext>(defaultContext);
