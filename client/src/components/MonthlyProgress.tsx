@@ -132,10 +132,10 @@ function DayCellHoverContent({ log, day, month, year }: { log?: DailyLog; day: n
               <span style={{ fontSize: 11, color: M.ink }}>{log!.blocksCompleted} deep focus {log!.blocksCompleted === 1 ? "block" : "blocks"} 🔥</span>
             </div>
           )}
-          {log?.mood && (
+          {(log?.mood ?? 4) && (
             <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-              <div style={{ width: 13, height: 13, borderRadius: "50%", background: MOOD_COLORS[log.mood - 1], flexShrink: 0 }} />
-              <span style={{ fontSize: 11, color: M.ink }}>Mood: {MOOD_LABELS[log.mood - 1]}</span>
+              <div style={{ width: 13, height: 13, borderRadius: "50%", background: MOOD_COLORS[(log?.mood ?? 4) - 1], flexShrink: 0 }} />
+              <span style={{ fontSize: 11, color: M.ink }}>Mood: {MOOD_LABELS[(log?.mood ?? 4) - 1]}</span>
             </div>
           )}
           {log?.score !== undefined && log.score > 0 && (
@@ -168,7 +168,7 @@ function DayCell({
   onClick: () => void;
 }) {
   const hasActivity = log && (log.wrapUpDone || log.dumpCount > 0 || log.winsCount > 0);
-  const moodColor = log?.mood ? MOOD_COLORS[log.mood - 1] : null;
+  const moodColor = log?.mood ? MOOD_COLORS[(log?.mood ?? 4) - 1] : null;
 
   const cellButton = (
     <button
@@ -370,10 +370,10 @@ function DayDetail({ log, dateStr, dateKey: dk, onClose, isPast }: { log?: Daily
             {/* Mood + Focus Time inline row */}
             {(log?.mood || focusCount > 0) && (
               <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-                {log?.mood && (
+                {(log?.mood ?? 4) && (
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: MOOD_COLORS[log.mood - 1], flexShrink: 0 }} />
-                    <span style={{ fontSize: 12, color: M.ink }}>Mood: <strong>{MOOD_LABELS[log.mood - 1]}</strong></span>
+                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: MOOD_COLORS[(log?.mood ?? 4) - 1], flexShrink: 0 }} />
+                    <span style={{ fontSize: 12, color: M.ink }}>Mood: <strong>{MOOD_LABELS[(log?.mood ?? 4) - 1]}</strong></span>
                   </div>
                 )}
                 {focusCount > 0 && (
@@ -805,6 +805,18 @@ Average mood: ${avgMood ?? "not tracked"}/5`
       </div>
     </div>
   );
+}
+
+/** Record mood to daily-logs whenever it changes (from pill, check-in, or default) */
+export function recordMood(mood: number) {
+  const today = new Date().toDateString();
+  try {
+    const raw = localStorage.getItem("adhd-daily-logs");
+    const logs: Record<string, DailyLog> = raw ? JSON.parse(raw) : {};
+    const existing = logs[today] ?? { dateKey: today, wrapUpDone: false, dumpCount: 0, winsCount: 0, tasksCompleted: 0, mood: null, score: 0 };
+    logs[today] = { ...existing, mood };
+    localStorage.setItem("adhd-daily-logs", JSON.stringify(logs));
+  } catch {}
 }
 
 export function recordWrapUp(mood?: number | null, score?: number) {

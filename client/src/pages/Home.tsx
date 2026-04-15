@@ -19,7 +19,7 @@ import { RetroPageWrapper } from "@/components/RetroPageWrapper";
 import { GlobalQuickAdd } from "@/components/GlobalQuickAdd";
 import { ConfettiCelebration } from "@/components/ConfettiCelebration";
 import { DailyWrapUp } from "@/components/DailyWrapUp";
-import { recordWrapUp, recordDumpEntry, recordFocusSession, recordBlockComplete } from "@/components/MonthlyProgress";
+import { recordWrapUp, recordDumpEntry, recordFocusSession, recordBlockComplete, recordMood } from "@/components/MonthlyProgress";
 import { DailyCheckIn, useDailyCheckIn, type CheckInResult } from "@/components/DailyCheckIn";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useBlockStreak } from "@/hooks/useBlockStreak";
@@ -265,6 +265,15 @@ export default function Home() {
     setShowNamePrompt(false);
   };
 
+  // Seed today's mood to Good if never set
+  React.useEffect(() => {
+    if (mood === null) {
+      setMood(4); // Default to Good
+    }
+  // Only run once on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── All data in localStorage ───────────────────────────────────────────────
   const [tasks,  setTasks]  = useLocalStorage<Task[]>("adhd-tasks",  INITIAL_TASKS);
   const [wins,   setWins]   = useLocalStorage<Win[]>("adhd-wins",   []);
@@ -274,6 +283,9 @@ export default function Home() {
 
   const setMood = useCallback((v: number | null | ((prev: number | null) => number | null)) => {
     setLocalMood(v);
+    // Also write mood to daily-logs for monthly tracking
+    const val = typeof v === "function" ? v(null) : v;
+    if (val !== null) recordMood(val);
   }, [setLocalMood]);
 
   const focusSessionsToday = (() => {
@@ -302,7 +314,9 @@ export default function Home() {
   const { show: showCheckIn, dismiss: dismissCheckIn } = useDailyCheckIn();
 
   const handleCheckInComplete = (data: CheckInResult) => {
-    if (data.mood) setMood(data.mood);
+    // If user set a mood in check-in, use it; otherwise default to Good (4)
+    const moodVal = data.mood ?? 4;
+    setMood(moodVal);
     if (data.newGoals?.length) setGoals((p) => [...data.newGoals, ...p]);
     if (data.newTasks.length) setTasks((p) => [...data.newTasks, ...p]);
     if (data.newWins.length) setWins((p) => [...data.newWins, ...p]);
