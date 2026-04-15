@@ -382,6 +382,8 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle }: Props) {
           dragOverTask={dragOverTask}
           setDragOverTask={setDragOverTask}
           onTaskToggle={onTaskToggle}
+          onTasksChange={onTasksChange}
+          tasks={tasks}
           PRIORITY_COLOR={PRIORITY_COLOR}
           M={M}
         />
@@ -390,7 +392,7 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle }: Props) {
   );
 }
 // ── Day Detail Modal — proper component so useState is valid ─────────────────
-function DayDetailModal({ selectedDay, onClose, getTasksForDay, dayOrder, saveDayOrder, dragId, setDragId, dragOverTask, setDragOverTask, onTaskToggle, PRIORITY_COLOR, M }: {
+function DayDetailModal({ selectedDay, onClose, getTasksForDay, dayOrder, saveDayOrder, dragId, setDragId, dragOverTask, setDragOverTask, onTaskToggle, onTasksChange, tasks, PRIORITY_COLOR, M }: {
   selectedDay: string; onClose: () => void;
   getTasksForDay: (ymd: string) => Task[];
   dayOrder: Record<string, string[]>;
@@ -399,26 +401,65 @@ function DayDetailModal({ selectedDay, onClose, getTasksForDay, dayOrder, saveDa
   dragOverTask: { id: string; pos: "before" | "after" } | null;
   setDragOverTask: (v: { id: string; pos: "before" | "after" } | null) => void;
   onTaskToggle: (id: string) => void;
+  onTasksChange?: (tasks: Task[]) => void;
+  tasks: Task[];
   PRIORITY_COLOR: Record<string, string>;
   M: Record<string, string>;
 }) {
   const [filterCtx, setFilterCtx] = useState<string>("all");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+  const [editPriority, setEditPriority] = useState<string>("focus");
+  const [editDate, setEditDate] = useState("");
+  const [editGoalId, setEditGoalId] = useState<string>("");
+
   const dayTasks = getTasksForDay(selectedDay);
   const dayDate = new Date(selectedDay + "T00:00:00");
   const allContexts = Array.from(new Set(dayTasks.map(t => t.context)));
   const filtered = filterCtx === "all" ? dayTasks : dayTasks.filter(t => t.context === filterCtx);
+  const totalSlots = Math.max(filtered.length, 1);
+  const goals: { id: string; text: string }[] = (() => { try { return JSON.parse(localStorage.getItem("adhd-goals") ?? "[]"); } catch { return []; } })();
+
+  const openEdit = (task: Task) => {
+    setEditingId(task.id);
+    setEditText(task.text);
+    setEditPriority(task.priority);
+    setEditDate(task.dueDate ?? "");
+    setEditGoalId(task.goalId ?? "");
+  };
+
+  const saveEdit = () => {
+    if (!editingId || !onTasksChange) return;
+    onTasksChange(tasks.map(t => t.id === editingId ? {
+      ...t, text: editText, priority: editPriority as Task["priority"],
+      dueDate: editDate || undefined, goalId: editGoalId || undefined,
+    } : t));
+    setEditingId(null);
+  };
+
+  const timeRef = (i: number) => {
+    const minPerSlot = ((18 - 9) * 60) / totalSlots;
+    const slotMin = Math.round(9 * 60 + i * minPerSlot);
+    const h = Math.floor(slotMin / 60);
+    const m = slotMin % 60;
+    return `${h > 12 ? h - 12 : h}:${m.toString().padStart(2,"0")}${h >= 12 ? "pm" : "am"}`;
+  };
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(140,40,90,0.18)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
       onClick={onClose}>
-      <div style={{ background: "#fdf4f8", borderRadius: 16, width: "min(480px, 94vw)", maxHeight: "75vh", display: "flex", flexDirection: "column", boxShadow: "0 24px 60px rgba(140,40,90,0.28), 0 8px 24px rgba(0,0,0,0.10)", overflow: "hidden" }}
+      <div style={{ background: "#fdf4f8", borderRadius: 16, width: "min(420px, 94vw)", maxHeight: "80vh", display: "flex", flexDirection: "column", boxShadow: "0 24px 60px rgba(140,40,90,0.28), 0 8px 24px rgba(0,0,0,0.10)", overflow: "hidden" }}
         onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
         <div style={{ padding: "12px 16px 10px", borderBottom: "1px solid oklch(0.82 0.050 340)", background: "#F9D6E8", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "1rem", fontWeight: 700, color: "oklch(0.28 0.040 320)", fontStyle: "italic" }}>
             {dayDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
           </span>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1rem", color: "oklch(0.52 0.040 330)" }}>×</button>
         </div>
+
+        {/* Tag filter */}
         {allContexts.length > 1 && (
           <div style={{ padding: "8px 14px 0", display: "flex", gap: 6, flexWrap: "wrap" }}>
             {["all", ...allContexts].map(ctx => (
@@ -429,46 +470,98 @@ function DayDetailModal({ selectedDay, onClose, getTasksForDay, dayOrder, saveDa
             ))}
           </div>
         )}
-        <div style={{ flex: 1, overflowY: "auto", padding: "10px 14px" }}>
+
+        {/* Task list */}
+        <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
           {filtered.length === 0
-            ? <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", color: M.muted, fontStyle: "italic" }}>No tasks for this day.</p>
+            ? <p style={{ padding: "16px 14px", fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", color: M.muted, fontStyle: "italic" }}>No tasks for this day.</p>
             : filtered.map((task, i) => (
-              <div key={task.id} draggable
-                onDragStart={() => setDragId(task.id)}
-                onDragEnd={() => { setDragId(null); setDragOverTask(null); }}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                  setDragOverTask({ id: task.id, pos: e.clientY < rect.top + rect.height / 2 ? "before" : "after" });
-                }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  if (!dragId || dragId === task.id) return;
-                  const curOrder = getTasksForDay(selectedDay).map(t => t.id).filter(id => id !== dragId);
-                  const targetIdx = curOrder.indexOf(task.id);
-                  const insertIdx = dragOverTask?.pos === "before" ? targetIdx : targetIdx + 1;
-                  curOrder.splice(Math.max(0, insertIdx), 0, dragId);
-                  saveDayOrder({ ...dayOrder, [selectedDay]: curOrder });
-                  setDragId(null); setDragOverTask(null);
-                }}
-                style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", cursor: "grab",
-                  borderBottom: i < filtered.length - 1 ? `1px solid oklch(0.82 0.050 340)` : "none",
-                  borderTop: dragOverTask?.id === task.id && dragOverTask.pos === "before" ? `2px solid oklch(0.58 0.18 340)` : "none",
-                }}>
-                <button onClick={() => onTaskToggle(task.id)} style={{ flexShrink: 0, width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${PRIORITY_COLOR[task.priority] ?? "oklch(0.58 0.18 340)"}`, background: "transparent", cursor: "pointer", padding: 0 }} />
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 1 }}>
-                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", color: M.ink }}>{task.text}</span>
-                  {(() => {
-                    const totalSlots = Math.max(filtered.length, 1);
-                    const minPerSlot = ((18 - 9) * 60) / totalSlots;
-                    const slotMin = Math.round(9 * 60 + i * minPerSlot);
-                    const h = Math.floor(slotMin / 60);
-                    const m = slotMin % 60;
-                    const timeStr = `${h > 12 ? h - 12 : h}:${m.toString().padStart(2,"0")}${h >= 12 ? "pm" : "am"}`;
-                    return <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.48rem", color: M.muted, opacity: 0.65 }}>{timeStr}</span>;
-                  })()}
+              <div key={task.id}>
+                {/* Task row */}
+                <div draggable
+                  onDragStart={() => setDragId(task.id)}
+                  onDragEnd={() => { setDragId(null); setDragOverTask(null); }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                    setDragOverTask({ id: task.id, pos: e.clientY < rect.top + rect.height / 2 ? "before" : "after" });
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (!dragId || dragId === task.id) return;
+                    const curOrder = getTasksForDay(selectedDay).map(t => t.id).filter(id => id !== dragId);
+                    const targetIdx = curOrder.indexOf(task.id);
+                    const insertIdx = dragOverTask?.pos === "before" ? targetIdx : targetIdx + 1;
+                    curOrder.splice(Math.max(0, insertIdx), 0, dragId);
+                    saveDayOrder({ ...dayOrder, [selectedDay]: curOrder });
+                    setDragId(null); setDragOverTask(null);
+                  }}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 10, padding: "9px 14px",
+                    cursor: "grab", background: editingId === task.id ? "oklch(0.97 0.015 340)" : "transparent",
+                    borderTop: dragOverTask?.id === task.id && dragOverTask.pos === "before" ? `2px solid oklch(0.58 0.18 340)` : "none",
+                  }}
+                >
+                  <button onClick={() => onTaskToggle(task.id)} style={{ flexShrink: 0, width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${PRIORITY_COLOR[task.priority] ?? "oklch(0.58 0.18 340)"}`, background: task.done ? PRIORITY_COLOR[task.priority] : "transparent", cursor: "pointer", padding: 0 }} />
+                  {/* Task name — single line + ellipsis, click to edit */}
+                  <span
+                    onClick={() => editingId === task.id ? setEditingId(null) : openEdit(task)}
+                    style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", color: M.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: task.done ? "line-through" : "none", opacity: task.done ? 0.5 : 1 }}
+                  >
+                    {task.text}
+                  </span>
+                  {/* Time reference — right side, subtle */}
+                  <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.46rem", color: M.muted, opacity: 0.6, flexShrink: 0 }}>
+                    {timeRef(i)}
+                  </span>
                 </div>
-                <span style={{ fontSize: "0.48rem", fontFamily: "'Space Mono', monospace", color: M.muted, textTransform: "uppercase" as const }}>{task.context}</span>
+
+                {/* Inline edit panel */}
+                {editingId === task.id && (
+                  <div style={{ margin: "0 14px 8px", padding: "10px 12px", background: "white", border: "1px solid oklch(0.82 0.050 340)", borderRadius: 8, display: "flex", flexDirection: "column", gap: 8 }}>
+                    {/* Text */}
+                    <input value={editText} onChange={e => setEditText(e.target.value)}
+                      autoFocus
+                      style={{ width: "100%", boxSizing: "border-box", fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", padding: "5px 8px", border: "1px solid oklch(0.82 0.050 340)", borderRadius: 4, outline: "none", color: M.ink }} />
+                    {/* Priority + Date row */}
+                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                      {["urgent","focus","normal"].map(p => {
+                        const colors: Record<string, string> = { urgent: "oklch(0.52 0.10 32)", focus: "oklch(0.52 0.14 290)", normal: "oklch(0.55 0.10 330)" };
+                        const isAct = editPriority === p;
+                        return (
+                          <button key={p} onClick={() => setEditPriority(p)}
+                            style={{ width: 24, height: 24, borderRadius: 4, border: `1.5px solid ${isAct ? colors[p] : M.border}`, background: isAct ? colors[p] + "20" : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                            title={p}
+                          >
+                            <span style={{ fontSize: 9, color: isAct ? colors[p] : M.muted }}>
+                              {p === "urgent" ? "🔥" : p === "focus" ? "⚡" : "☆"}
+                            </span>
+                          </button>
+                        );
+                      })}
+                      <input type="date" value={editDate} onChange={e => setEditDate(e.target.value)}
+                        style={{ fontSize: "0.60rem", fontFamily: "'DM Sans', sans-serif", padding: "3px 5px", border: `1px solid ${editDate ? "oklch(0.58 0.18 340)" : M.border}`, background: "transparent", color: editDate ? M.coral : M.muted, borderRadius: 3, outline: "none", flex: 1 }} />
+                    </div>
+                    {/* Goal link */}
+                    {goals.length > 0 && (
+                      <select value={editGoalId} onChange={e => setEditGoalId(e.target.value)}
+                        style={{ width: "100%", fontSize: "0.62rem", fontFamily: "'DM Sans', sans-serif", padding: "3px 6px", border: `1px solid ${editGoalId ? "oklch(0.58 0.18 340)" : M.border}`, background: "transparent", color: editGoalId ? M.coral : M.muted, borderRadius: 3, outline: "none", cursor: "pointer" }}>
+                        <option value="">No goal linked</option>
+                        {goals.filter((g: any) => !g.archived).map((g: any) => <option key={g.id} value={g.id}>{g.text.length > 40 ? g.text.slice(0,40)+"…" : g.text}</option>)}
+                      </select>
+                    )}
+                    {/* Save/Cancel */}
+                    <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                      <button onClick={() => setEditingId(null)} style={{ fontSize: "0.60rem", fontFamily: "'Space Mono', monospace", padding: "3px 10px", border: `1px solid ${M.border}`, background: "transparent", color: M.muted, cursor: "pointer", borderRadius: 3 }}>Cancel</button>
+                      <button onClick={saveEdit} style={{ fontSize: "0.60rem", fontFamily: "'Space Mono', monospace", padding: "3px 10px", border: "none", background: "oklch(0.58 0.18 340)", color: "white", cursor: "pointer", borderRadius: 3 }}>Save</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Separator */}
+                {i < filtered.length - 1 && !editingId && (
+                  <div style={{ height: 1, background: "oklch(0.82 0.050 340 / 0.4)", margin: "0 14px" }} />
+                )}
               </div>
             ))
           }
