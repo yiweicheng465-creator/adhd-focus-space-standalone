@@ -45,26 +45,97 @@ import StorageBackup from "@/pages/StorageBackup";
 
 
 /* ── Compact mood pill SVG faces (same as MoodCheckIn) ── */
+/* ── Doodle-style mood faces (5 levels) ── */
 function PillFaceDrained({ active }: { active: boolean }) {
-  const fill = active ? "#B8B4C8" : "#CCC8D8"; const c = "#5A5570";
-  return <svg viewBox="0 0 80 80" fill="none" width="100%" height="100%"><circle cx="40" cy="40" r="32" fill={fill} /><ellipse cx="28" cy="37" rx="4.5" ry="2.5" fill={c} /><ellipse cx="52" cy="37" rx="4.5" ry="2.5" fill={c} /><line x1="30" y1="52" x2="50" y2="52" stroke={c} strokeWidth="2" strokeLinecap="round" /></svg>;
+  // Sad blue face — crying tear, downturned mouth
+  const bg = active ? "#7BAED4" : "#A8C8E8"; const ink = "#2A4A6A";
+  return (
+    <svg viewBox="0 0 80 80" fill="none" width="100%" height="100%">
+      {/* Round body */}
+      <circle cx="40" cy="40" r="30" fill={bg} />
+      {/* Wobbly outline */}
+      <circle cx="40" cy="40" r="30" stroke={ink} strokeWidth="2" strokeDasharray="4 2" fill="none" opacity="0.3" />
+      {/* Eyes — droopy/sad */}
+      <path d="M27 34 Q30 31 33 34" stroke={ink} strokeWidth="2.2" strokeLinecap="round" fill="none" />
+      <path d="M47 34 Q50 31 53 34" stroke={ink} strokeWidth="2.2" strokeLinecap="round" fill="none" />
+      {/* Teardrop */}
+      <ellipse cx="53" cy="41" rx="2.5" ry="3.5" fill="#A8D4F0" />
+      {/* Frown */}
+      <path d="M30 52 Q40 46 50 52" stroke={ink} strokeWidth="2.5" strokeLinecap="round" fill="none" />
+    </svg>
+  );
 }
 function PillFaceLow({ active }: { active: boolean }) {
-  const fill = active ? "#C0B8D4" : "#D4CEEA"; const c = "#5A5070";
-  return <svg viewBox="0 0 80 80" fill="none" width="100%" height="100%"><rect x="8" y="8" width="64" height="64" rx="22" fill={fill} /><circle cx="28" cy="37" r="3" fill={c} /><circle cx="52" cy="37" r="3" fill={c} /><path d="M30 52 Q40 47 50 52" stroke={c} strokeWidth="2" strokeLinecap="round" fill="none" /></svg>;
+  // Worried yellow — squiggly brow, slight frown
+  const bg = active ? "#F5C842" : "#FAD96A"; const ink = "#7A5000";
+  return (
+    <svg viewBox="0 0 80 80" fill="none" width="100%" height="100%">
+      <circle cx="40" cy="40" r="30" fill={bg} />
+      {/* Worried brows */}
+      <path d="M25 30 Q28 27 32 29" stroke={ink} strokeWidth="2.2" strokeLinecap="round" fill="none" />
+      <path d="M48 29 Q52 27 55 30" stroke={ink} strokeWidth="2.2" strokeLinecap="round" fill="none" />
+      {/* Dot eyes */}
+      <circle cx="30" cy="36" r="3" fill={ink} />
+      <circle cx="50" cy="36" r="3" fill={ink} />
+      {/* Slight frown */}
+      <path d="M31 50 Q40 46 49 50" stroke={ink} strokeWidth="2.5" strokeLinecap="round" fill="none" />
+    </svg>
+  );
 }
 function PillFaceOkay({ active }: { active: boolean }) {
-  const fill = active ? "#E8A8C8" : "#F0C0D8"; const c = "#8A3870";
-  return <svg viewBox="0 0 80 80" fill="none" width="100%" height="100%"><circle cx="40" cy="40" r="32" fill={fill} /><circle cx="28" cy="35" r="3.5" fill={c} /><circle cx="52" cy="35" r="3.5" fill={c} /><circle cx="40" cy="44" r="1.8" fill={c} opacity="0.7" /><line x1="30" y1="53" x2="50" y2="53" stroke={c} strokeWidth="2" strokeLinecap="round" /></svg>;
+  // Neutral yellow — flat line mouth, simple eyes
+  const bg = active ? "#F5C842" : "#FAD96A"; const ink = "#7A5000";
+  return (
+    <svg viewBox="0 0 80 80" fill="none" width="100%" height="100%">
+      <circle cx="40" cy="40" r="30" fill={bg} />
+      {/* Round dot eyes */}
+      <circle cx="30" cy="36" r="3.5" fill={ink} />
+      <circle cx="50" cy="36" r="3.5" fill={ink} />
+      {/* Highlight dots */}
+      <circle cx="31.5" cy="34.5" r="1.2" fill="white" />
+      <circle cx="51.5" cy="34.5" r="1.2" fill="white" />
+      {/* Flat mouth */}
+      <line x1="31" y1="51" x2="49" y2="51" stroke={ink} strokeWidth="2.5" strokeLinecap="round" />
+    </svg>
+  );
 }
 function PillFaceGood({ active }: { active: boolean }) {
-  const fill = active ? "#F0B8D8" : "#F8CCE8"; const c = "#9A3880";
-  return <svg viewBox="0 0 80 80" fill="none" width="100%" height="100%"><circle cx="40" cy="40" r="32" fill={fill} /><path d="M24 36 Q28 31 32 36" stroke={c} strokeWidth="2.5" strokeLinecap="round" fill="none" /><path d="M48 36 Q52 31 56 36" stroke={c} strokeWidth="2.5" strokeLinecap="round" fill="none" /><path d="M30 50 Q40 57 50 50" stroke={c} strokeWidth="2" strokeLinecap="round" fill="none" /></svg>;
+  // Happy yellow — curved up eyes, big smile
+  const bg = active ? "#F5C842" : "#FAD96A"; const ink = "#7A5000";
+  return (
+    <svg viewBox="0 0 80 80" fill="none" width="100%" height="100%">
+      <circle cx="40" cy="40" r="30" fill={bg} />
+      {/* Happy crescent eyes */}
+      <path d="M26 38 Q30 33 34 38" stroke={ink} strokeWidth="2.5" strokeLinecap="round" fill="none" />
+      <path d="M46 38 Q50 33 54 38" stroke={ink} strokeWidth="2.5" strokeLinecap="round" fill="none" />
+      {/* Big smile */}
+      <path d="M29 49 Q40 58 51 49" stroke={ink} strokeWidth="2.5" strokeLinecap="round" fill="none" />
+      {/* Rosy cheeks */}
+      <ellipse cx="24" cy="46" rx="5" ry="3.5" fill="#F09060" opacity="0.35" />
+      <ellipse cx="56" cy="46" rx="5" ry="3.5" fill="#F09060" opacity="0.35" />
+    </svg>
+  );
 }
 function PillFaceGlowing({ active }: { active: boolean }) {
-  const fill = active ? "#F8C8E8" : "#FDD8F0"; const c = "#A84888";
-  const pts = Array.from({ length: 20 }, (_, i) => { const a = (i * Math.PI) / 10 - Math.PI / 2; const r = i % 2 === 0 ? 38 : 28; return `${40 + r * Math.cos(a)},${40 + r * Math.sin(a)}`; }).join(" ");
-  return <svg viewBox="0 0 80 80" fill="none" width="100%" height="100%"><polygon points={pts} fill={fill} /><path d="M26 37 Q30 32 34 37" stroke={c} strokeWidth="2.5" strokeLinecap="round" fill="none" /><path d="M46 37 Q50 32 54 37" stroke={c} strokeWidth="2.5" strokeLinecap="round" fill="none" /><path d="M28 50 Q40 60 52 50" stroke={c} strokeWidth="2" strokeLinecap="round" fill="none" /></svg>;
+  // Ecstatic yellow — star/sparkle eyes, huge grin
+  const bg = active ? "#F5C842" : "#FAD96A"; const ink = "#7A5000";
+  return (
+    <svg viewBox="0 0 80 80" fill="none" width="100%" height="100%">
+      <circle cx="40" cy="40" r="30" fill={bg} />
+      {/* Star left eye */}
+      <path d="M30 37 L31.5 33 L33 37 L37 38.5 L33 40 L31.5 44 L30 40 L26 38.5 Z" fill={ink} />
+      {/* Star right eye */}
+      <path d="M50 37 L51.5 33 L53 37 L57 38.5 L53 40 L51.5 44 L50 40 L46 38.5 Z" fill={ink} />
+      {/* Huge open grin */}
+      <path d="M27 50 Q40 62 53 50" stroke={ink} strokeWidth="2.5" strokeLinecap="round" fill="none" />
+      <path d="M27 50 Q40 60 53 50 Q40 52 27 50 Z" fill={ink} opacity="0.12" />
+      {/* Rosy cheeks */}
+      <ellipse cx="22" cy="47" rx="6" ry="4" fill="#F09060" opacity="0.4" />
+      <ellipse cx="58" cy="47" rx="6" ry="4" fill="#F09060" opacity="0.4" />
+      {/* Sparkle */}
+      <path d="M62 22 L63 18 L64 22 L68 23 L64 24 L63 28 L62 24 L58 23 Z" fill="#F5C842" stroke={ink} strokeWidth="0.8" />
+    </svg>
+  );
 }
 
 const PILL_FACES = [PillFaceDrained, PillFaceLow, PillFaceOkay, PillFaceGood, PillFaceGlowing];
