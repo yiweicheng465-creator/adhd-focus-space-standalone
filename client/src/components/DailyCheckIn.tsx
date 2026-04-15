@@ -568,6 +568,31 @@ Be warm but concise. Speak directly to the user. No bullet points.`,
           {/* TASKS */}
           {step === "tasks" && (
             <div>
+              {/* AI suggested tasks from Morning Brief */}
+              {topTaskIds.length > 0 && (() => {
+                const allTasks: Task[] = (() => { try { return JSON.parse(localStorage.getItem("adhd-tasks") ?? "[]"); } catch { return []; } })();
+                const suggested = topTaskIds.map(id => allTasks.find(t => t.id === id)).filter(Boolean) as Task[];
+                if (!suggested.length) return null;
+                const PRIORITY_COLOR: Record<string, string> = { urgent: "oklch(0.52 0.10 32)", focus: "oklch(0.52 0.14 290)", normal: "oklch(0.55 0.10 330)", someday: "oklch(0.62 0.04 330)" };
+                return (
+                  <div style={{ marginBottom: 14, padding: "10px 12px", background: `${M.accent}08`, border: `1px solid ${M.accent}30`, borderRadius: 8 }}>
+                    <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.52rem", letterSpacing: "0.10em", color: M.accent, textTransform: "uppercase", marginBottom: 8, display: "flex", alignItems: "center", gap: 5 }}>
+                      <span>✦</span> AI suggested focus today
+                    </p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                      {suggested.map((task, i) => (
+                        <div key={task.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.50rem", color: M.muted, minWidth: 12 }}>{i + 1}.</span>
+                          <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 6, padding: "5px 8px", background: "white", borderRadius: 5, border: `1px solid ${M.border}`, borderLeft: `3px solid ${PRIORITY_COLOR[task.priority] ?? M.accent}` }}>
+                            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem", color: M.ink, flex: 1 }}>{task.text}</span>
+                            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.46rem", color: PRIORITY_COLOR[task.priority] ?? M.muted, letterSpacing: "0.06em", textTransform: "uppercase" }}>{task.priority}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
               <p className="text-sm mb-3" style={{ color: M.muted }}>
                 Add tasks for today. Press Enter to add each one.
               </p>
