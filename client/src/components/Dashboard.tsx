@@ -193,8 +193,9 @@ export function Dashboard({
       const systemPrompt = `You are a warm, encouraging ADHD productivity coach. Keep replies short (1-2 sentences).
 You CAN take actions on the user's tasks. After your reply, if an action is needed output it on a new line as JSON:
 ACTION:{"type":"complete_task","taskId":"id"} — to mark a task done
-ACTION:{"type":"create_task","text":"task text","priority":"focus|normal|urgent"} — to add a task
+ACTION:{"type":"create_task","text":"task text","priority":"focus|normal|urgent","context":"work|personal","dueDate":"YYYY-MM-DD or null"} — to add a task (use dueDate if user mentions a specific day like "Saturday", "tomorrow", "next Monday")
 ACTION:{"type":"none"} — if no action needed
+Today is ${new Date().toISOString().slice(0,10)} (${new Date().toLocaleDateString("en-US",{weekday:"long"})}).`
 
 Current tasks:
 ${taskSummary || "none"}
@@ -235,11 +236,12 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
               id: Math.random().toString(36).slice(2),
               text: action.text,
               priority: (action.priority as Task["priority"]) ?? "normal",
-              context: "work",
+              context: (action.context as Task["context"]) ?? "work",
               done: false,
               createdAt: new Date(),
+              ...(action.dueDate ? { dueDate: action.dueDate as string } : {}),
             });
-            displayReply += `\n✓ Created task: "${action.text}"`;
+            displayReply += `\n✓ Created task: "${action.text}"${action.dueDate ? ` (due ${action.dueDate})` : ""}`;
           }
         } catch { /* ignore parse errors */ }
       }

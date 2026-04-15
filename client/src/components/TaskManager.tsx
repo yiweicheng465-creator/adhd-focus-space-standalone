@@ -9,9 +9,8 @@ import { CalendarView } from "./CalendarView";
 import { EisenhowerMatrix, priorityToQuadrant, type QuadrantId } from "./EisenhowerMatrix";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Circle, Flame, List, CalendarDays, Loader2, Plus, Sparkles, Star, Trash2, Zap } from "lucide-react";
+import { CheckCircle2, Circle, Flame, List, CalendarDays, Plus, Star, Trash2, Zap } from "lucide-react";
 import { toast } from "sonner";
-import { callAI } from "@/lib/ai";
 import { nanoid } from "nanoid";
 import {
   ContextSwitcher, ContextBadge, getContextConfig,
@@ -106,11 +105,10 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
   const [newTaskContext,  setNewTaskContext]  = useState<ItemContext>("work");
   const [newTaskGoalId,   setNewTaskGoalId]   = useState<string | null>(null);
   const [newTaskDueDate,  setNewTaskDueDate]  = useState<string>("");
-  const [aiGenerating,    setAiGenerating]    = useState(false);
   const [completingId,    setCompletingId]    = useState<string | null>(null);
   const [activeContext,   setActiveContext]   = useState<ActiveContext>(defaultContext);
   const [filter,          setFilter]          = useState<"all" | "active" | "done">("active");
-  const [viewMode,        setViewMode]        = useState<"list" | "calendar">("list");
+  const [viewMode,        setViewMode]        = useState<"list" | "calendar">("calendar");
   // Inline editing state
   // Quadrant map: taskId → quadrantId (persisted in component state)
   const [quadrantMap, setQuadrantMap]         = useState<Record<string, QuadrantId>>(() => {
@@ -131,25 +129,6 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
   // Detect hashtag in current input for live preview
   const { tag: liveTag } = parseHashtag(newTaskText);
 
-  const handleAiTask = async () => {
-    const input = newTaskText.trim();
-    if (!input) return;
-    setAiGenerating(true);
-    try {
-      const result = await callAI(
-        `You convert a user's rough note into a clean, actionable task name.
-Rules: max 60 chars, start with a verb, no filler words, keep it specific.
-Return ONLY the task name, nothing else.`,
-        input
-      );
-      setNewTaskText(result.trim().replace(/^["']|["']$/g, ""));
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "";
-      if (msg !== "no-key" && msg !== "invalid-key") toast.error("AI unavailable", { duration: 3000 });
-    } finally {
-      setAiGenerating(false);
-    }
-  };
 
   const addTask = () => {
     if (!newTaskText.trim()) return;
@@ -222,7 +201,7 @@ Return ONLY the task name, nothing else.`,
             value={newTaskText}
             onChange={(e) => setNewTaskText(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addTask()}
-            placeholder="task name... or describe to AI ✦"
+            placeholder="task name... #tag"
             className="flex-1"
             style={{
               background: M.card,
@@ -237,25 +216,7 @@ Return ONLY the task name, nothing else.`,
               color: "oklch(0.35 0.02 70)",
             }}
           />
-          {/* AI refine button */}
-          <button
-            onClick={handleAiTask}
-            disabled={aiGenerating || !newTaskText.trim()}
-            title="AI: clean up & improve this task name"
-            style={{
-              flexShrink: 0, padding: "0 10px", borderRadius: 4,
-              border: `1px solid ${M.coral}60`,
-              background: newTaskText.trim() ? `${M.coral}10` : "transparent",
-              color: newTaskText.trim() ? M.coral : M.muted,
-              cursor: aiGenerating || !newTaskText.trim() ? "not-allowed" : "pointer",
-              display: "flex", alignItems: "center", gap: 4,
-              transition: "all 0.15s",
-            }}
-          >
-            {aiGenerating
-              ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} />
-              : <Sparkles size={13} />}
-          </button>
+
           <button
             onClick={addTask}
             className="m-btn-primary shrink-0"
