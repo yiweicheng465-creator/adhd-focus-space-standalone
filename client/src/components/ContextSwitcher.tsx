@@ -180,23 +180,37 @@ export function ClickableContextBadge({ context, allContexts, onChange }: {
   onChange: (ctx: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [dropPos, setDropPos] = useState<{ top: number; left: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
   const cfg = getContextConfig(context);
   const Icon = cfg.icon;
 
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (
+        btnRef.current && !btnRef.current.contains(e.target as Node) &&
+        dropRef.current && !dropRef.current.contains(e.target as Node)
+      ) setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
+  const handleOpen = () => {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setDropPos({ top: rect.bottom + 4, left: rect.left });
+    }
+    setOpen(o => !o);
+  };
+
   return (
-    <div ref={ref} style={{ position: "relative", display: "inline-flex" }}>
+    <div style={{ display: "inline-flex" }}>
       <button
-        onClick={() => setOpen(o => !o)}
+        ref={btnRef}
+        onClick={handleOpen}
         className="inline-flex items-center gap-1 shrink-0"
         style={{
           background: cfg.bg, color: cfg.color, border: `1.5px solid ${cfg.border}`,
@@ -207,11 +221,10 @@ export function ClickableContextBadge({ context, allContexts, onChange }: {
       >
         <Icon style={{ width: 9, height: 9 }} />
         {cfg.label}
-        <span style={{ fontSize: "0.5rem", opacity: 0.6, marginLeft: 1 }}>▾</span>
       </button>
-      {open && (
-        <div style={{
-          position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 9999,
+      {open && dropPos && (
+        <div ref={dropRef} style={{
+          position: "fixed", top: dropPos.top, left: dropPos.left, zIndex: 99999,
           background: "#fdf4f8", border: "1.5px solid oklch(0.82 0.050 340)",
           borderRadius: 6, boxShadow: "0 4px 16px rgba(140,40,90,0.15)",
           padding: "4px", minWidth: 120, display: "flex", flexDirection: "column", gap: 1,
