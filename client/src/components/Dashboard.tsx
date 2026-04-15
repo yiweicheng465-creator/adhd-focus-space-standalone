@@ -161,6 +161,14 @@ export function Dashboard({
   const [quickCapture, setQuickCapture] = useState("");
   const [completing, setCompleting] = useState<string | null>(null);
   const dumpInputRef = useRef<HTMLInputElement>(null);
+  const [showAI, setShowAI] = useState<boolean>(() => {
+    return localStorage.getItem("adhd-dashboard-show-ai") !== "false";
+  });
+  const toggleAI = () => setShowAI(v => {
+    const next = !v;
+    localStorage.setItem("adhd-dashboard-show-ai", String(next));
+    return next;
+  });
 
   // ── AI Chat ──
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>(() => {
