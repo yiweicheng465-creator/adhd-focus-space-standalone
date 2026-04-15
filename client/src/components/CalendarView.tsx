@@ -214,27 +214,9 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle }: Props) {
           </div>
         </div>
 
-        {/* Tasks — scrollable with time indicators */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "5px 2px 5px 0", minHeight: 60, maxHeight: 280 }}>
-          {dayTasks.map((t, idx) => {
-            const startHour = 9; const endHour = 18;
-            const totalSlots = Math.max(dayTasks.length, 1);
-            const minPerSlot = ((endHour - startHour) * 60) / totalSlots;
-            const slotMin = Math.round(startHour * 60 + idx * minPerSlot);
-            const h = Math.floor(slotMin / 60);
-            const m = slotMin % 60;
-            const timeStr = `${h > 12 ? h - 12 : h}:${m.toString().padStart(2,"0")}${h >= 12 ? "pm" : "am"}`;
-            return (
-              <div key={t.id} style={{ display: "flex", alignItems: "flex-start", gap: 3, marginBottom: 3 }}>
-                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.38rem", color: isToday ? M.coral : M.muted, opacity: 0.7, minWidth: 28, paddingTop: 4, textAlign: "right", flexShrink: 0 }}>
-                  {timeStr}
-                </span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <TaskChip task={t} dayYMD={ymd} />
-                </div>
-              </div>
-            );
-          })}
+        {/* Tasks — scrollable */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "5px 4px", minHeight: 60, maxHeight: 280 }}>
+          {dayTasks.map(t => <TaskChip key={t.id} task={t} dayYMD={ymd} />)}
           {isOver && dragId && (
             <div style={{ textAlign: "center", fontSize: "0.48rem", fontFamily: "'Space Mono', monospace", color: M.coral, opacity: 0.8 }}>
               drop here
@@ -429,7 +411,7 @@ function DayDetailModal({ selectedDay, onClose, getTasksForDay, dayOrder, saveDa
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(140,40,90,0.18)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
       onClick={onClose}>
-      <div style={{ background: "#fdf4f8", borderRadius: 12, width: "min(380px, 94vw)", maxHeight: "70vh", display: "flex", flexDirection: "column", boxShadow: "0 20px 48px rgba(140,40,90,0.22)", overflow: "hidden" }}
+      <div style={{ background: "#fdf4f8", borderRadius: 16, width: "min(480px, 94vw)", maxHeight: "75vh", display: "flex", flexDirection: "column", boxShadow: "0 24px 60px rgba(140,40,90,0.28), 0 8px 24px rgba(0,0,0,0.10)", overflow: "hidden" }}
         onClick={e => e.stopPropagation()}>
         <div style={{ padding: "12px 16px 10px", borderBottom: "1px solid oklch(0.82 0.050 340)", background: "#F9D6E8", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "1rem", fontWeight: 700, color: "oklch(0.28 0.040 320)", fontStyle: "italic" }}>
@@ -474,7 +456,18 @@ function DayDetailModal({ selectedDay, onClose, getTasksForDay, dayOrder, saveDa
                   borderTop: dragOverTask?.id === task.id && dragOverTask.pos === "before" ? `2px solid oklch(0.58 0.18 340)` : "none",
                 }}>
                 <button onClick={() => onTaskToggle(task.id)} style={{ flexShrink: 0, width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${PRIORITY_COLOR[task.priority] ?? "oklch(0.58 0.18 340)"}`, background: "transparent", cursor: "pointer", padding: 0 }} />
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", color: M.ink, flex: 1 }}>{task.text}</span>
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 1 }}>
+                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", color: M.ink }}>{task.text}</span>
+                  {(() => {
+                    const totalSlots = Math.max(filtered.length, 1);
+                    const minPerSlot = ((18 - 9) * 60) / totalSlots;
+                    const slotMin = Math.round(9 * 60 + i * minPerSlot);
+                    const h = Math.floor(slotMin / 60);
+                    const m = slotMin % 60;
+                    const timeStr = `${h > 12 ? h - 12 : h}:${m.toString().padStart(2,"0")}${h >= 12 ? "pm" : "am"}`;
+                    return <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.48rem", color: M.muted, opacity: 0.65 }}>{timeStr}</span>;
+                  })()}
+                </div>
                 <span style={{ fontSize: "0.48rem", fontFamily: "'Space Mono', monospace", color: M.muted, textTransform: "uppercase" as const }}>{task.context}</span>
               </div>
             ))
