@@ -521,7 +521,7 @@ function DayDetailModal({ selectedDay, onClose, getTasksForDay, dayOrder, saveDa
                   <div style={{ width: 1, height: 16, background: "oklch(0.82 0.050 340 / 0.5)", flexShrink: 0 }} />
                   <span
                     onClick={() => editingId === task.id ? setEditingId(null) : openEdit(task)}
-                    style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", color: M.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: task.done ? "line-through" : "none", opacity: task.done ? 0.5 : 1 }}
+                    style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", color: M.ink, lineHeight: 1.5, cursor: "pointer", textDecoration: task.done ? "line-through" : "none", opacity: task.done ? 0.5 : 1, wordBreak: "break-word" }}
                   >
                     {task.text}
                   </span>
@@ -531,9 +531,9 @@ function DayDetailModal({ selectedDay, onClose, getTasksForDay, dayOrder, saveDa
                 {editingId === task.id && (
                   <div style={{ margin: "0 14px 8px", padding: "10px 12px", background: "white", border: "1px solid oklch(0.82 0.050 340)", borderRadius: 8, display: "flex", flexDirection: "column", gap: 8 }}>
                     {/* Text */}
-                    <input value={editText} onChange={e => setEditText(e.target.value)}
-                      autoFocus
-                      style={{ width: "100%", boxSizing: "border-box", fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", padding: "5px 8px", border: "1px solid oklch(0.82 0.050 340)", borderRadius: 4, outline: "none", color: M.ink }} />
+                    <textarea value={editText} onChange={e => setEditText(e.target.value)}
+                      autoFocus rows={3}
+                      style={{ width: "100%", boxSizing: "border-box", fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", padding: "5px 8px", border: "1px solid oklch(0.82 0.050 340)", borderRadius: 4, outline: "none", color: M.ink, resize: "vertical", lineHeight: 1.5 }} />
                     {/* Priority + Date row */}
                     <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                       {["urgent","focus","normal"].map(p => {
