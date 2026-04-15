@@ -556,7 +556,7 @@ export default function StorageBackup() {
           ))}
         </div>
         <p style={{ fontSize: 10, color: M.muted, fontFamily: "'DM Sans', sans-serif", marginTop: 8 }}>
-          Not included: Google OAuth tokens, OpenAI API key (stored server-side).
+
         </p>
       </Section>
     </div>

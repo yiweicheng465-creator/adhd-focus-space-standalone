@@ -9,7 +9,7 @@ import { CalendarView } from "./CalendarView";
 import { EisenhowerMatrix, priorityToQuadrant, type QuadrantId } from "./EisenhowerMatrix";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Circle, Flame, List, CalendarDays, Plus, Star, Trash2, Zap } from "lucide-react";
+import { CheckCircle2, Circle, Flame, List, CalendarDays, Loader2, Plus, Sparkles, Star, Trash2, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { callAI } from "@/lib/ai";
 import { nanoid } from "nanoid";
