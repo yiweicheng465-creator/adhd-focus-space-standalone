@@ -41,9 +41,12 @@ const DEFAULT_CHIPS = [
 
 interface GlobalQuickAddProps {
   onAddTask: (task: Task) => void;
+  onAddGoal?: (text: string, context?: string) => void;
+  onAddWin?: (text: string, iconIdx?: number) => void;
+  onAddDump?: (text: string) => void;
 }
 
-export function GlobalQuickAdd({ onAddTask }: GlobalQuickAddProps) {
+export function GlobalQuickAdd({ onAddTask, onAddGoal, onAddWin, onAddDump }: GlobalQuickAddProps) {
   const [open, setOpen]           = useState(false);
   const [configMode, setConfigMode] = useState(false);
   const [text, setText]           = useState("");
@@ -105,28 +108,42 @@ export function GlobalQuickAdd({ onAddTask }: GlobalQuickAddProps) {
       const todayName = new Date().toLocaleDateString("en-US", { weekday: "long" });
 
       const result = await callAI(
-        `Parse this task request and return ONLY valid JSON:
-{"text":"clean task name (verb + specific)","priority":"urgent|focus|normal","context":"work|personal","dueDate":"YYYY-MM-DD or today or tomorrow or null","goalName":"partial goal name or null"}
-Today is ${today} (${todayName}). Available goals: ${goalList || "none"}.
-Rules: start text with verb, max 60 chars, match goalName to closest goal if mentioned.`,
+        `Parse this capture request and return ONLY valid JSON:
+{"type":"task|goal|win|dump","text":"clean content","priority":"urgent|focus|normal","context":"work|personal","dueDate":"YYYY-MM-DD or today or tomorrow or null","goalName":"partial goal name or null"}
+type: "task" for actionable tasks, "goal" for long-term goals/aspirations, "win" for accomplishments to celebrate, "dump" for random thoughts/ideas.
+Today is ${today} (${todayName}). Available goals: ${goalList || "none"}.`,
         text.trim()
       );
       const match = result.match(/\{[\s\S]*\}/);
       if (match) {
-        const parsed = JSON.parse(match[0]) as { text?: string; priority?: string; context?: string; dueDate?: string; goalName?: string };
-        const taskText = parsed.text?.trim() || text.trim();
-        const taskPriority = (["urgent","focus","normal"].includes(parsed.priority ?? "") ? parsed.priority : "focus") as Priority;
-        const taskContext = (["work","personal"].includes(parsed.context ?? "") ? parsed.context : "personal") as "work" | "personal";
-        let taskDue = parsed.dueDate ?? null;
-        if (taskDue === "today") taskDue = today;
-        if (taskDue === "tomorrow") { const d = new Date(); d.setDate(d.getDate()+1); taskDue = d.toISOString().slice(0,10); }
-        let taskGoalId: string | undefined;
-        if (parsed.goalName) {
-          const gMatch = goals.find(g => g.text.toLowerCase().includes(parsed.goalName!.toLowerCase()));
-          if (gMatch) taskGoalId = gMatch.id;
+        const parsed = JSON.parse(match[0]) as { type?: string; text?: string; priority?: string; context?: string; dueDate?: string; goalName?: string };
+        const cleanText = parsed.text?.trim() || text.trim();
+        const type = parsed.type ?? "task";
+
+        if (type === "goal" && onAddGoal) {
+          onAddGoal(cleanText, parsed.context);
+          toast.success(`🎯 Goal created: ${cleanText}`);
+        } else if (type === "win" && onAddWin) {
+          onAddWin(cleanText, parsed.context === "work" ? 2 : parsed.context === "personal" ? 5 : 4);
+          toast.success(`🏆 Win logged: ${cleanText}`);
+        } else if (type === "dump" && onAddDump) {
+          onAddDump(cleanText);
+          toast.success(`💭 Added to Brain Dump`);
+        } else {
+          // Default: create task
+          const taskPriority = (["urgent","focus","normal"].includes(parsed.priority ?? "") ? parsed.priority : "focus") as Priority;
+          const taskContext = (["work","personal"].includes(parsed.context ?? "") ? parsed.context : "personal") as "work" | "personal";
+          let taskDue = parsed.dueDate ?? null;
+          if (taskDue === "today") taskDue = today;
+          if (taskDue === "tomorrow") { const d = new Date(); d.setDate(d.getDate()+1); taskDue = d.toISOString().slice(0,10); }
+          let taskGoalId: string | undefined;
+          if (parsed.goalName) {
+            const gMatch = goals.find(g => g.text.toLowerCase().includes(parsed.goalName!.toLowerCase()));
+            if (gMatch) taskGoalId = gMatch.id;
+          }
+          onAddTask({ id: nanoid(), text: cleanText, priority: taskPriority, context: taskContext, done: false, createdAt: new Date(), ...(taskDue ? { dueDate: taskDue } : {}), ...(taskGoalId ? { goalId: taskGoalId } : {}) });
+          toast.success(`✓ Task: ${cleanText} · ${taskPriority}${taskDue ? " · " + taskDue : ""}${taskGoalId ? " → goal" : ""}`);
         }
-        onAddTask({ id: nanoid(), text: taskText, priority: taskPriority, context: taskContext, done: false, createdAt: new Date(), ...(taskDue ? { dueDate: taskDue } : {}), ...(taskGoalId ? { goalId: taskGoalId } : {}) });
-        toast.success(`✓ ${taskText} · ${taskPriority}${taskDue ? " · " + taskDue : ""}${taskGoalId ? " → goal" : ""}`);
         setText(""); setAiMode(false); setOpen(false);
       }
     } catch (err) {

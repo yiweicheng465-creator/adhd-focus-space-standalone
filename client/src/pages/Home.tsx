@@ -872,7 +872,19 @@ export default function Home() {
       </main>
 
       {/* ── Global overlays ── */}
-      <GlobalQuickAdd onAddTask={(t) => setTasks((p) => [t, ...p])} />
+      <GlobalQuickAdd
+        onAddTask={(t) => setTasks((p) => [t, ...p])}
+        onAddGoal={(text, context) => {
+          setGoals((prev: any) => [{ id: `g-${Date.now()}`, text, progress: 0, context: context ?? "personal", createdAt: new Date() }, ...prev]);
+        }}
+        onAddWin={(text, iconIdx) => {
+          setWins((prev: any) => [{ id: `w-${Date.now()}`, text, iconIdx: iconIdx ?? 4, createdAt: new Date() }, ...prev]);
+        }}
+        onAddDump={(text) => {
+          window.dispatchEvent(new CustomEvent("quickDump", { detail: text }));
+          setActiveSection("dump");
+        }}
+      />
       <ConfettiCelebration trigger={confettiTrigger} onComplete={() => setConfettiTrigger(false)} />
 
       {wrapUpOpen && (
