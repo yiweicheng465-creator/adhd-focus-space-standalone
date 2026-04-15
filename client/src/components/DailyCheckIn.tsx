@@ -254,7 +254,6 @@ export function DailyCheckIn({ onComplete, onSkip, onClose, displayName, existin
       await callAIStream(
         `You are a warm ADHD morning coach. Write 2-3 sentences max.
 ${isBusy ? "The user has a busy day ahead. Acknowledge the load, name 1-2 urgent tasks to tackle first, give one short actionable focus tip." : "The user has a lighter day. Encourage them to use free time to dump ideas or plan future tasks."}
-End with one brief tip to help avoid mindless phone scrolling today (e.g. put phone face down, set app limits, use focus timer before checking social).
 Be direct, warm, specific. No generic platitudes. No bullet points.`,
         ctx,
         (delta) => setBriefText(prev => prev + delta),
