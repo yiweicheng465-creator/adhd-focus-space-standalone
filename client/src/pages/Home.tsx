@@ -836,14 +836,36 @@ export default function Home() {
             )}
 
             {activeSection === "goals" && (
-              <RetroPageWrapper title="goals.md" sticker="leaf">
-              <div className="p-8 min-h-[600px] flex flex-col relative overflow-hidden">
-                <GoalsDecor />
-                <div className="relative z-10">
-                  <Goals goals={goals} onGoalsChange={setGoals} allCategories={allCategories} onDeleteCategory={handleDeleteCategory} tasks={tasks} onTasksChange={handleTasksChange} />
+              <>
+                <RetroPageWrapper title="goals.md" sticker="leaf">
+                <div className="p-8 min-h-[600px] flex flex-col relative overflow-hidden">
+                  <GoalsDecor />
+                  <div className="relative z-10">
+                    <Goals goals={goals} onGoalsChange={setGoals} allCategories={allCategories} onDeleteCategory={handleDeleteCategory} tasks={tasks} onTasksChange={handleTasksChange} />
+                  </div>
                 </div>
-              </div>
-              </RetroPageWrapper>
+                </RetroPageWrapper>
+                {/* Life Coach floating button — right side of screen */}
+                <button
+                  onClick={() => {
+                    const goalEl = document.querySelector('[data-life-coach-trigger]') as HTMLButtonElement | null;
+                    if (goalEl) goalEl.click();
+                  }}
+                  style={{
+                    position: "fixed", right: 16, top: "50%", transform: "translateY(-50%)",
+                    zIndex: 50, background: "oklch(0.58 0.12 285)", color: "white",
+                    border: "none", borderRadius: "8px 0 0 8px", padding: "12px 8px",
+                    cursor: "pointer", writingMode: "vertical-rl", textOrientation: "mixed",
+                    fontFamily: "'Space Mono', monospace", fontSize: "0.50rem", letterSpacing: "0.10em",
+                    boxShadow: "-2px 0 12px oklch(0.55 0.12 285 / 0.25)",
+                    display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                  }}
+                  title="Open Life Coach AI"
+                >
+                  🧭
+                  <span style={{ writingMode: "vertical-rl", fontSize: "0.44rem", letterSpacing: "0.12em" }}>LIFE COACH</span>
+                </button>
+              </>
             )}
 
             {activeSection === "agents" && (

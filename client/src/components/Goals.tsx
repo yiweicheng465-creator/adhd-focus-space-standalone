@@ -35,7 +35,7 @@ export interface Goal {
 }
 
 const M = {
-  coral:    "oklch(0.55 0.12 270)",   // blue-purple accent
+  coral:    "oklch(0.58 0.12 285)",   // purple-blue accent
   coralBg:  "oklch(0.55 0.12 270 / 0.08)",
   coralBdr: "oklch(0.55 0.12 270 / 0.28)",
   sage:     "oklch(0.55 0.10 290)",   // purple-sage for done
@@ -51,8 +51,8 @@ const M = {
 };
 // Progress gradient: blue → purple
 const PROGRESS_GRADIENT = (done: boolean) => done
-  ? "linear-gradient(90deg, oklch(0.55 0.10 290), oklch(0.60 0.08 310))"
-  : "linear-gradient(90deg, oklch(0.58 0.14 240), oklch(0.55 0.12 280), oklch(0.52 0.10 300))";
+  ? "linear-gradient(90deg, oklch(0.60 0.08 285), oklch(0.58 0.10 245))"
+  : "linear-gradient(90deg, oklch(0.60 0.12 290), oklch(0.62 0.10 260), oklch(0.65 0.08 240))";
 
 const LABEL: React.CSSProperties = {
   fontFamily: "'DM Sans', sans-serif",
@@ -141,23 +141,10 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
   const CAT_SALMON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410012773/WNs8kMVMKanwFbtYhk72en/cat4_salmon_sitting_2fe20a45.png";
   return (
     <div className="flex flex-col gap-4 h-full" style={{ position: "relative" }}>
+      {/* Hidden trigger for external Life Coach button */}
+      <button data-life-coach-trigger onClick={() => setShowLifeCoach(true)} style={{ display: "none" }} />
       {/* Cat sticker: salmon sitting cat — bottom-right corner */}
       <img src={CAT_SALMON} alt="" aria-hidden="true" style={{ position: "absolute", bottom: 0, right: 0, width: 70, opacity: 0.38, pointerEvents: "none", zIndex: 5 }} />
-      {/* Life Coach AI button — corner */}
-      <button
-        onClick={() => setShowLifeCoach(true)}
-        style={{
-          position: "absolute", top: 0, right: 0, zIndex: 10,
-          display: "flex", alignItems: "center", gap: 4,
-          background: M.coralBg, border: `1px solid ${M.coralBdr}`,
-          borderRadius: "0 0 0 8px", padding: "5px 10px",
-          fontFamily: "'Space Mono', monospace", fontSize: "0.50rem",
-          letterSpacing: "0.08em", color: M.coral, cursor: "pointer",
-        }}
-      >
-        <Sparkles style={{ width: 10, height: 10 }} />
-        🧭 LIFE COACH
-      </button>
       {showLifeCoach && <LifeCoachModal onClose={() => setShowLifeCoach(false)} goals={goals} />}
       {/* Overall progress */}
       {visibleGoals.length > 0 && (
@@ -289,6 +276,8 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
               style={{
                 background: done ? M.sageBg : M.card,
                 border: dragOverGoalId === goal.id ? `2px dashed ${M.coral}` : `1px solid ${done ? M.sageBdr : M.border}`,
+                borderRadius: 14,
+                boxShadow: "0 2px 12px oklch(0.55 0.12 285 / 0.08), 0 1px 3px oklch(0.28 0.04 320 / 0.06)",
               }}
               onDragOver={(e) => { e.preventDefault(); setDragOverGoalId(goal.id); }}
               onDragLeave={(e) => {
@@ -344,7 +333,7 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
                     </button>
                   ) : (
                     <button
-                      onClick={() => onGoalsChange(goals.map(g => g.id === goal.id ? { ...g, archived: false, archivedAt: undefined } : g))}
+                      onClick={() => { onGoalsChange(goals.map(g => g.id === goal.id ? { ...g, archived: false, archivedAt: undefined } : g)); setShowArchived(false); }}
                       title="Unarchive"
                       className="opacity-0 group-hover:opacity-100 transition-opacity"
                       style={{ color: M.sage, fontSize: "0.55rem", fontFamily: "'Space Mono', monospace" }}
