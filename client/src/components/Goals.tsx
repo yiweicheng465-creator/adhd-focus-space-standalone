@@ -299,6 +299,24 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
                 </button>
               </div>
 
+              {/* Drop zone: drag task from another goal to reassign */}
+              {(() => {
+                const [isDragOver, setIsDragOver] = React.useState(false);
+                return (
+                  <div
+                    onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                    onDragLeave={() => setIsDragOver(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setIsDragOver(false);
+                      const taskId = e.dataTransfer.getData("taskId");
+                      if (!taskId || !onTasksChange) return;
+                      onTasksChange(tasks.map(t => t.id === taskId ? { ...t, goalId: goal.id } : t));
+                    }}
+                    style={{ borderRadius: 4, outline: isDragOver ? `2px dashed ${M.coral}` : "none", outlineOffset: 2, transition: "outline 0.1s" }}
+                  />
+                );
+              })()}
               {/* Linked tasks */}
               {(() => {
                 const linked = tasks.filter((t) => t.goalId === goal.id);
@@ -310,11 +328,14 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
                       {linked.map((t) => (
                         <div
                           key={t.id}
+                          draggable
+                          onDragStart={(e) => { e.dataTransfer.setData("taskId", t.id); e.dataTransfer.effectAllowed = "move"; }}
                           className="flex items-center gap-2 px-2 py-1.5 transition-all"
                           style={{
                             background: t.done ? "oklch(0.97 0.006 78)" : "oklch(0.975 0.010 78)",
                             border: `1px solid ${t.done ? M.sageBdr : M.border}`,
                             opacity: t.done ? 0.7 : 1,
+                            cursor: "grab",
                           }}
                         >
                           <button

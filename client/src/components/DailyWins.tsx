@@ -532,7 +532,7 @@ export function DailyWins({ wins, onWinsChange }: DailyWinsProps) {
         </div>
         <div className="p-3" style={{ background: M.slumBg, border: `1px solid ${M.slumBdr}`, borderRadius: 6 }}>
           <div className="flex items-center gap-2 mb-1">
-            <IconFitness size={14} color={M.slumber} />
+            <IconCreative size={14} color={M.slumber} />
             <span className="text-xs font-medium" style={{ color: M.muted, fontFamily: "'DM Sans', sans-serif" }}>Total</span>
           </div>
           {/* Total counts ALL wins including archived */}

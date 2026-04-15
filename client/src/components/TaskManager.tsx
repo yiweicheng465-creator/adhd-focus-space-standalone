@@ -459,7 +459,7 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
                       color: isOverdue ? "oklch(0.45 0.18 25)" : "oklch(0.42 0.10 32)",
                       border: `1px solid ${isOverdue ? "oklch(0.55 0.14 25 / 0.35)" : "oklch(0.52 0.10 32 / 0.25)"}`,
                     }}>
-                      {isOverdue ? "⚠ " : "📅 "}{label}
+                      {isOverdue ? "● " : "📅 "}{label}
                     </span>
                   );
                 })()}

@@ -690,7 +690,7 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
                   </div>
                 </div>
               ))}
-              {chatLoading && (
+              {chatLoading && chatHistory[chatHistory.length - 1]?.role !== "assistant" && (
                 <div style={{ display: "flex", gap: 3, padding: "5px 9px", background: AI_MSG_BG, border: `1px solid ${AI_BORDER}`, borderRadius: "8px 8px 8px 2px", width: "fit-content" }}>
                   {[0,1,2].map((i) => (
                     <div key={i} style={{
