@@ -236,18 +236,23 @@ export function DailyCheckIn({ onComplete, onSkip, onClose, displayName, existin
         .slice(0, 3);
       setTopTaskIds(top3.map(t => t.id));
 
+      const todayYMD = new Date().toISOString().slice(0,10);
+      const todayTasks = pending.filter(t => !t.dueDate || t.dueDate === todayYMD);
+      const urgentToday = todayTasks.filter(t => t.priority === "urgent");
+      const isBusy = todayTasks.length >= 6 || urgentToday.length >= 2;
+
       const ctx = [
-        `Pending tasks (${pending.length} total): ${pending.slice(0,5).map(t => `"${t.text}" [${t.priority}]`).join(", ")}`,
+        `Today's tasks: ${todayTasks.length} total, ${urgentToday.length} urgent`,
+        urgentToday.length ? `Urgent: ${urgentToday.slice(0,3).map(t => `"${t.text}"`).join(", ")}` : "",
+        `All pending: ${pending.length} tasks`,
         topGoals.length ? `Active goals: ${topGoals.map(g => `"${g.text}" (${g.progress}%)`).join(", ")}` : "",
-        yesterdayLog ? `Yesterday: mood ${yesterdayLog.mood ?? "?"}/5, ${yesterdayLog.tasksCompleted ?? 0} tasks done, ${yesterdayLog.winsCount ?? 0} wins` : "No data from yesterday yet.",
+        yesterdayLog ? `Yesterday: mood ${yesterdayLog.mood ?? "?"}/5, ${yesterdayLog.tasksCompleted ?? 0} tasks done` : "",
       ].filter(Boolean).join("\n");
 
       await callAIStream(
-        `You are a warm, encouraging ADHD morning coach. Write a brief (3-4 sentences) personalized morning message that:
-1. Acknowledges yesterday briefly if there's data
-2. Highlights 1-2 specific tasks from the pending list to focus on today
-3. Ends with a short, genuine encouragement (not generic)
-Be warm but concise. Speak directly to the user. No bullet points.`,
+        `You are a warm ADHD morning coach. Write 2-3 sentences max.
+${isBusy ? "The user has a busy day ahead. Acknowledge the load, name 1-2 urgent tasks to tackle first, give one short focus tip." : "The user has a lighter day. Encourage them to use free time to dump ideas or plan future tasks. Suggest one thing to create or explore."}
+Be direct, warm, specific to their tasks. No generic platitudes. No bullet points.`,
         ctx,
         (delta) => setBriefText(prev => prev + delta),
         () => setBriefLoading(false)
@@ -375,9 +380,10 @@ Be warm but concise. Speak directly to the user. No bullet points.`,
       >
 
         {/* Close (X) button — top right */}
-        <div style={{ position: "absolute", top: 16, right: 16, zIndex: 20 }}>
-          
-        </div>
+        <button
+          onClick={onClose}
+          style={{ position: "absolute", top: 14, right: 14, zIndex: 20, width: 30, height: 30, borderRadius: "50%", background: "rgba(0,0,0,0.07)", border: "none", cursor: "pointer", color: "oklch(0.45 0.04 320)", fontSize: "1.1rem", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}
+        >×</button>
 
         {/* Progress bar */}
         <div className="relative z-10 h-[2px] w-full" style={{ background: "#E8C8DC" }}>
@@ -484,7 +490,7 @@ Be warm but concise. Speak directly to the user. No bullet points.`,
           {/* MOOD */}
           {step === "mood" && (
             <div className="flex flex-col gap-4">
-              <div className="flex items-end justify-between gap-2">
+              <div className="flex items-end justify-between gap-2" style={{ marginTop: 16 }}>
                 {MOODS.map((m, i) => {
                   const FaceIcon = FACE_COMPONENTS[i];
                   const isSelected = mood === m.value;
@@ -492,7 +498,10 @@ Be warm but concise. Speak directly to the user. No bullet points.`,
                     <button
                       key={m.value}
                       onClick={() => setMood(m.value)}
-                      className="flex flex-col items-center gap-1 flex-1 transition-all duration-200 focus:outline-none"
+                      className="flex flex-col items-center gap-1 flex-1 focus:outline-none"
+                      style={{ transition: "transform 0.15s cubic-bezier(0.34,1.56,0.64,1)", transform: "scale(1)" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.18)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
                       style={{
                         transform: isSelected ? "scale(1.18) translateY(-4px)" : "scale(1)",
                         filter: isSelected ? `drop-shadow(0 6px 12px ${m.shadow})` : "none",
