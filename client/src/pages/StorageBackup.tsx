@@ -69,7 +69,11 @@ function connectGoogleDrive(clientId: string): Promise<string> {
       access_type: "offline",
       prompt: "consent",
       callback: async (response: any) => {
-        if (response.error) { reject(new Error(response.error)); return; }
+        if (response.error) {
+          const cancelled = ["popup_closed_by_user", "access_denied", "popup_failed_to_open", "user_cancel"];
+          reject(new Error(cancelled.includes(response.error) ? "CANCELLED" : response.error));
+          return;
+        }
         try {
           const res = await fetch("/api/drive/connect", {
             method: "POST", credentials: "include",
@@ -283,7 +287,6 @@ export default function StorageBackup() {
     setGdStatus("loading");
     setGdMessage("Connecting to Google…");
     try {
-      await loadGapiScripts();
       const token = await getGoogleAccessToken(gdClientId.trim());
       setGdMessage("Uploading backup…");
       const backup = exportAppData();
@@ -301,9 +304,12 @@ export default function StorageBackup() {
         setGdMessage("Backup cancelled.");
       } else {
         setGdStatus("error");
-        setGdMessage(msg ?? "Unknown error");
+        setGdMessage(msg || "Unknown error");
         toast.error("Google Drive backup failed.", { duration: 4000 });
       }
+    } finally {
+      // Safety net: always clear loading state
+      setGdStatus((s) => s === "loading" ? "idle" : s);
     }
   };
 
@@ -317,7 +323,6 @@ export default function StorageBackup() {
     setGdStatus("loading");
     setGdMessage("Connecting to Google…");
     try {
-      await loadGapiScripts();
       const token = await getGoogleAccessToken(gdClientId.trim());
       setGdMessage("Downloading backup from Drive…");
       const backup = await downloadFromDrive(token);
@@ -335,9 +340,11 @@ export default function StorageBackup() {
         setGdMessage("Restore cancelled.");
       } else {
         setGdStatus("error");
-        setGdMessage(msg ?? "Unknown error");
+        setGdMessage(msg || "Unknown error");
         toast.error("Google Drive restore failed.", { duration: 5000 });
       }
+    } finally {
+      setGdStatus((s) => s === "loading" ? "idle" : s);
     }
   };
 
