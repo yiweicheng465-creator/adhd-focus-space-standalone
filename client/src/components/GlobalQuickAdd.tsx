@@ -337,56 +337,39 @@ Rules: start text with verb, max 60 chars, match goalName to closest goal if men
                   </p>
                 ) : (
                   <>
-                  {/* Priority row */}
-                  <div className="flex items-center gap-1.5 mt-2">
-                  {(["urgent", "focus", "normal"] as Priority[]).map((p) => {
-                    const { label, Icon, color, bg, border } = PRIORITY_CFG[p];
-                    const isActive = priority === p;
+                  {/* Compact controls row: icon-only priority + goal + date */}
+                  {(() => {
+                    const goals: { id: string; text: string }[] = (() => { try { return JSON.parse(localStorage.getItem("adhd-goals") ?? "[]"); } catch { return []; } })();
+                    const activeGoals = goals.filter((g: any) => !g.archived);
                     return (
-                      <button
-                        key={p}
-                        onClick={() => setPriority(p)}
-                        className="flex items-center gap-1.5 px-3 py-1 transition-all"
-                        style={{
-                          background:    isActive ? bg : "transparent",
-                          color:         isActive ? color : M.muted,
-                          border:        `1px solid ${isActive ? border : M.border}`,
-                          fontFamily:    "'DM Sans', sans-serif",
-                          fontSize:      "0.62rem",
-                          fontWeight:    isActive ? 600 : 400,
-                          letterSpacing: "0.12em",
-                          textTransform: "uppercase",
-                          borderRadius:  0,
-                        }}
-                      >
-                        <Icon className="w-3 h-3" />
-                        {label}
-                      </button>
+                      <div className="flex items-center gap-1.5 mt-2">
+                        {/* Icon-only priority buttons */}
+                        {(["urgent", "focus", "normal"] as Priority[]).map((p) => {
+                          const { Icon, color, bg, border } = PRIORITY_CFG[p];
+                          const isActive = priority === p;
+                          return (
+                            <button key={p} onClick={() => setPriority(p)} title={p}
+                              style={{ width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", background: isActive ? bg : "transparent", color: isActive ? color : M.muted, border: `1px solid ${isActive ? border : M.border}`, borderRadius: 4, cursor: "pointer", flexShrink: 0 }}>
+                              <Icon style={{ width: 12, height: 12 }} />
+                            </button>
+                          );
+                        })}
+                        {/* Divider */}
+                        <div style={{ width: 1, height: 18, background: M.border, flexShrink: 0 }} />
+                        {/* Goal selector */}
+                        {activeGoals.length > 0 && (
+                          <select value={goalId ?? ""} onChange={e => setGoalId(e.target.value || null)}
+                            style={{ flex: 1, minWidth: 0, fontSize: "0.60rem", fontFamily: "'DM Sans', sans-serif", padding: "3px 5px", border: `1px solid ${goalId ? M.coralBdr : M.border}`, background: "transparent", color: goalId ? M.coral : M.muted, borderRadius: 3, outline: "none", cursor: "pointer" }}>
+                            <option value="">↳ goal</option>
+                            {activeGoals.map((g: any) => <option key={g.id} value={g.id}>{g.text.length > 28 ? g.text.slice(0,28)+"…" : g.text}</option>)}
+                          </select>
+                        )}
+                        {/* Date picker */}
+                        <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} min={new Date().toISOString().slice(0,10)}
+                          style={{ fontSize: "0.60rem", fontFamily: "'DM Sans', sans-serif", padding: "3px 5px", border: `1px solid ${dueDate ? M.coralBdr : M.border}`, background: "transparent", color: dueDate ? M.coral : M.muted, borderRadius: 3, outline: "none", cursor: "pointer", flexShrink: 0, maxWidth: 110 }} />
+                      </div>
                     );
-                  })}
-                </div>
-
-                {/* Goal + Date row */}
-                {(() => {
-                  const goals: { id: string; text: string }[] = (() => { try { return JSON.parse(localStorage.getItem("adhd-goals") ?? "[]"); } catch { return []; } })();
-                  const activeGoals = goals.filter((g: any) => !g.archived);
-                  return activeGoals.length > 0 ? (
-                    <div className="flex items-center gap-2 mt-2">
-                      <select value={goalId ?? ""} onChange={e => setGoalId(e.target.value || null)}
-                        style={{ flex: 1, fontSize: "0.62rem", fontFamily: "'DM Sans', sans-serif", padding: "3px 6px", border: `1px solid ${goalId ? M.coralBdr : M.border}`, background: "transparent", color: goalId ? M.coral : M.muted, borderRadius: 0, outline: "none", cursor: "pointer" }}>
-                        <option value="">↳ Link goal (optional)</option>
-                        {activeGoals.map((g: any) => <option key={g.id} value={g.id}>{g.text.length > 35 ? g.text.slice(0,35)+"…" : g.text}</option>)}
-                      </select>
-                      <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} min={new Date().toISOString().slice(0,10)}
-                        style={{ fontSize: "0.62rem", fontFamily: "'DM Sans', sans-serif", padding: "3px 6px", border: `1px solid ${dueDate ? M.coralBdr : M.border}`, background: "transparent", color: dueDate ? M.coral : M.muted, outline: "none", cursor: "pointer" }} />
-                    </div>
-                  ) : (
-                    <div className="flex justify-end mt-2">
-                      <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} min={new Date().toISOString().slice(0,10)}
-                        style={{ fontSize: "0.62rem", fontFamily: "'DM Sans', sans-serif", padding: "3px 6px", border: `1px solid ${dueDate ? M.coralBdr : M.border}`, background: "transparent", color: dueDate ? M.coral : M.muted, outline: "none", cursor: "pointer" }} />
-                    </div>
-                  );
-                })()}
+                  })()}
 
                 {/* Quick chips */}
                 <div className="flex flex-wrap gap-2 mt-3">

@@ -72,6 +72,9 @@ interface GoalsProps {
 
 export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategories, onDeleteCategory, tasks = [], onTasksChange }: GoalsProps) {
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
+  const activeGoals = goals.filter(g => !g.archived);
+  const archivedGoals = goals.filter(g => g.archived);
   const [showLifeCoach, setShowLifeCoach] = useState(false);
   const [dragOverGoalId, setDragOverGoalId] = useState<string | null>(null);
   const [newGoal,       setNewGoal]       = useState("");
@@ -84,7 +87,7 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
   // Detect hashtag in current input for live preview
   const { tag: liveTag } = parseHashtag(newGoal);
 
-  const visibleGoals = goals.filter((g) => activeContext === "all" ? true : g.context === activeContext);
+  const visibleGoals = (showArchived ? archivedGoals : activeGoals).filter((g) => activeContext === "all" ? true : g.context === activeContext);
 
   const addGoal = () => {
     if (!newGoal.trim()) return;
