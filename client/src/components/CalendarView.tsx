@@ -388,78 +388,99 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle }: Props) {
       {calView === "week" ? <WeekView /> : <MonthView />}
 
       {/* Day Detail Modal */}
-      {selectedDay && (() => {
-        const dayTasks = getTasksForDay(selectedDay);
-        const dayDate = new Date(selectedDay + "T00:00:00");
-        const allContexts = Array.from(new Set(dayTasks.map(t => t.context)));
-        const [filterCtx, setFilterCtx] = React.useState<string>("all");
-        const filtered = filterCtx === "all" ? dayTasks : dayTasks.filter(t => t.context === filterCtx);
-        return (
-          <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(140,40,90,0.18)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
-            onClick={() => setSelectedDay(null)}>
-            <div style={{ background: "#fdf4f8", borderRadius: 12, width: "min(380px, 94vw)", maxHeight: "70vh", display: "flex", flexDirection: "column", boxShadow: "0 20px 48px rgba(140,40,90,0.22)", overflow: "hidden" }}
-              onClick={e => e.stopPropagation()}>
-              {/* Header */}
-              <div style={{ padding: "12px 16px 10px", borderBottom: "1px solid oklch(0.82 0.050 340)", background: "#F9D6E8", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "1rem", fontWeight: 700, color: "oklch(0.28 0.040 320)", fontStyle: "italic" }}>
-                  {dayDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
-                </span>
-                <button onClick={() => setSelectedDay(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1rem", color: "oklch(0.52 0.040 330)" }}>×</button>
-              </div>
-              {/* Tag filter */}
-              {allContexts.length > 1 && (
-                <div style={{ padding: "8px 14px 0", display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {["all", ...allContexts].map(ctx => (
-                    <button key={ctx} onClick={() => setFilterCtx(ctx)}
-                      style={{ fontSize: "0.58rem", fontFamily: "'Space Mono', monospace", letterSpacing: "0.06em", padding: "2px 8px", borderRadius: 10, border: `1px solid ${filterCtx === ctx ? M.coral : M.border}`, background: filterCtx === ctx ? M.coralBg : "transparent", color: filterCtx === ctx ? M.coral : M.muted, cursor: "pointer", textTransform: "uppercase" as const }}>
-                      {ctx}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {/* Task list */}
-              <div style={{ flex: 1, overflowY: "auto", padding: "10px 14px" }}>
-                {filtered.length === 0
-                  ? <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", color: M.muted, fontStyle: "italic" }}>No tasks for this day.</p>
-                  : filtered.map((task, i) => (
-                    <div
-                      key={task.id}
-                      draggable
-                      onDragStart={() => setDragId(task.id)}
-                      onDragEnd={() => { setDragId(null); setDragOverTask(null); }}
-                      onDragOver={(e) => {
-                        e.preventDefault();
-                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                        const pos = e.clientY < rect.top + rect.height / 2 ? "before" : "after";
-                        setDragOverTask({ id: task.id, pos });
-                      }}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        if (!dragId || dragId === task.id || !selectedDay) return;
-                        const curOrder = getTasksForDay(selectedDay).map(t => t.id).filter(id => id !== dragId);
-                        const targetIdx = curOrder.indexOf(task.id);
-                        const insertIdx = dragOverTask?.pos === "before" ? targetIdx : targetIdx + 1;
-                        curOrder.splice(Math.max(0, insertIdx), 0, dragId);
-                        saveDayOrder({ ...dayOrder, [selectedDay]: curOrder });
-                        setDragId(null); setDragOverTask(null);
-                      }}
-                      style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: i < filtered.length - 1 ? `1px solid ${M.border}` : "none", cursor: "grab",
-                        borderTop: dragOverTask?.id === task.id && dragOverTask.pos === "before" ? `2px solid ${M.coral}` : "none",
-                        borderBottomWidth: dragOverTask?.id === task.id && dragOverTask.pos === "after" ? 2 : undefined,
-                        borderBottomColor: dragOverTask?.id === task.id && dragOverTask.pos === "after" ? M.coral : M.border,
-                      }}
-                    >
-                      <button onClick={() => { onTaskToggle(task.id); }} style={{ flexShrink: 0, width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${PRIORITY_COLOR[task.priority] ?? M.coral}`, background: "transparent", cursor: "pointer", padding: 0 }} />
-                      <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", color: M.ink, flex: 1 }}>{task.text}</span>
-                      <span style={{ fontSize: "0.48rem", fontFamily: "'Space Mono', monospace", color: M.muted, textTransform: "uppercase" as const }}>{task.context}</span>
-                    </div>
-                  ))
-                }
-              </div>
-            </div>
+      {selectedDay && (
+        <DayDetailModal
+          selectedDay={selectedDay}
+          onClose={() => setSelectedDay(null)}
+          getTasksForDay={getTasksForDay}
+          dayOrder={dayOrder}
+          saveDayOrder={saveDayOrder}
+          dragId={dragId}
+          setDragId={setDragId}
+          dragOverTask={dragOverTask}
+          setDragOverTask={setDragOverTask}
+          onTaskToggle={onTaskToggle}
+          PRIORITY_COLOR={PRIORITY_COLOR}
+          M={M}
+        />
+      )}
+    </div>
+  );
+}
+// ── Day Detail Modal — proper component so useState is valid ─────────────────
+function DayDetailModal({ selectedDay, onClose, getTasksForDay, dayOrder, saveDayOrder, dragId, setDragId, dragOverTask, setDragOverTask, onTaskToggle, PRIORITY_COLOR, M }: {
+  selectedDay: string; onClose: () => void;
+  getTasksForDay: (ymd: string) => Task[];
+  dayOrder: Record<string, string[]>;
+  saveDayOrder: (o: Record<string, string[]>) => void;
+  dragId: string | null; setDragId: (id: string | null) => void;
+  dragOverTask: { id: string; pos: "before" | "after" } | null;
+  setDragOverTask: (v: { id: string; pos: "before" | "after" } | null) => void;
+  onTaskToggle: (id: string) => void;
+  PRIORITY_COLOR: Record<string, string>;
+  M: Record<string, string>;
+}) {
+  const [filterCtx, setFilterCtx] = useState<string>("all");
+  const dayTasks = getTasksForDay(selectedDay);
+  const dayDate = new Date(selectedDay + "T00:00:00");
+  const allContexts = Array.from(new Set(dayTasks.map(t => t.context)));
+  const filtered = filterCtx === "all" ? dayTasks : dayTasks.filter(t => t.context === filterCtx);
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(140,40,90,0.18)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+      onClick={onClose}>
+      <div style={{ background: "#fdf4f8", borderRadius: 12, width: "min(380px, 94vw)", maxHeight: "70vh", display: "flex", flexDirection: "column", boxShadow: "0 20px 48px rgba(140,40,90,0.22)", overflow: "hidden" }}
+        onClick={e => e.stopPropagation()}>
+        <div style={{ padding: "12px 16px 10px", borderBottom: "1px solid oklch(0.82 0.050 340)", background: "#F9D6E8", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "1rem", fontWeight: 700, color: "oklch(0.28 0.040 320)", fontStyle: "italic" }}>
+            {dayDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+          </span>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1rem", color: "oklch(0.52 0.040 330)" }}>×</button>
+        </div>
+        {allContexts.length > 1 && (
+          <div style={{ padding: "8px 14px 0", display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {["all", ...allContexts].map(ctx => (
+              <button key={ctx} onClick={() => setFilterCtx(ctx)}
+                style={{ fontSize: "0.58rem", fontFamily: "'Space Mono', monospace", letterSpacing: "0.06em", padding: "2px 8px", borderRadius: 10, border: `1px solid ${filterCtx === ctx ? M.coral : M.border}`, background: filterCtx === ctx ? M.coralBg : "transparent", color: filterCtx === ctx ? M.coral : M.muted, cursor: "pointer", textTransform: "uppercase" as const }}>
+                {ctx}
+              </button>
+            ))}
           </div>
-        );
-      })()}
+        )}
+        <div style={{ flex: 1, overflowY: "auto", padding: "10px 14px" }}>
+          {filtered.length === 0
+            ? <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", color: M.muted, fontStyle: "italic" }}>No tasks for this day.</p>
+            : filtered.map((task, i) => (
+              <div key={task.id} draggable
+                onDragStart={() => setDragId(task.id)}
+                onDragEnd={() => { setDragId(null); setDragOverTask(null); }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                  setDragOverTask({ id: task.id, pos: e.clientY < rect.top + rect.height / 2 ? "before" : "after" });
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (!dragId || dragId === task.id) return;
+                  const curOrder = getTasksForDay(selectedDay).map(t => t.id).filter(id => id !== dragId);
+                  const targetIdx = curOrder.indexOf(task.id);
+                  const insertIdx = dragOverTask?.pos === "before" ? targetIdx : targetIdx + 1;
+                  curOrder.splice(Math.max(0, insertIdx), 0, dragId);
+                  saveDayOrder({ ...dayOrder, [selectedDay]: curOrder });
+                  setDragId(null); setDragOverTask(null);
+                }}
+                style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", cursor: "grab",
+                  borderBottom: i < filtered.length - 1 ? `1px solid oklch(0.82 0.050 340)` : "none",
+                  borderTop: dragOverTask?.id === task.id && dragOverTask.pos === "before" ? `2px solid oklch(0.58 0.18 340)` : "none",
+                }}>
+                <button onClick={() => onTaskToggle(task.id)} style={{ flexShrink: 0, width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${PRIORITY_COLOR[task.priority] ?? "oklch(0.58 0.18 340)"}`, background: "transparent", cursor: "pointer", padding: 0 }} />
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", color: M.ink, flex: 1 }}>{task.text}</span>
+                <span style={{ fontSize: "0.48rem", fontFamily: "'Space Mono', monospace", color: M.muted, textTransform: "uppercase" as const }}>{task.context}</span>
+              </div>
+            ))
+          }
+        </div>
+      </div>
     </div>
   );
 }
