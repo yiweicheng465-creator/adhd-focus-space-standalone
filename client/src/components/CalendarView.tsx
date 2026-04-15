@@ -126,8 +126,17 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle }: Props) {
         )}
         <div
           draggable
-          onDragStart={(e) => { e.stopPropagation(); setDragId(task.id); }}
-          onDragEnd={() => { setDragId(null); setDragOverDate(null); setDragOverTask(null); }}
+          onDragStart={(e) => {
+            setDragId(task.id);
+            // Set drag image to avoid grey ghost
+            e.dataTransfer.effectAllowed = "move";
+          }}
+          onDragEnd={() => {
+            setDragId(null);
+            setDragOverDate(null);
+            setDragOverTask(null);
+            dragOverTaskRef.current = null;
+          }}
           onDragOver={(e) => {
             e.preventDefault(); e.stopPropagation();
             const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -504,15 +513,17 @@ function DayDetailModal({ selectedDay, onClose, getTasksForDay, dayOrder, saveDa
                 >
                   <button onClick={() => onTaskToggle(task.id)} style={{ flexShrink: 0, width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${PRIORITY_COLOR[task.priority] ?? "oklch(0.58 0.18 340)"}`, background: task.done ? PRIORITY_COLOR[task.priority] : "transparent", cursor: "pointer", padding: 0 }} />
                   {/* Task name — single line + ellipsis, click to edit */}
+                  {/* Time reference — LEFT side, notebook style */}
+                  <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.44rem", color: M.muted, opacity: 0.55, flexShrink: 0, minWidth: 38, textAlign: "right" }}>
+                    {timeRef(i)}
+                  </span>
+                  {/* Thin vertical notebook line */}
+                  <div style={{ width: 1, height: 16, background: "oklch(0.82 0.050 340 / 0.5)", flexShrink: 0 }} />
                   <span
                     onClick={() => editingId === task.id ? setEditingId(null) : openEdit(task)}
                     style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", color: M.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: task.done ? "line-through" : "none", opacity: task.done ? 0.5 : 1 }}
                   >
                     {task.text}
-                  </span>
-                  {/* Time reference — right side, subtle */}
-                  <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.46rem", color: M.muted, opacity: 0.6, flexShrink: 0 }}>
-                    {timeRef(i)}
                   </span>
                 </div>
 

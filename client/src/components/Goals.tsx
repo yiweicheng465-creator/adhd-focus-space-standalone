@@ -3,7 +3,7 @@
    Progress: coral bar, sage completed, slumber neutral
    ============================================================ */
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Plus, Sparkles, Trash2, TrendingUp, CheckCircle2, Circle } from "lucide-react";
