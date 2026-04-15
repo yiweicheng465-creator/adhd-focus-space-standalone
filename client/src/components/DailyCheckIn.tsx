@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import { callAIStream } from "@/lib/ai";
 /* ============================================================
    ADHD FOCUS SPACE — Daily Check-In v3.0
    Fixes:
@@ -68,8 +69,8 @@ export interface CheckInResult {
   focusNote: string;
 }
 
-type Step = "greeting" | "mood" | "goals" | "tasks" | "agents" | "wins" | "done";
-const STEP_ORDER: Step[] = ["greeting", "mood", "goals", "tasks", "agents", "wins", "done"];
+type Step = "greeting" | "brief" | "mood" | "goals" | "tasks" | "agents" | "wins" | "done";
+const STEP_ORDER: Step[] = ["greeting", "brief", "mood", "goals", "tasks", "agents", "wins", "done"];
 
 /* ── Win categories (matches DailyWins) ── */
 const WIN_CATS = [
@@ -123,6 +124,9 @@ const FACE_COMPONENTS = [FaceDrained, FaceLow, FaceOkay, FaceGood, FaceGlowing];
 /* ── Main component ── */
 export function DailyCheckIn({ onComplete, onSkip, onClose, displayName, existingTasks = [] }: DailyCheckInProps) {
   const [step, setStep] = useState<Step>("greeting");
+  const [briefText, setBriefText] = useState("");
+  const [briefLoading, setBriefLoading] = useState(false);
+  const [topTaskIds, setTopTaskIds] = useState<string[]>([]);
   const [mood, setMood] = useState<number | null>(null);
 
   // Goals
@@ -218,10 +222,55 @@ export function DailyCheckIn({ onComplete, onSkip, onClose, displayName, existin
     } catch { return [] as { id: string; text: string; context: string; progress: number }[]; }
   })();
 
+  const generateBrief = async () => {
+    setBriefLoading(true);
+    setBriefText("");
+    try {
+      // Gather context from localStorage
+      const todayStr = new Date().toDateString();
+      const allTasks: Task[] = (() => { try { return JSON.parse(localStorage.getItem("adhd-tasks") ?? "[]"); } catch { return []; } })();
+      const allGoals: Goal[] = (() => { try { return JSON.parse(localStorage.getItem("adhd-goals") ?? "[]"); } catch { return []; } })();
+      const logs = (() => { try { return JSON.parse(localStorage.getItem("adhd-daily-logs") ?? "{}"); } catch { return {}; } })();
+      const yesterdayLog = logs[new Date(Date.now() - 86400000).toDateString()];
+      const pending = allTasks.filter(t => !t.done).slice(0, 10);
+      const topGoals = allGoals.filter(g => g.progress < 100).slice(0, 3);
+      
+      // Pick top 3 tasks to pre-suggest
+      const top3 = pending
+        .sort((a, b) => { const o = ["urgent","focus","normal","someday"]; return o.indexOf(a.priority) - o.indexOf(b.priority); })
+        .slice(0, 3);
+      setTopTaskIds(top3.map(t => t.id));
+
+      const ctx = [
+        `Pending tasks (${pending.length} total): ${pending.slice(0,5).map(t => `"${t.text}" [${t.priority}]`).join(", ")}`,
+        topGoals.length ? `Active goals: ${topGoals.map(g => `"${g.text}" (${g.progress}%)`).join(", ")}` : "",
+        yesterdayLog ? `Yesterday: mood ${yesterdayLog.mood ?? "?"}/5, ${yesterdayLog.tasksCompleted ?? 0} tasks done, ${yesterdayLog.winsCount ?? 0} wins` : "No data from yesterday yet.",
+      ].filter(Boolean).join("\n");
+
+      await callAIStream(
+        `You are a warm, encouraging ADHD morning coach. Write a brief (3-4 sentences) personalized morning message that:
+1. Acknowledges yesterday briefly if there's data
+2. Highlights 1-2 specific tasks from the pending list to focus on today
+3. Ends with a short, genuine encouragement (not generic)
+Be warm but concise. Speak directly to the user. No bullet points.`,
+        ctx,
+        (delta) => setBriefText(prev => prev + delta),
+        () => setBriefLoading(false)
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg !== "no-key" && msg !== "invalid-key") {
+        setBriefText("Let's make today count. Start with your top priority and build momentum from there. You've got this!");
+      }
+      setBriefLoading(false);
+    }
+  };
+
   const goNext = () => {
     const idx = STEP_ORDER.indexOf(step);
     if (idx < STEP_ORDER.length - 1) {
       const nextStep = STEP_ORDER[idx + 1];
+      if (nextStep === "brief") { generateBrief(); }
       setStep(nextStep);
 
     }
@@ -369,6 +418,7 @@ export function DailyCheckIn({ onComplete, onSkip, onClose, displayName, existin
               style={{ fontFamily: "'Playfair Display', serif", color: M.ink }}
             >
               {step === "greeting" && greeting}
+              {step === "brief"     && "Your Morning Brief"}
               {step === "mood"     && "How are you feeling?"}
               {step === "goals"    && "Set a goal for today?"}
               {step === "tasks"    && "What's on your plate?"}
@@ -398,6 +448,59 @@ export function DailyCheckIn({ onComplete, onSkip, onClose, displayName, existin
                   "Your brain is not broken — it just works differently."
                 </p>
               </div>
+            </div>
+          )}
+
+          {/* BRIEF — AI Morning Guide */}
+          {step === "brief" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {/* AI message */}
+              <div style={{
+                background: "oklch(0.97 0.012 355)",
+                border: `1px solid ${M.border}`,
+                borderLeft: `4px solid ${M.accent}`,
+                borderRadius: 8, padding: "16px 18px",
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: "0.92rem", color: "oklch(0.28 0.04 320)",
+                lineHeight: 1.7, minHeight: 80,
+                whiteSpace: "pre-wrap",
+              }}>
+                {briefLoading && !briefText && (
+                  <span style={{ color: M.muted, fontStyle: "italic", fontSize: "0.82rem" }}>
+                    Your AI coach is reviewing your day…
+                  </span>
+                )}
+                {briefText || (!briefLoading && "Let's make today count. Start with your top priority and build momentum from there.")}
+                {briefLoading && briefText && <span style={{ opacity: 0.5 }}>▊</span>}
+              </div>
+
+              {/* Top suggested tasks */}
+              {topTaskIds.length > 0 && (() => {
+                const allTasks: Task[] = (() => { try { return JSON.parse(localStorage.getItem("adhd-tasks") ?? "[]"); } catch { return []; } })();
+                const suggestedTasks = topTaskIds.map(id => allTasks.find(t => t.id === id)).filter(Boolean) as Task[];
+                if (!suggestedTasks.length) return null;
+                return (
+                  <div>
+                    <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.55rem", letterSpacing: "0.10em", color: M.muted, textTransform: "uppercase", marginBottom: 8 }}>
+                      ✦ Suggested focus today
+                    </p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {suggestedTasks.map(task => (
+                        <div key={task.id} style={{
+                          display: "flex", alignItems: "center", gap: 10,
+                          padding: "8px 12px", borderRadius: 6,
+                          background: "oklch(0.98 0.010 355)",
+                          border: `1px solid ${M.border}`,
+                        }}>
+                          <div style={{ width: 8, height: 8, borderRadius: "50%", background: M.accent, flexShrink: 0 }} />
+                          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", color: "oklch(0.28 0.04 320)" }}>{task.text}</span>
+                          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.50rem", color: M.muted, letterSpacing: "0.06em", marginLeft: "auto", textTransform: "uppercase" }}>{task.priority}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
@@ -825,7 +928,7 @@ export function DailyCheckIn({ onComplete, onSkip, onClose, displayName, existin
               className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium transition-all hover:opacity-90 active:scale-95"
               style={{ background: M.accent, color: "white" }}
             >
-              {step === "greeting" ? "Start my day ✦" : "Next"}
+              {step === "greeting" ? "Start my day ✦" : step === "brief" ? "Looks good →" : "Next"}
               <ArrowRight className="w-4 h-4" />
             </button>
           ) : (
