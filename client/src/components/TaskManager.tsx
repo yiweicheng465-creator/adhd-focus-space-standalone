@@ -5,10 +5,11 @@
    ============================================================ */
 
 import { useState, useRef, useEffect } from "react";
+import { CalendarView } from "./CalendarView";
 import { EisenhowerMatrix, priorityToQuadrant, type QuadrantId } from "./EisenhowerMatrix";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Circle, Flame, Plus, Star, Trash2, Zap } from "lucide-react";
+import { CheckCircle2, Circle, Flame, List, CalendarDays, Plus, Star, Trash2, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { nanoid } from "nanoid";
 import {
@@ -107,7 +108,7 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
   const [completingId,    setCompletingId]    = useState<string | null>(null);
   const [activeContext,   setActiveContext]   = useState<ActiveContext>(defaultContext);
   const [filter,          setFilter]          = useState<"all" | "active" | "done">("active");
-  const [sortBy,          setSortBy]          = useState<"priority" | "created" | "due">("priority");
+  const [viewMode,        setViewMode]        = useState<"list" | "calendar">("list");
   // Inline editing state
   // Quadrant map: taskId → quadrantId (persisted in component state)
   const [quadrantMap, setQuadrantMap]         = useState<Record<string, QuadrantId>>(() => {
@@ -172,18 +173,8 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
   const contextFiltered = tasks.filter((t) => activeContext === "all" ? true : t.context === activeContext);
   const sorted = [...contextFiltered].sort((a, b) => {
     if (a.done !== b.done) return a.done ? 1 : -1;
-    if (sortBy === "priority") {
-      const order: TaskPriority[] = ["urgent", "focus", "normal", "someday"];
-      return order.indexOf(a.priority) - order.indexOf(b.priority);
-    }
-    if (sortBy === "due") {
-      if (!a.dueDate && !b.dueDate) return 0;
-      if (!a.dueDate) return 1;
-      if (!b.dueDate) return -1;
-      return a.dueDate.localeCompare(b.dueDate);
-    }
-    // created: newest first
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    const order: TaskPriority[] = ["urgent", "focus", "normal", "someday"];
+    return order.indexOf(a.priority) - order.indexOf(b.priority);
   });
   const filtered = sorted.filter((t) => {
     if (filter === "active") return !t.done;
@@ -355,30 +346,40 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
           );
         })}
         </div>
-        {/* Sort selector */}
+        {/* View toggle: List | Calendar */}
         <div className="flex items-center gap-1 pr-2">
-          {(["priority", "created", "due"] as const).map((s) => (
+          {(["list", "calendar"] as const).map((v) => (
             <button
-              key={s}
-              onClick={() => setSortBy(s)}
-              title={s === "priority" ? "Sort by priority" : s === "created" ? "Sort by newest" : "Sort by due date"}
+              key={v}
+              onClick={() => setViewMode(v)}
+              title={v === "list" ? "List view" : "Calendar view"}
               style={{
-                fontSize: "0.58rem", fontFamily: "'Space Mono', monospace",
-                letterSpacing: "0.06em", padding: "2px 7px", borderRadius: 3,
-                border: `1px solid ${sortBy === s ? M.coral : M.border}`,
-                background: sortBy === s ? `${M.coral}12` : "transparent",
-                color: sortBy === s ? M.coral : M.muted,
-                cursor: "pointer",
+                padding: "2px 7px", borderRadius: 3,
+                border: `1px solid ${viewMode === v ? M.coral : M.border}`,
+                background: viewMode === v ? `${M.coral}12` : "transparent",
+                color: viewMode === v ? M.coral : M.muted,
+                cursor: "pointer", display: "flex", alignItems: "center",
               }}
             >
-              {s === "priority" ? "⚡" : s === "created" ? "🕐" : "📅"}
+              {v === "list" ? <List size={11} /> : <CalendarDays size={11} />}
             </button>
           ))}
         </div>
       </div>
 
+      {/* Calendar view */}
+      {viewMode === "calendar" && (
+        <div className="flex-1 overflow-y-auto" style={{ minHeight: 0 }}>
+          <CalendarView
+            tasks={tasks}
+            onTasksChange={onTasksChange}
+            onTaskToggle={(id) => onTasksChange(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t))}
+          />
+        </div>
+      )}
+
       {/* Task list — retro dashed-border rows with icon box + dotted connectors */}
-      <div className="flex-1 overflow-y-auto pr-1 retro-task-list">
+      {viewMode === "list" && <div className="flex-1 overflow-y-auto pr-1 retro-task-list">
         {filtered.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 text-center gap-3">
             <svg width="40" height="40" viewBox="0 0 40 40" style={{ opacity: 0.18 }}>
@@ -505,7 +506,7 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
             </div>
           );
         })}
-      </div>
+      </div>}
 
       {/* ── Eisenhower Matrix ── */}
       <EisenhowerMatrix
