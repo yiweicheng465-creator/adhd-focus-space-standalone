@@ -171,3 +171,74 @@ export function ContextBadge({ context }: { context: string }) {
     </span>
   );
 }
+
+/* Clickable context badge — shows dropdown to switch tag */
+export function ClickableContextBadge({ context, allContexts, onChange }: {
+  context: string;
+  allContexts: string[];
+  onChange: (ctx: string) => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+  const cfg = getContextConfig(context);
+  const Icon = cfg.icon;
+
+  React.useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  return (
+    <div ref={ref} style={{ position: "relative", display: "inline-flex" }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="inline-flex items-center gap-1 shrink-0"
+        style={{
+          background: cfg.bg, color: cfg.color, border: `1.5px solid ${cfg.border}`,
+          borderRadius: 2, padding: "2px 6px", fontFamily: "'Space Mono', monospace",
+          fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.08em",
+          textTransform: "uppercase" as const, cursor: "pointer",
+        }}
+      >
+        <Icon style={{ width: 9, height: 9 }} />
+        {cfg.label}
+        <span style={{ fontSize: "0.5rem", opacity: 0.6, marginLeft: 1 }}>▾</span>
+      </button>
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 9999,
+          background: "#fdf4f8", border: "1.5px solid oklch(0.82 0.050 340)",
+          borderRadius: 6, boxShadow: "0 4px 16px rgba(140,40,90,0.15)",
+          padding: "4px", minWidth: 120, display: "flex", flexDirection: "column", gap: 1,
+        }}>
+          {allContexts.map(ctx => {
+            const c = getContextConfig(ctx);
+            const CIcon = c.icon;
+            return (
+              <button
+                key={ctx}
+                onClick={() => { onChange(ctx); setOpen(false); }}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "4px 8px", borderRadius: 4, cursor: "pointer",
+                  background: ctx === context ? c.bg : "transparent",
+                  border: "none", width: "100%", textAlign: "left",
+                }}
+              >
+                <CIcon style={{ width: 10, height: 10, color: c.color }} />
+                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.58rem",
+                  fontWeight: 600, letterSpacing: "0.06em", color: c.color, textTransform: "uppercase" }}>
+                  {c.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

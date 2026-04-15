@@ -13,7 +13,7 @@ import { CheckCircle2, Circle, Flame, List, CalendarDays, Plus, Star, Trash2, Za
 import { toast } from "sonner";
 import { nanoid } from "nanoid";
 import {
-  ContextSwitcher, ContextBadge, getContextConfig,
+  ContextSwitcher, ContextBadge, ClickableContextBadge, getContextConfig,
   type ItemContext, type ActiveContext,
 } from "./ContextSwitcher";
 import type { Goal } from "./Goals";
@@ -108,7 +108,13 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
   const [completingId,    setCompletingId]    = useState<string | null>(null);
   const [activeContext,   setActiveContext]   = useState<ActiveContext>(defaultContext);
   const [filter,          setFilter]          = useState<"all" | "active" | "done">("active");
-  const [viewMode,        setViewMode]        = useState<"list" | "calendar">("calendar");
+  const [viewMode, setViewModeState] = useState<"list" | "calendar">(() => {
+    return (sessionStorage.getItem("adhd-task-viewmode") as "list" | "calendar") ?? "calendar";
+  });
+  const setViewMode = (m: "list" | "calendar") => {
+    setViewModeState(m);
+    sessionStorage.setItem("adhd-task-viewmode", m);
+  };
   // Inline editing state
   // Quadrant map: taskId → quadrantId (persisted in component state)
   const [quadrantMap, setQuadrantMap]         = useState<Record<string, QuadrantId>>(() => {
@@ -499,8 +505,12 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
 
               {/* Right side: context badge + edit button + checkbox + delete */}
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0, marginTop: 2 }}>
-                {/* Context badge */}
-                <ContextBadge context={task.context} />
+                {/* Clickable context badge */}
+                <ClickableContextBadge
+                  context={task.context}
+                  allContexts={allContexts}
+                  onChange={(ctx) => onTasksChange(tasks.map(t => t.id === task.id ? { ...t, context: ctx as import("./ContextSwitcher").ItemContext } : t))}
+                />
                 {/* Checkbox */}
                 <button
                   onClick={() => toggleTask(task.id)}

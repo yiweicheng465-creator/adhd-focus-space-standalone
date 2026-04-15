@@ -10,7 +10,7 @@ import { Plus, Trash2, TrendingUp, CheckCircle2, Circle } from "lucide-react";
 import { toast } from "sonner";
 import { nanoid } from "nanoid";
 import {
-  ContextSwitcher, ContextBadge, getContextConfig,
+  ContextSwitcher, ContextBadge, ClickableContextBadge, getContextConfig,
   type ItemContext, type ActiveContext,
 } from "./ContextSwitcher";
 import type { Task } from "./TaskManager";
@@ -252,7 +252,11 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <ContextBadge context={goal.context} />
+<ClickableContextBadge
+                    context={goal.context}
+                    allContexts={knownCategories}
+                    onChange={(ctx) => onGoalsChange(goals.map(g => g.id === goal.id ? { ...g, context: ctx as import("./ContextSwitcher").ItemContext } : g))}
+                  />
                   <button
                     onClick={() => deleteGoal(goal.id)}
                     className="opacity-0 group-hover:opacity-100 transition-opacity"

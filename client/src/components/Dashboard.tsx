@@ -190,10 +190,11 @@ export function Dashboard({
     setChatLoading(true);
     try {
       const taskSummary = tasks.map((t) => `[id:${t.id}] [${t.priority}] "${t.text}" (${t.done ? "done" : "pending"})`).join("\n");
+      const goalSummary = goals.length ? `\nGoals: ${goals.map(g => `"${g.text}"`).join(", ")}` : "";
       const systemPrompt = `You are a warm, encouraging ADHD productivity coach. Keep replies short (1-2 sentences).
 You CAN take actions on the user's tasks. After your reply, if an action is needed output it on a new line as JSON:
 ACTION:{"type":"complete_task","taskId":"id"} — to mark a task done
-ACTION:{"type":"create_task","text":"task text","priority":"focus|normal|urgent","context":"work|personal","dueDate":"YYYY-MM-DD or null"} — to add a task (use dueDate if user mentions a specific day like "Saturday", "tomorrow", "next Monday")
+ACTION:{"type":"create_task","text":"task text","priority":"focus|normal|urgent","context":"work|personal","dueDate":"YYYY-MM-DD or today or tomorrow or null","goalName":"partial name of goal to link, or null"} — to add a task. Use goalName if user mentions linking to a goal.
 ACTION:{"type":"none"} — if no action needed
 Today is ${new Date().toISOString().slice(0,10)} (${new Date().toLocaleDateString("en-US",{weekday:"long"})}).
 
