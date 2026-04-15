@@ -465,7 +465,6 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
                         setQuickCapture("");
                         (e.target as HTMLInputElement).blur();
                         onQuickDump?.(text);
-                        onNavigate("braindump");
                       }
                     }
                   }}
