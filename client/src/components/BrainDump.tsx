@@ -155,13 +155,16 @@ export function BrainDump({ onConvertToTask, onCreateAgent, onAddGoal, onDump, i
   const dump = (text?: string) => {
     const thought = (text ?? currentThought).trim();
     if (!thought) return;
-    const tags = extractTags(thought);
+    let tags = extractTags(thought);
+    // Auto-add active tag if one is selected and not already in the text
+    if (activeTag && !tags.includes(activeTag)) {
+      tags = [activeTag, ...tags];
+    }
     const id = nanoid();
     createMutation.mutate({ id, text: thought, tags });
     if (!text) setCurrentThought("");
     onDump?.();
-    const tagMsg = tags.length > 0 ? ` Tagged: ${tags.map((t) => `#${t}`).join(", ")}` : "";
-      };
+  };
 
   const convertToTask = (entry: BrainDumpEntry) => {
     const cleanText = entry.text.replace(/(?:^|\s)#[a-zA-Z0-9\u4e00-\u9fa5_-]+/g, " ").replace(/\s{2,}/g, " ").trim();
