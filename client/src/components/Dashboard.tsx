@@ -170,6 +170,13 @@ export function Dashboard({
     return next;
   });
 
+  // Listen for AI toggle from header button
+  useEffect(() => {
+    const handler = () => toggleAI();
+    window.addEventListener("toggleDashboardAI", handler);
+    return () => window.removeEventListener("toggleDashboardAI", handler);
+  }, []);
+
   // ── AI Chat ──
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>(() => {
     try { return JSON.parse(localStorage.getItem(CHAT_HISTORY_KEY) ?? "[]"); } catch { return []; }
