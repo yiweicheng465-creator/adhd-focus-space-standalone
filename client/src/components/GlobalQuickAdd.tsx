@@ -350,7 +350,7 @@ Today is ${today} (${todayName}). Available goals: ${goalList || "none"}.`,
 
                 {aiMode ? (
                   <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.48rem", color: M.muted, margin: "5px 0 0", lineHeight: 1.5, opacity: 0.8 }}>
-                    Describe the task naturally — AI sets priority, context, goal link and date automatically.
+                    Create a task, goal, win, or brain dump — AI understands it all naturally.
                   </p>
                 ) : (
                   <>
