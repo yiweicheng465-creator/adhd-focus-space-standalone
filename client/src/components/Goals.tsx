@@ -68,6 +68,8 @@ interface GoalsProps {
 }
 
 export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategories, onDeleteCategory, tasks = [], onTasksChange }: GoalsProps) {
+  const [draggingTaskId, setDraggingTaskId] = React.useState<string | null>(null);
+  const [dragOverGoalId, setDragOverGoalId] = React.useState<string | null>(null);
   const [newGoal,       setNewGoal]       = useState("");
   const [newGoalCtx,    setNewGoalCtx]    = useState<ItemContext>("work");
   const [activeContext, setActiveContext] = useState<ActiveContext>(defaultContext);
@@ -210,13 +212,27 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
               className="group p-4 transition-all relative overflow-hidden"
               style={{
                 background: done ? M.sageBg : M.card,
-                border:     `1px solid ${done ? M.sageBdr : M.border}`,
+                border: dragOverGoalId === goal.id ? `2px dashed ${M.coral}` : `1px solid ${done ? M.sageBdr : M.border}`,
+              }}
+              onDragOver={(e) => { e.preventDefault(); setDragOverGoalId(goal.id); }}
+              onDragLeave={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverGoalId(null);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragOverGoalId(null);
+                const taskId = draggingTaskId ?? e.dataTransfer.getData("taskId");
+                if (!taskId || !onTasksChange) return;
+                const task = tasks.find(t => t.id === taskId);
+                if (!task || task.goalId === goal.id) return;
+                onTasksChange(tasks.map(t => t.id === taskId ? { ...t, goalId: goal.id } : t));
+                setDraggingTaskId(null);
               }}
               onMouseEnter={(e) => {
-                if (!done) (e.currentTarget as HTMLDivElement).style.borderColor = M.coralBdr;
+                if (!done && dragOverGoalId !== goal.id) (e.currentTarget as HTMLDivElement).style.borderColor = M.coralBdr;
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLDivElement).style.borderColor = done ? M.sageBdr : M.border;
+                if (dragOverGoalId !== goal.id) (e.currentTarget as HTMLDivElement).style.borderColor = done ? M.sageBdr : M.border;
               }}
             >
 
@@ -299,24 +315,7 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
                 </button>
               </div>
 
-              {/* Drop zone: drag task from another goal to reassign */}
-              {(() => {
-                const [isDragOver, setIsDragOver] = React.useState(false);
-                return (
-                  <div
-                    onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-                    onDragLeave={() => setIsDragOver(false)}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      setIsDragOver(false);
-                      const taskId = e.dataTransfer.getData("taskId");
-                      if (!taskId || !onTasksChange) return;
-                      onTasksChange(tasks.map(t => t.id === taskId ? { ...t, goalId: goal.id } : t));
-                    }}
-                    style={{ borderRadius: 4, outline: isDragOver ? `2px dashed ${M.coral}` : "none", outlineOffset: 2, transition: "outline 0.1s" }}
-                  />
-                );
-              })()}
+
               {/* Linked tasks */}
               {(() => {
                 const linked = tasks.filter((t) => t.goalId === goal.id);
@@ -329,7 +328,12 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
                         <div
                           key={t.id}
                           draggable
-                          onDragStart={(e) => { e.dataTransfer.setData("taskId", t.id); e.dataTransfer.effectAllowed = "move"; }}
+                          onDragStart={(e) => {
+                            setDraggingTaskId(t.id);
+                            e.dataTransfer.setData("taskId", t.id);
+                            e.dataTransfer.effectAllowed = "move";
+                          }}
+                          onDragEnd={() => { setDraggingTaskId(null); setDragOverGoalId(null); }}
                           className="flex items-center gap-2 px-2 py-1.5 transition-all"
                           style={{
                             background: t.done ? "oklch(0.97 0.006 78)" : "oklch(0.975 0.010 78)",

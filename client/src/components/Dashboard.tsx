@@ -195,7 +195,7 @@ You CAN take actions on the user's tasks. After your reply, if an action is need
 ACTION:{"type":"complete_task","taskId":"id"} — to mark a task done
 ACTION:{"type":"create_task","text":"task text","priority":"focus|normal|urgent","context":"work|personal","dueDate":"YYYY-MM-DD or null"} — to add a task (use dueDate if user mentions a specific day like "Saturday", "tomorrow", "next Monday")
 ACTION:{"type":"none"} — if no action needed
-Today is ${new Date().toISOString().slice(0,10)} (${new Date().toLocaleDateString("en-US",{weekday:"long"})}).`
+Today is ${new Date().toISOString().slice(0,10)} (${new Date().toLocaleDateString("en-US",{weekday:"long"})}).
 
 Current tasks:
 ${taskSummary || "none"}
@@ -232,6 +232,16 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
               displayReply += `\n✓ Marked "${task.text}" as done!`;
             }
           } else if (action.type === "create_task" && action.text) {
+            // Resolve "today" / "tomorrow" as actual dates
+            let dueDate = action.dueDate as string | undefined;
+            if (dueDate === "today") dueDate = new Date().toISOString().slice(0,10);
+            if (dueDate === "tomorrow") { const d = new Date(); d.setDate(d.getDate()+1); dueDate = d.toISOString().slice(0,10); }
+            // Find goal by name match
+            let goalId: string | undefined;
+            if (action.goalName) {
+              const goalMatch = goals.find(g => g.text.toLowerCase().includes((action.goalName as string).toLowerCase()));
+              if (goalMatch) goalId = goalMatch.id;
+            }
             onTaskCreate?.({
               id: Math.random().toString(36).slice(2),
               text: action.text,
@@ -239,9 +249,10 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
               context: (action.context as Task["context"]) ?? "work",
               done: false,
               createdAt: new Date(),
-              ...(action.dueDate ? { dueDate: action.dueDate as string } : {}),
+              ...(dueDate ? { dueDate } : {}),
+              ...(goalId ? { goalId } : {}),
             });
-            displayReply += `\n✓ Created task: "${action.text}"${action.dueDate ? ` (due ${action.dueDate})` : ""}`;
+            displayReply += `\n✓ Created task: "${action.text}"${dueDate ? ` (due ${dueDate})` : ""}${goalId ? " → linked to goal" : ""}`;
           }
         } catch { /* ignore parse errors */ }
       }

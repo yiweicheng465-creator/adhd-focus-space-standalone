@@ -7,7 +7,7 @@
    - Month: shows full month grid
    ============================================================ */
 
-import { useState } from "react";
+import React, { useState } from "react";
 import type { Task } from "./TaskManager";
 import { ChevronLeft, ChevronRight, List, CalendarDays } from "lucide-react";
 
