@@ -5,7 +5,7 @@
    Each day shows: wrap-up done, brain dump entries, wins count, mood
    ============================================================ */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Sparkles, Brain, CheckCircle2, Flame, Loader2 } from "lucide-react";
 import { callAI } from "@/lib/ai";
 import { toast } from "sonner";
@@ -275,6 +275,26 @@ const WIN_CAT_COLORS = [
 const WIN_CAT_LABELS = ["Health","Study","Work","Social","Creative","Mindful","Fitness","Nutrition"];
 
 /* ── Day detail panel ── */
+function EditableDiary({ dateKey, initialNote }: { dateKey: string; initialNote?: string }) {
+  const [text, setText] = React.useState(initialNote ?? "");
+  const save = (val: string) => {
+    setText(val);
+    try {
+      const logs = JSON.parse(localStorage.getItem("adhd-daily-logs") ?? "{}");
+      const existing = logs[dateKey] ?? { dateKey, wrapUpDone: false, dumpCount: 0, winsCount: 0, tasksCompleted: 0, mood: null, score: 0 };
+      logs[dateKey] = { ...existing, journalNote: val };
+      localStorage.setItem("adhd-daily-logs", JSON.stringify(logs));
+    } catch {}
+  };
+  return (
+    <div style={{ marginTop: 8 }}>
+      <p style={{ fontSize: 10, fontFamily: "'Space Mono', monospace", letterSpacing: "0.06em", color: M.muted, textTransform: "uppercase", marginBottom: 4 }}>📝 My Diary</p>
+      <textarea value={text} onChange={(e) => save(e.target.value)} placeholder="Write your thoughts for this day…" rows={3}
+        style={{ width: "100%", boxSizing: "border-box", fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: M.ink, lineHeight: 1.6, padding: "8px 10px", border: "1px dashed oklch(0.82 0.050 340)", borderRadius: 6, background: "oklch(0.97 0.012 355)", resize: "vertical", outline: "none" }} />
+    </div>
+  );
+}
+
 function DayDetail({ log, dateStr, dateKey: dk, onClose, isPast }: { log?: DailyLog; dateStr: string; dateKey: string; onClose: () => void; isPast?: boolean }) {
   const hasAny = log && (log.wrapUpDone || log.dumpCount > 0 || log.winsCount > 0 || log.tasksCompleted > 0 || (log.focusSessions ?? 0) > 0);
 
@@ -446,12 +466,7 @@ function DayDetail({ log, dateStr, dateKey: dk, onClose, isPast }: { log?: Daily
                 <span style={{ fontSize: 12, color: M.ink }}>{log!.tasksCompleted} {log!.tasksCompleted === 1 ? "task" : "tasks"} completed</span>
               </div>
             )}
-            {log?.journalNote && (
-              <div style={{ marginTop: 8, padding: "10px 12px", background: "oklch(0.97 0.012 355)", border: "1px dashed oklch(0.82 0.050 340)", borderRadius: 6 }}>
-                <p style={{ fontSize: 10, fontFamily: "'Space Mono', monospace", letterSpacing: "0.06em", color: M.muted, textTransform: "uppercase", marginBottom: 4 }}>📝 My Diary</p>
-                <p style={{ fontSize: 12, color: M.ink, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6, whiteSpace: "pre-wrap", margin: 0 }}>{log.journalNote}</p>
-              </div>
-            )}
+            <EditableDiary dateKey={dk} initialNote={log?.journalNote} />
           </>
         )}
       </div>
