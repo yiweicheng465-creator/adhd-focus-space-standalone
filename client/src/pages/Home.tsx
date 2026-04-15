@@ -548,7 +548,7 @@ export default function Home() {
         bottom: "30%",
         zIndex: 50,
       }}>
-        <TimerPill onGoToFocus={() => setActiveSection("focus")} />
+        <TimerPill onGoToFocus={() => {}} />
       </div>
 
       {/* Main content */}

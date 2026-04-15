@@ -131,7 +131,6 @@ const NAV: Array<{
   title: string;
 }> = [
   { id: "dashboard", short: "HOME",   Icon: IconHome,   title: "Dashboard"   },
-  { id: "focus",     short: "FOCUS",  Icon: IconFocus,  title: "Focus Timer"  },
   { id: "tasks",     short: "TASKS",  Icon: IconTasks,  title: "My Tasks"     },
   { id: "goals",     short: "GOALS",  Icon: IconGoals,  title: "Goals"        },
   { id: "dump",      short: "DUMP",   Icon: IconDump,   title: "Brain Dump"   },
@@ -173,11 +172,7 @@ export function TimerPill({ onGoToFocus }: { onGoToFocus: () => void }) {
   }, [showPopover]);
 
   const handleClick = () => {
-    if (active) {
-      setShowPopover(p => !p);
-    } else {
-      onGoToFocus();
-    }
+    setShowPopover(p => !p);
   };
 
   return (
@@ -293,28 +288,7 @@ export function TimerPill({ onGoToFocus }: { onGoToFocus: () => void }) {
             {sound.musicEnabled ? "Music On" : "Music Off"}
           </button>
 
-          {/* Go to Focus */}
-          <button
-            onClick={() => { setShowPopover(false); onGoToFocus(); }}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              padding: "4px 8px",
-              fontFamily: "'Space Mono', monospace",
-              fontSize: 7,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              background: "transparent",
-              color: "oklch(0.55 0.08 340)",
-              border: "1px solid oklch(0.80 0.06 340)",
-              cursor: "pointer",
-              width: "100%",
-            }}
-          >
-            <span style={{ fontSize: 8 }}>→</span>
-            Open Timer
-          </button>
+
         </div>
       )}
     </div>
