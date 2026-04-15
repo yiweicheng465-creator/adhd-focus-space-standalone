@@ -545,7 +545,7 @@ export function DailyWrapUp({ tasks, wins, agents, quitCount = 0, onClose }: Dai
           <div className="relative z-10 pt-2 pb-4" style={{ borderTop: `1px solid ${M.border}`, marginTop: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
               <span style={{ fontSize: "1rem" }}>📝</span>
-              <span style={{ fontSize: "1rem", fontWeight: 700, color: M.ink, fontFamily: "'DM Sans', sans-serif" }}>Daily Note</span>
+              <span style={{ fontSize: "1rem", fontWeight: 700, color: M.ink, fontFamily: "'DM Sans', sans-serif" }}>My Diary</span>
               <span style={{ fontSize: "0.72rem", color: M.muted, fontFamily: "'DM Sans', sans-serif", fontStyle: "italic" }}>saved to monthly</span>
             </div>
             <textarea

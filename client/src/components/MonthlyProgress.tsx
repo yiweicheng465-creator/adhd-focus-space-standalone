@@ -448,7 +448,7 @@ function DayDetail({ log, dateStr, dateKey: dk, onClose, isPast }: { log?: Daily
             )}
             {log?.journalNote && (
               <div style={{ marginTop: 8, padding: "10px 12px", background: "oklch(0.97 0.012 355)", border: "1px dashed oklch(0.82 0.050 340)", borderRadius: 6 }}>
-                <p style={{ fontSize: 10, fontFamily: "'Space Mono', monospace", letterSpacing: "0.06em", color: M.muted, textTransform: "uppercase", marginBottom: 4 }}>📝 Daily Note</p>
+                <p style={{ fontSize: 10, fontFamily: "'Space Mono', monospace", letterSpacing: "0.06em", color: M.muted, textTransform: "uppercase", marginBottom: 4 }}>📝 My Diary</p>
                 <p style={{ fontSize: 12, color: M.ink, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6, whiteSpace: "pre-wrap", margin: 0 }}>{log.journalNote}</p>
               </div>
             )}
