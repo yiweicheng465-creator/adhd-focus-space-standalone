@@ -146,29 +146,31 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
       {/* Cat sticker: salmon sitting cat — bottom-right corner */}
       <img src={CAT_SALMON} alt="" aria-hidden="true" style={{ position: "absolute", bottom: 0, right: 0, width: 70, opacity: 0.38, pointerEvents: "none", zIndex: 5 }} />
       {showLifeCoach && <LifeCoachModal onClose={() => setShowLifeCoach(false)} goals={goals} />}
-      {/* Overall progress */}
-      {visibleGoals.length > 0 && (
-        <div className="p-4" style={{ background: M.coralBg, border: `1px solid ${M.coralBdr}` }}>
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4" style={{ color: M.coral }} />
-              <span className="text-sm font-medium" style={{ color: M.ink, fontFamily: "'DM Sans', sans-serif" }}>
-                {activeContext === "all" ? "Overall" : getContextConfig(activeContext).label} Progress
-              </span>
+
+
+      {/* Life Coach insights — top of page */}
+      {(() => {
+        try {
+          const data = JSON.parse(localStorage.getItem("adhd-life-coach-insights") ?? "null");
+          if (!data) return null;
+          return (
+            <div style={{ padding: "10px 14px", background: "oklch(0.58 0.12 285 / 0.06)", border: "1px solid oklch(0.58 0.12 285 / 0.20)", borderRadius: 8, display: "flex", gap: 10, alignItems: "flex-start" }}>
+              <span style={{ fontSize: "1rem", flexShrink: 0 }}>🧭</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.48rem", letterSpacing: "0.08em", color: "oklch(0.55 0.12 285)", textTransform: "uppercase", marginBottom: 3 }}>
+                  Life Coach · {data.coachType === "career" ? "Career" : "Life Planning"}
+                </p>
+                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem", color: "oklch(0.35 0.040 320)", lineHeight: 1.5, margin: 0, wordBreak: "break-word" }}>
+                  {data.summary?.slice(0, 200)}{data.summary?.length > 200 ? "…" : ""}
+                </p>
+                <button onClick={() => setShowLifeCoach(true)} style={{ marginTop: 4, fontSize: "0.55rem", fontFamily: "'Space Mono', monospace", color: "oklch(0.55 0.12 285)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 0 }}>
+                  Continue conversation →
+                </button>
+              </div>
             </div>
-            <span className="text-sm font-bold" style={{ color: M.coral, fontFamily: "'Playfair Display', serif" }}>
-              {avgProgress}%
-            </span>
-          </div>
-          {/* Custom progress bar */}
-          <div className="h-1.5 w-full" style={{ background: "oklch(0.88 0.014 75)" }}>
-            <div
-              className="h-full transition-all duration-500"
-              style={{ width: `${avgProgress}%`, background: M.coral }}
-            />
-          </div>
-        </div>
-      )}
+          );
+        } catch { return null; }
+      })()}
 
       {/* Add goal */}
       <div className="flex flex-col gap-2">
@@ -181,7 +183,7 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
             className="flex-1"
             style={{
               background: M.card,
-              border: `1px solid ${liveTag ? M.coral : M.border}`,
+              border: `1px solid ${liveTag ? "oklch(0.58 0.18 340)" : "oklch(0.82 0.050 340)"}`,
               fontFamily: "'DM Sans', sans-serif",
               transition: "border-color 0.2s",
               fontSize: "0.8rem",
@@ -215,30 +217,6 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
       </div>
 
       <ContextSwitcher active={activeContext} onChange={setActiveContext} counts={counts} contexts={knownCategories} onDeleteContext={onDeleteCategory} label="FILTER BY TAG" />
-
-      {/* Life Coach insights (if any) */}
-      {(() => {
-        try {
-          const data = JSON.parse(localStorage.getItem("adhd-life-coach-insights") ?? "null");
-          if (!data) return null;
-          return (
-            <div style={{ padding: "10px 14px", background: "oklch(0.55 0.12 270 / 0.06)", border: "1px solid oklch(0.55 0.12 270 / 0.20)", borderRadius: 8, display: "flex", gap: 10, alignItems: "flex-start" }}>
-              <span style={{ fontSize: "1rem", flexShrink: 0 }}>🧭</span>
-              <div>
-                <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.48rem", letterSpacing: "0.08em", color: "oklch(0.55 0.12 270)", textTransform: "uppercase", marginBottom: 3 }}>
-                  Life Coach · {data.coachType === "career" ? "Career" : "Life Planning"}
-                </p>
-                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem", color: "oklch(0.35 0.040 320)", lineHeight: 1.5, margin: 0 }}>
-                  {data.summary?.slice(0, 160)}{data.summary?.length > 160 ? "…" : ""}
-                </p>
-                <button onClick={() => setShowLifeCoach(true)} style={{ marginTop: 4, fontSize: "0.55rem", fontFamily: "'Space Mono', monospace", color: "oklch(0.55 0.12 270)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 0 }}>
-                  Continue conversation →
-                </button>
-              </div>
-            </div>
-          );
-        } catch { return null; }
-      })()}
 
       {/* Archive toggle + stats */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -274,10 +252,16 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
               key={goal.id}
               className="group p-4 transition-all relative overflow-hidden"
               style={{
-                background: done ? M.sageBg : M.card,
-                border: dragOverGoalId === goal.id ? `2px dashed ${M.coral}` : `1px solid ${done ? M.sageBdr : M.border}`,
+                background: done
+                  ? "oklch(0.96 0.030 340)"
+                  : goal.progress === 0
+                  ? "oklch(0.985 0.005 300)"
+                  : `oklch(${0.985 - goal.progress * 0.0002} ${goal.progress * 0.0003} ${340 - goal.progress * 0.4})`,
+                border: dragOverGoalId === goal.id ? `2px dashed oklch(0.58 0.18 340)` : `1px solid ${done ? "oklch(0.82 0.08 340)" : M.border}`,
                 borderRadius: 14,
-                boxShadow: "0 2px 12px oklch(0.55 0.12 285 / 0.08), 0 1px 3px oklch(0.28 0.04 320 / 0.06)",
+                boxShadow: done
+                  ? "0 2px 12px oklch(0.58 0.18 340 / 0.12), 0 1px 3px oklch(0.28 0.04 320 / 0.06)"
+                  : "0 2px 12px oklch(0.55 0.12 285 / 0.06), 0 1px 3px oklch(0.28 0.04 320 / 0.04)",
               }}
               onDragOver={(e) => { e.preventDefault(); setDragOverGoalId(goal.id); }}
               onDragLeave={(e) => {
