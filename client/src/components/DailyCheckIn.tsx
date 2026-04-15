@@ -84,40 +84,33 @@ const WIN_CATS = [
   { idx: 7, label: "Nutrition", color: "oklch(0.52 0.10 130)", emoji: "🍎" },
 ];
 
-/* ── Geometric mood faces (matching MoodCheckIn) ── */
+/* ── Korean aesthetic blob mood faces (matching Home.tsx) ── */
 const MOODS = [
-  { value: 1, label: "Drained", fill: "#C8B8D8", stroke: "#6A4880", shadow: "rgba(180,160,210,0.4)" },
-  { value: 2, label: "Low",     fill: "#D4B8E0", stroke: "#7A4890", shadow: "rgba(190,165,215,0.4)" },
-  { value: 3, label: "Okay",    fill: "#E8A8C8", stroke: "#8A3870", shadow: "rgba(220,155,190,0.4)" },
-  { value: 4, label: "Good",    fill: "#F0B8D8", stroke: "#9A3880", shadow: "rgba(235,170,205,0.4)" },
-  { value: 5, label: "Glowing", fill: "#F8C8E8", stroke: "#A84888", shadow: "rgba(245,185,220,0.4)" },
+  { value: 1, label: "Drained", labelKr: "피곤해", fill: "#8BBDD9", stroke: "#2A5A7A", shadow: "rgba(139,189,217,0.4)" },
+  { value: 2, label: "Low",     labelKr: "별로야", fill: "#B5A8D0", stroke: "#4A3A7A", shadow: "rgba(181,168,208,0.4)" },
+  { value: 3, label: "Okay",    labelKr: "괜찮아", fill: "#C4B8CC", stroke: "#4A3A5A", shadow: "rgba(196,184,204,0.4)" },
+  { value: 4, label: "Good",    labelKr: "좋아!",  fill: "#F0A8C0", stroke: "#7A2050", shadow: "rgba(240,168,192,0.4)" },
+  { value: 5, label: "Glowing", labelKr: "최고!",  fill: "#F4A0B0", stroke: "#7A1840", shadow: "rgba(244,160,176,0.4)" },
 ];
-
 function FaceDrained({ active }: { active: boolean }) {
-  const fill = active ? "#C8B8D8" : "#DDD0E8"; const c = "#6A4880";
-  return <svg viewBox="0 0 80 80" fill="none"><circle cx="40" cy="40" r="32" fill={fill}/><circle cx="28" cy="37" r="3" fill={c}/><circle cx="52" cy="37" r="3" fill={c}/><line x1="30" y1="52" x2="50" y2="52" stroke={c} strokeWidth="2" strokeLinecap="round"/></svg>;
+  const bg = active ? "#8BBDD9" : "#B5D4E8";
+  return <svg viewBox="0 0 80 80" fill="none" width="100%" height="100%"><path d="M40 14C52 12 66 18 70 30C74 42 70 60 58 68C46 76 26 76 16 64C6 52 8 30 18 20C24 14 32 16 40 14Z" fill={bg}/><ellipse cx="30" cy="38" rx="4" ry="5" fill="#2A5A7A" opacity="0.7"/><ellipse cx="50" cy="38" rx="4" ry="5" fill="#2A5A7A" opacity="0.7"/><ellipse cx="31" cy="36" rx="1.5" ry="2" fill="white" opacity="0.6"/><ellipse cx="51" cy="36" rx="1.5" ry="2" fill="white" opacity="0.6"/><path d="M33 52 Q40 48 47 52" stroke="#2A5A7A" strokeWidth="2" strokeLinecap="round" fill="none"/><ellipse cx="54.5" cy="52" rx="2" ry="3" fill="#A8D4F0" opacity="0.7"/></svg>;
 }
 function FaceLow({ active }: { active: boolean }) {
-  const fill = active ? "#D4B8E0" : "#E4CCF0"; const c = "#7A4890";
-  return <svg viewBox="0 0 80 80" fill="none"><rect x="8" y="8" width="64" height="64" rx="22" fill={fill}/><circle cx="28" cy="37" r="3" fill={c}/><circle cx="52" cy="37" r="3" fill={c}/><path d="M30 52 Q40 47 50 52" stroke={c} strokeWidth="2" strokeLinecap="round" fill="none"/></svg>;
+  const bg = active ? "#B5A8D0" : "#CFC4E4";
+  return <svg viewBox="0 0 80 80" fill="none" width="100%" height="100%"><path d="M38 13C50 10 66 17 70 30C74 43 68 62 56 69C44 76 24 75 14 63C4 51 6 28 18 19C24 14 30 16 38 13Z" fill={bg}/><path d="M26 32 Q29 28 33 30" stroke="#4A3A7A" strokeWidth="1.8" strokeLinecap="round" fill="none"/><path d="M47 30 Q51 28 54 32" stroke="#4A3A7A" strokeWidth="1.8" strokeLinecap="round" fill="none"/><ellipse cx="30" cy="38" rx="3.5" ry="4" fill="#4A3A7A" opacity="0.65"/><ellipse cx="50" cy="38" rx="3.5" ry="4" fill="#4A3A7A" opacity="0.65"/><ellipse cx="31" cy="36.5" rx="1.2" ry="1.5" fill="white" opacity="0.55"/><ellipse cx="51" cy="36.5" rx="1.2" ry="1.5" fill="white" opacity="0.55"/><path d="M31 52 Q40 48 49 52" stroke="#4A3A7A" strokeWidth="2" strokeLinecap="round" fill="none"/></svg>;
 }
 function FaceOkay({ active }: { active: boolean }) {
-  const fill = active ? "#E8A8C8" : "#F0C0D8"; const c = "#8A3870";
-  return <svg viewBox="0 0 80 80" fill="none"><circle cx="40" cy="40" r="32" fill={fill}/><circle cx="28" cy="37" r="3" fill={c}/><circle cx="52" cy="37" r="3" fill={c}/><line x1="30" y1="52" x2="50" y2="52" stroke={c} strokeWidth="2" strokeLinecap="round"/></svg>;
+  const bg = active ? "#C4B8CC" : "#D8CEDC";
+  return <svg viewBox="0 0 80 80" fill="none" width="100%" height="100%"><path d="M40 13C53 11 67 19 70 32C73 45 67 63 54 70C41 77 22 75 13 62C4 49 8 28 20 19C27 14 33 15 40 13Z" fill={bg}/><ellipse cx="30" cy="37" rx="3.5" ry="4" fill="#4A3A5A" opacity="0.65"/><ellipse cx="50" cy="37" rx="3.5" ry="4" fill="#4A3A5A" opacity="0.65"/><ellipse cx="31" cy="35.5" rx="1.2" ry="1.5" fill="white" opacity="0.55"/><ellipse cx="51" cy="35.5" rx="1.2" ry="1.5" fill="white" opacity="0.55"/><line x1="32" y1="51" x2="48" y2="51" stroke="#4A3A5A" strokeWidth="2" strokeLinecap="round"/><ellipse cx="23" cy="46" rx="5" ry="3.5" fill="#E8B0C8" opacity="0.3"/><ellipse cx="57" cy="46" rx="5" ry="3.5" fill="#E8B0C8" opacity="0.3"/></svg>;
 }
 function FaceGood({ active }: { active: boolean }) {
-  const fill = active ? "#F0B8D8" : "#F8CCE8"; const c = "#9A3880";
-  return <svg viewBox="0 0 80 80" fill="none"><circle cx="40" cy="40" r="32" fill={fill}/><path d="M24 36 Q28 31 32 36" stroke={c} strokeWidth="2.5" strokeLinecap="round" fill="none"/><path d="M48 36 Q52 31 56 36" stroke={c} strokeWidth="2.5" strokeLinecap="round" fill="none"/><path d="M30 50 Q40 57 50 50" stroke={c} strokeWidth="2" strokeLinecap="round" fill="none"/></svg>;
+  const bg = active ? "#F0A8C0" : "#F8C4D4";
+  return <svg viewBox="0 0 80 80" fill="none" width="100%" height="100%"><path d="M40 12C54 10 68 19 71 33C74 47 67 65 53 71C39 77 20 74 11 61C2 48 6 26 19 18C26 13 33 14 40 12Z" fill={bg}/><path d="M25 38 Q29 33 33 38" stroke="#7A2050" strokeWidth="2.2" strokeLinecap="round" fill="none"/><path d="M47 38 Q51 33 55 38" stroke="#7A2050" strokeWidth="2.2" strokeLinecap="round" fill="none"/><path d="M29 51 Q40 60 51 51" stroke="#7A2050" strokeWidth="2.5" strokeLinecap="round" fill="none"/><ellipse cx="22" cy="47" rx="5.5" ry="3.5" fill="#F07090" opacity="0.3"/><ellipse cx="58" cy="47" rx="5.5" ry="3.5" fill="#F07090" opacity="0.3"/></svg>;
 }
 function FaceGlowing({ active }: { active: boolean }) {
-  const fill = active ? "#F8C8E8" : "#FDD8F0"; const c = "#A84888";
-  const numRays = 10; const outerR = 38, innerR = 28;
-  const points = Array.from({ length: numRays * 2 }, (_, i) => {
-    const angle = (i * Math.PI) / numRays - Math.PI / 2;
-    const r = i % 2 === 0 ? outerR : innerR;
-    return `${40 + r * Math.cos(angle)},${40 + r * Math.sin(angle)}`;
-  }).join(" ");
-  return <svg viewBox="0 0 80 80" fill="none"><polygon points={points} fill={fill}/><path d="M26 37 Q30 32 34 37" stroke={c} strokeWidth="2.5" strokeLinecap="round" fill="none"/><path d="M46 37 Q50 32 54 37" stroke={c} strokeWidth="2.5" strokeLinecap="round" fill="none"/><path d="M28 50 Q40 60 52 50" stroke={c} strokeWidth="2" strokeLinecap="round" fill="none"/></svg>;
+  const bg = active ? "#F4A0B0" : "#FAC0CC";
+  return <svg viewBox="0 0 80 80" fill="none" width="100%" height="100%"><path d="M40 11C55 9 70 20 72 35C74 50 66 67 51 73C36 79 17 74 9 59C1 44 6 22 20 15C27 11 33 13 40 11Z" fill={bg}/><path d="M24 38 Q28 32 33 36" stroke="#7A1840" strokeWidth="2.2" strokeLinecap="round" fill="none"/><path d="M47 36 Q52 32 56 38" stroke="#7A1840" strokeWidth="2.2" strokeLinecap="round" fill="none"/><ellipse cx="28.5" cy="37" rx="2" ry="2.5" fill="#7A1840" opacity="0.5"/><ellipse cx="51.5" cy="37" rx="2" ry="2.5" fill="#7A1840" opacity="0.5"/><path d="M27 51 Q40 63 53 51" stroke="#7A1840" strokeWidth="2.5" strokeLinecap="round" fill="none"/><ellipse cx="21" cy="48" rx="6" ry="4" fill="#F07090" opacity="0.35"/><ellipse cx="59" cy="48" rx="6" ry="4" fill="#F07090" opacity="0.35"/><path d="M63 18 L64 14 L65 18 L69 19 L65 20 L64 24 L63 20 L59 19 Z" fill="#FAC0CC" stroke="#7A1840" strokeWidth="0.8"/></svg>;
 }
 const FACE_COMPONENTS = [FaceDrained, FaceLow, FaceOkay, FaceGood, FaceGlowing];
 
@@ -266,11 +259,23 @@ Be warm but concise. Speak directly to the user. No bullet points.`,
     }
   };
 
-  const goNext = () => {
+  const goNext = async () => {
     const idx = STEP_ORDER.indexOf(step);
     if (idx < STEP_ORDER.length - 1) {
       const nextStep = STEP_ORDER[idx + 1];
-      if (nextStep === "brief") { generateBrief(); }
+      if (nextStep === "brief") {
+        // Check if AI is available before showing brief
+        const keyStatus = await fetch("/api/key", { credentials: "include" }).then(r => r.json()).catch(() => ({ hasKey: false, remaining: 0 }));
+        const hasAI = keyStatus.hasKey || (keyStatus.remaining ?? 0) > 0;
+        if (!hasAI) {
+          // Skip brief step entirely
+          const briefIdx = STEP_ORDER.indexOf("brief");
+          const afterBrief = STEP_ORDER[briefIdx + 1];
+          setStep(afterBrief);
+          return;
+        }
+        generateBrief();
+      }
       setStep(nextStep);
 
     }
@@ -359,47 +364,17 @@ Be warm but concise. Speak directly to the user. No bullet points.`,
       <div
         className="w-full max-w-lg animate-scale-in overflow-hidden"
         style={{
-          background: M.bg,
-          border: `1.5px solid ${M.border}`,
-          boxShadow: "0 20px 60px rgba(140,40,90,0.35), 0 8px 24px rgba(180,60,120,0.25), 0 0 0 1.5px rgba(212,88,152,0.40)",
+          background: "oklch(0.982 0.008 355)",
+          borderRadius: 20,
+          border: "1px solid rgba(255,255,255,0.6)",
+          boxShadow: "0 32px 64px rgba(140,40,90,0.22), 0 12px 32px rgba(180,60,120,0.14), 0 4px 12px rgba(0,0,0,0.08)",
           position: "relative",
         }}
       >
 
-        {/* Retro title bar */}
-        <div className="relative z-10" style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "5px 10px",
-          background: "#F9D6E8",
-          borderBottom: `1.5px solid ${M.border}`,
-          fontFamily: "'Space Mono', monospace",
-          fontSize: 10,
-          color: "#8A3060",
-        }}>
-          <span>daily_checkin.exe</span>
-          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            {/* Progress dots */}
-            {STEP_ORDER.slice(0, -1).map((s, i) => (
-              <div key={s} style={{
-                width: 8, height: 8, borderRadius: "50%",
-                background: i <= STEP_ORDER.indexOf(step) ? M.accent : "#E8C8DC",
-                boxShadow: i <= STEP_ORDER.indexOf(step)
-                  ? `0 1px 0 oklch(0.40 0.18 340), inset 0 1px 1px rgba(255,255,255,0.55)`
-                  : `0 1px 0 rgba(180,120,160,0.3), inset 0 1px 1px rgba(255,255,255,0.40)`,
-                transition: "background 0.3s, box-shadow 0.3s",
-              }} />
-            ))}
-            <div style={{ width: 1, height: 10, background: M.border, margin: "0 4px" }} />
-            <button
-              onClick={onClose}
-              title="Close (will show again today)"
-              style={{ fontSize: 9, padding: "1px 5px", cursor: "pointer",
-                background: "#F0D0E4", border: `1px solid ${M.border}`,
-                color: "#8A3060", fontFamily: "'Space Mono', monospace",
-                lineHeight: 1.4,
-              }}
-            >✕</button>
-          </div>
+        {/* Clean close button */}
+        <div className="relative z-10" style={{ position: "absolute", top: 14, right: 14, zIndex: 20 }}>
+          
         </div>
 
         {/* Progress bar */}
@@ -515,7 +490,7 @@ Be warm but concise. Speak directly to the user. No bullet points.`,
                     <button
                       key={m.value}
                       onClick={() => setMood(m.value)}
-                      className="flex flex-col items-center gap-1.5 flex-1 transition-all duration-200 focus:outline-none"
+                      className="flex flex-col items-center gap-1 flex-1 transition-all duration-200 focus:outline-none"
                       style={{
                         transform: isSelected ? "scale(1.18) translateY(-4px)" : "scale(1)",
                         filter: isSelected ? `drop-shadow(0 6px 12px ${m.shadow})` : "none",
@@ -928,7 +903,7 @@ Be warm but concise. Speak directly to the user. No bullet points.`,
               className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium transition-all hover:opacity-90 active:scale-95"
               style={{ background: M.accent, color: "white" }}
             >
-              {step === "greeting" ? "Start my day ✦" : step === "brief" ? "Looks good →" : "Next"}
+              {step === "greeting" ? "Start my day ✦" : step === "brief" ? "Looks good" : "Next"}
               <ArrowRight className="w-4 h-4" />
             </button>
           ) : (

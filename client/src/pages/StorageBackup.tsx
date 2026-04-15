@@ -429,7 +429,7 @@ export default function StorageBackup() {
       </Section>
 
       {/* Google Drive backup */}
-      <Section title="Google Drive Backup" subtitle="Save your data to your own Google Drive — no account setup needed.">
+      <Section title='Google Drive Backup' subtitle="" badge="Beta">
 
         {/* Collapsible setup guide */}
         <div style={{ marginBottom: 14 }}>
@@ -437,8 +437,8 @@ export default function StorageBackup() {
             onClick={() => setShowDriveSetup(v => !v)}
             style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: 0, marginBottom: showDriveSetup ? 10 : 0 }}
           >
-            <span style={{ fontSize: 10, color: M.muted, fontFamily: "'Space Mono', monospace", letterSpacing: "0.06em" }}>
-              {showDriveSetup ? "▾" : "▸"} First time? How to set up Google Drive backup
+            <span style={{ fontSize: 10, color: "oklch(0.55 0.14 340)", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
+              {showDriveSetup ? "▾" : "▸"} This is a beta feature — want to give it a try? Follow the setup guide here
             </span>
           </button>
 
@@ -514,9 +514,21 @@ export default function StorageBackup() {
           {getPersistedToken() && gdClientId && (
             <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", background: "oklch(0.97 0.018 340)", border: "1px solid oklch(0.82 0.08 340)", borderRadius: 4 }}>
               <CheckCircle2 size={11} style={{ color: "oklch(0.50 0.14 168)", flexShrink: 0 }} />
-              <p style={{ fontSize: 10, color: "oklch(0.40 0.12 168)", fontFamily: "'DM Sans', sans-serif", margin: 0 }}>
-                <strong>Google Drive connected</strong> — access token refreshes automatically. Auto-backup runs every 24 hours.
+              <p style={{ fontSize: 10, color: "oklch(0.40 0.12 168)", fontFamily: "'DM Sans', sans-serif", margin: 0, flex: 1 }}>
+                <strong>Google Drive connected</strong> — auto-backup every 24 hours.
               </p>
+              <button
+                onClick={async () => {
+                  await fetch("/api/drive/disconnect", { method: "DELETE", credentials: "include" });
+                  localStorage.removeItem("adhd-gdrive-connected");
+                  cachedDriveToken = null;
+                  toast.success("Google Drive disconnected.");
+                  window.location.reload();
+                }}
+                style={{ flexShrink: 0, fontSize: 9, fontFamily: "'Space Mono', monospace", letterSpacing: "0.06em", padding: "2px 7px", borderRadius: 3, border: "1px solid oklch(0.72 0.08 340)", background: "transparent", color: "oklch(0.50 0.08 340)", cursor: "pointer" }}
+              >
+                Disconnect
+              </button>
             </div>
           )}
           <p style={{ fontSize: 10, color: M.muted, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6, margin: 0 }}>
@@ -532,8 +544,10 @@ export default function StorageBackup() {
           {[
             "Tasks", "Goals", "Wins", "Agents",
             "Brain Dump entries", "Daily logs", "Focus sessions",
-            "Mood history", "Care log", "Work mode",
-            "Display name", "Pet deaths",
+            "Mood history", "Display name", "Work mode",
+            "Theme & hue settings", "Film grain settings",
+            "Quick chips", "Block streak", "AI chat history",
+            "Calendar day order", "Priority matrix order",
           ].map((item) => (
             <div key={item} style={{ display: "flex", alignItems: "center", gap: 5 }}>
               <span style={{ fontSize: 9, color: M.sage }}>✓</span>
@@ -542,7 +556,7 @@ export default function StorageBackup() {
           ))}
         </div>
         <p style={{ fontSize: 10, color: M.muted, fontFamily: "'DM Sans', sans-serif", marginTop: 8 }}>
-          Theme and UI preferences are not included in backups.
+          Not included: Google OAuth tokens, OpenAI API key (stored server-side).
         </p>
       </Section>
     </div>
@@ -550,24 +564,20 @@ export default function StorageBackup() {
 }
 
 /* ── Sub-components ── */
-function Section({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+function Section({ title, subtitle, badge, children }: { title: string; subtitle?: string; badge?: string; children: React.ReactNode }) {
   return (
-    <div style={{
-      border: `1px solid ${M.border}`,
-      background: M.card,
-      padding: "16px 18px",
-    }}>
-      <p style={{
-        fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase",
-        fontFamily: "'JetBrains Mono', monospace", color: M.muted, marginBottom: subtitle ? 2 : 12, fontWeight: 700,
-      }}>
-        {title}
-      </p>
-      {subtitle && (
-        <p style={{ fontSize: 11, color: M.muted, fontFamily: "'DM Sans', sans-serif", marginBottom: 12 }}>
-          {subtitle}
+    <div style={{ border: `1px solid ${M.border}`, background: M.card, padding: "16px 18px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: subtitle ? 2 : 12 }}>
+        <p style={{ fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", fontFamily: "'JetBrains Mono', monospace", color: M.muted, fontWeight: 700, margin: 0 }}>
+          {title}
         </p>
-      )}
+        {badge && (
+          <span style={{ fontSize: 8, fontFamily: "'Space Mono', monospace", letterSpacing: "0.08em", padding: "1px 5px", borderRadius: 3, background: "oklch(0.58 0.18 340 / 0.12)", color: M.coral, border: "1px solid oklch(0.58 0.18 340 / 0.30)", fontWeight: 700 }}>
+            {badge}
+          </span>
+        )}
+      </div>
+      {subtitle && <p style={{ fontSize: 11, color: M.muted, fontFamily: "'DM Sans', sans-serif", marginBottom: 12 }}>{subtitle}</p>}
       {children}
     </div>
   );

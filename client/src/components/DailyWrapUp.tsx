@@ -596,9 +596,17 @@ export function DailyWrapUp({ tasks, wins, agents, quitCount = 0, onClose }: Dai
           {aiSummary && !aiLoading && (
             <div>
               <p style={{ fontSize: "0.875rem", color: M.ink, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.7, marginBottom: 8 }}>{aiSummary}</p>
-              <button onClick={() => setAiSummary(null)} style={{ fontSize: "0.75rem", color: M.muted, background: "none", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
-                Regenerate
-              </button>
+              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <button onClick={() => setAiSummary(null)} style={{ fontSize: "0.75rem", color: M.muted, background: "none", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+                  Regenerate
+                </button>
+                <button
+                  onClick={() => { navigator.clipboard.writeText(aiSummary ?? ""); toast.success("Summary copied!"); }}
+                  style={{ fontSize: "0.75rem", color: M.coral, background: "none", border: `1px solid ${M.coralBdr}`, borderRadius: 4, padding: "2px 10px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", display: "flex", alignItems: "center", gap: 4 }}
+                >
+                  📋 Copy
+                </button>
+              </div>
             </div>
           )}
           </div>

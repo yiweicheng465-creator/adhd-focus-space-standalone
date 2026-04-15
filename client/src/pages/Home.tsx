@@ -45,106 +45,90 @@ import StorageBackup from "@/pages/StorageBackup";
 
 
 /* ── Compact mood pill SVG faces (same as MoodCheckIn) ── */
-/* ── Doodle-style mood faces (5 levels) ── */
+/* ── Korean aesthetic blob mood faces ── */
 function PillFaceDrained({ active }: { active: boolean }) {
-  // Sad blue face — crying tear, downturned mouth
-  const bg = active ? "#7BAED4" : "#A8C8E8"; const ink = "#2A4A6A";
+  const bg = active ? "#8BBDD9" : "#B5D4E8";
   return (
     <svg viewBox="0 0 80 80" fill="none" width="100%" height="100%">
-      {/* Round body */}
-      <circle cx="40" cy="40" r="30" fill={bg} />
-      {/* Wobbly outline */}
-      <circle cx="40" cy="40" r="30" stroke={ink} strokeWidth="2" strokeDasharray="4 2" fill="none" opacity="0.3" />
-      {/* Eyes — droopy/sad */}
-      <path d="M27 34 Q30 31 33 34" stroke={ink} strokeWidth="2.2" strokeLinecap="round" fill="none" />
-      <path d="M47 34 Q50 31 53 34" stroke={ink} strokeWidth="2.2" strokeLinecap="round" fill="none" />
-      {/* Teardrop */}
-      <ellipse cx="53" cy="41" rx="2.5" ry="3.5" fill="#A8D4F0" />
-      {/* Frown */}
-      <path d="M30 52 Q40 46 50 52" stroke={ink} strokeWidth="2.5" strokeLinecap="round" fill="none" />
+      <path d="M40 14C52 12 66 18 70 30C74 42 70 60 58 68C46 76 26 76 16 64C6 52 8 30 18 20C24 14 32 16 40 14Z" fill={bg}/>
+      <ellipse cx="30" cy="38" rx="4" ry="5" fill="#2A5A7A" opacity="0.7"/>
+      <ellipse cx="50" cy="38" rx="4" ry="5" fill="#2A5A7A" opacity="0.7"/>
+      <ellipse cx="31" cy="36" rx="1.5" ry="2" fill="white" opacity="0.6"/>
+      <ellipse cx="51" cy="36" rx="1.5" ry="2" fill="white" opacity="0.6"/>
+      <path d="M33 52 Q40 48 47 52" stroke="#2A5A7A" strokeWidth="2" strokeLinecap="round" fill="none"/>
+      <path d="M53 43 Q56 48 54 52" stroke="#7AADD4" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.8"/>
+      <ellipse cx="54.5" cy="53" rx="2" ry="3" fill="#A8D4F0" opacity="0.7"/>
     </svg>
   );
 }
 function PillFaceLow({ active }: { active: boolean }) {
-  // Worried yellow — squiggly brow, slight frown
-  const bg = active ? "#F5C842" : "#FAD96A"; const ink = "#7A5000";
+  const bg = active ? "#B5A8D0" : "#CFC4E4";
   return (
     <svg viewBox="0 0 80 80" fill="none" width="100%" height="100%">
-      <circle cx="40" cy="40" r="30" fill={bg} />
-      {/* Worried brows */}
-      <path d="M25 30 Q28 27 32 29" stroke={ink} strokeWidth="2.2" strokeLinecap="round" fill="none" />
-      <path d="M48 29 Q52 27 55 30" stroke={ink} strokeWidth="2.2" strokeLinecap="round" fill="none" />
-      {/* Dot eyes */}
-      <circle cx="30" cy="36" r="3" fill={ink} />
-      <circle cx="50" cy="36" r="3" fill={ink} />
-      {/* Slight frown */}
-      <path d="M31 50 Q40 46 49 50" stroke={ink} strokeWidth="2.5" strokeLinecap="round" fill="none" />
+      <path d="M38 13C50 10 66 17 70 30C74 43 68 62 56 69C44 76 24 75 14 63C4 51 6 28 18 19C24 14 30 16 38 13Z" fill={bg}/>
+      <path d="M26 32 Q29 28 33 30" stroke="#4A3A7A" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
+      <path d="M47 30 Q51 28 54 32" stroke="#4A3A7A" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
+      <ellipse cx="30" cy="38" rx="3.5" ry="4" fill="#4A3A7A" opacity="0.65"/>
+      <ellipse cx="50" cy="38" rx="3.5" ry="4" fill="#4A3A7A" opacity="0.65"/>
+      <ellipse cx="31" cy="36.5" rx="1.2" ry="1.5" fill="white" opacity="0.55"/>
+      <ellipse cx="51" cy="36.5" rx="1.2" ry="1.5" fill="white" opacity="0.55"/>
+      <path d="M31 52 Q40 48 49 52" stroke="#4A3A7A" strokeWidth="2" strokeLinecap="round" fill="none"/>
     </svg>
   );
 }
 function PillFaceOkay({ active }: { active: boolean }) {
-  // Neutral yellow — flat line mouth, simple eyes
-  const bg = active ? "#F5C842" : "#FAD96A"; const ink = "#7A5000";
+  const bg = active ? "#C4B8CC" : "#D8CEDC";
   return (
     <svg viewBox="0 0 80 80" fill="none" width="100%" height="100%">
-      <circle cx="40" cy="40" r="30" fill={bg} />
-      {/* Round dot eyes */}
-      <circle cx="30" cy="36" r="3.5" fill={ink} />
-      <circle cx="50" cy="36" r="3.5" fill={ink} />
-      {/* Highlight dots */}
-      <circle cx="31.5" cy="34.5" r="1.2" fill="white" />
-      <circle cx="51.5" cy="34.5" r="1.2" fill="white" />
-      {/* Flat mouth */}
-      <line x1="31" y1="51" x2="49" y2="51" stroke={ink} strokeWidth="2.5" strokeLinecap="round" />
+      <path d="M40 13C53 11 67 19 70 32C73 45 67 63 54 70C41 77 22 75 13 62C4 49 8 28 20 19C27 14 33 15 40 13Z" fill={bg}/>
+      <ellipse cx="30" cy="37" rx="3.5" ry="4" fill="#4A3A5A" opacity="0.65"/>
+      <ellipse cx="50" cy="37" rx="3.5" ry="4" fill="#4A3A5A" opacity="0.65"/>
+      <ellipse cx="31" cy="35.5" rx="1.2" ry="1.5" fill="white" opacity="0.55"/>
+      <ellipse cx="51" cy="35.5" rx="1.2" ry="1.5" fill="white" opacity="0.55"/>
+      <line x1="32" y1="51" x2="48" y2="51" stroke="#4A3A5A" strokeWidth="2" strokeLinecap="round"/>
+      <ellipse cx="23" cy="46" rx="5" ry="3.5" fill="#E8B0C8" opacity="0.3"/>
+      <ellipse cx="57" cy="46" rx="5" ry="3.5" fill="#E8B0C8" opacity="0.3"/>
     </svg>
   );
 }
 function PillFaceGood({ active }: { active: boolean }) {
-  // Happy yellow — curved up eyes, big smile
-  const bg = active ? "#F5C842" : "#FAD96A"; const ink = "#7A5000";
+  const bg = active ? "#F0A8C0" : "#F8C4D4";
   return (
     <svg viewBox="0 0 80 80" fill="none" width="100%" height="100%">
-      <circle cx="40" cy="40" r="30" fill={bg} />
-      {/* Happy crescent eyes */}
-      <path d="M26 38 Q30 33 34 38" stroke={ink} strokeWidth="2.5" strokeLinecap="round" fill="none" />
-      <path d="M46 38 Q50 33 54 38" stroke={ink} strokeWidth="2.5" strokeLinecap="round" fill="none" />
-      {/* Big smile */}
-      <path d="M29 49 Q40 58 51 49" stroke={ink} strokeWidth="2.5" strokeLinecap="round" fill="none" />
-      {/* Rosy cheeks */}
-      <ellipse cx="24" cy="46" rx="5" ry="3.5" fill="#F09060" opacity="0.35" />
-      <ellipse cx="56" cy="46" rx="5" ry="3.5" fill="#F09060" opacity="0.35" />
+      <path d="M40 12C54 10 68 19 71 33C74 47 67 65 53 71C39 77 20 74 11 61C2 48 6 26 19 18C26 13 33 14 40 12Z" fill={bg}/>
+      <path d="M25 38 Q29 33 33 38" stroke="#7A2050" strokeWidth="2.2" strokeLinecap="round" fill="none"/>
+      <path d="M47 38 Q51 33 55 38" stroke="#7A2050" strokeWidth="2.2" strokeLinecap="round" fill="none"/>
+      <path d="M29 51 Q40 60 51 51" stroke="#7A2050" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+      <ellipse cx="22" cy="47" rx="5.5" ry="3.5" fill="#F07090" opacity="0.3"/>
+      <ellipse cx="58" cy="47" rx="5.5" ry="3.5" fill="#F07090" opacity="0.3"/>
     </svg>
   );
 }
 function PillFaceGlowing({ active }: { active: boolean }) {
-  // Ecstatic yellow — star/sparkle eyes, huge grin
-  const bg = active ? "#F5C842" : "#FAD96A"; const ink = "#7A5000";
+  const bg = active ? "#F4A0B0" : "#FAC0CC";
   return (
     <svg viewBox="0 0 80 80" fill="none" width="100%" height="100%">
-      <circle cx="40" cy="40" r="30" fill={bg} />
-      {/* Star left eye */}
-      <path d="M30 37 L31.5 33 L33 37 L37 38.5 L33 40 L31.5 44 L30 40 L26 38.5 Z" fill={ink} />
-      {/* Star right eye */}
-      <path d="M50 37 L51.5 33 L53 37 L57 38.5 L53 40 L51.5 44 L50 40 L46 38.5 Z" fill={ink} />
-      {/* Huge open grin */}
-      <path d="M27 50 Q40 62 53 50" stroke={ink} strokeWidth="2.5" strokeLinecap="round" fill="none" />
-      <path d="M27 50 Q40 60 53 50 Q40 52 27 50 Z" fill={ink} opacity="0.12" />
-      {/* Rosy cheeks */}
-      <ellipse cx="22" cy="47" rx="6" ry="4" fill="#F09060" opacity="0.4" />
-      <ellipse cx="58" cy="47" rx="6" ry="4" fill="#F09060" opacity="0.4" />
-      {/* Sparkle */}
-      <path d="M62 22 L63 18 L64 22 L68 23 L64 24 L63 28 L62 24 L58 23 Z" fill="#F5C842" stroke={ink} strokeWidth="0.8" />
+      <path d="M40 11C55 9 70 20 72 35C74 50 66 67 51 73C36 79 17 74 9 59C1 44 6 22 20 15C27 11 33 13 40 11Z" fill={bg}/>
+      <path d="M24 38 Q28 32 33 36" stroke="#7A1840" strokeWidth="2.2" strokeLinecap="round" fill="none"/>
+      <path d="M47 36 Q52 32 56 38" stroke="#7A1840" strokeWidth="2.2" strokeLinecap="round" fill="none"/>
+      <ellipse cx="28.5" cy="37" rx="2" ry="2.5" fill="#7A1840" opacity="0.5"/>
+      <ellipse cx="51.5" cy="37" rx="2" ry="2.5" fill="#7A1840" opacity="0.5"/>
+      <path d="M27 51 Q40 63 53 51" stroke="#7A1840" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+      <path d="M27 51 Q40 60 53 51 Q40 54 27 51Z" fill="#7A1840" opacity="0.08"/>
+      <ellipse cx="21" cy="48" rx="6" ry="4" fill="#F07090" opacity="0.35"/>
+      <ellipse cx="59" cy="48" rx="6" ry="4" fill="#F07090" opacity="0.35"/>
+      <path d="M63 18 L64 14 L65 18 L69 19 L65 20 L64 24 L63 20 L59 19 Z" fill="#FAC0CC" stroke="#7A1840" strokeWidth="0.8"/>
     </svg>
   );
 }
 
 const PILL_FACES = [PillFaceDrained, PillFaceLow, PillFaceOkay, PillFaceGood, PillFaceGlowing];
 const MOOD_DATA = [
-  { value: 1, label: "Drained", color: "oklch(0.50 0.06 280)" },
-  { value: 2, label: "Low",     color: "oklch(0.48 0.08 290)" },
-  { value: 3, label: "Okay",    color: "oklch(0.55 0.18 340)" },
-  { value: 4, label: "Good",    color: "oklch(0.55 0.14 310)" },
-  { value: 5, label: "Glowing", color: "oklch(0.58 0.18 355)" },
+  { value: 1, label: "Drained", color: "oklch(0.52 0.08 240)", label_kr: "피곤해" },
+  { value: 2, label: "Low",     color: "oklch(0.52 0.08 290)", label_kr: "별로야" },
+  { value: 3, label: "Okay",    color: "oklch(0.50 0.05 320)", label_kr: "괜찮아" },
+  { value: 4, label: "Good",    color: "oklch(0.55 0.14 350)", label_kr: "좋아!" },
+  { value: 5, label: "Glowing", color: "oklch(0.58 0.18 355)", label_kr: "최고!" },
 ];
 
 function MoodPill({ mood, onMoodChange }: { mood: number | null; onMoodChange: (v: number) => void }) {
@@ -201,17 +185,19 @@ function MoodPill({ mood, onMoodChange }: { mood: number | null; onMoodChange: (
                 key={m.value}
                 onClick={() => { onMoodChange(m.value); setOpen(false); }}
                 title={m.label}
-                className="flex flex-col items-center gap-1 px-2 py-1.5 transition-all"
+                className="flex flex-col items-center gap-0.5 px-1.5 py-1.5 transition-all"
                 style={{
                   borderRadius: 8,
                   background: mood === m.value ? "oklch(0.965 0.015 355)" : "transparent",
                   border: mood === m.value ? `1px solid ${m.color}60` : "1px solid transparent",
+                  minWidth: 44,
                 }}
               >
-                <span style={{ width: 32, height: 32, display: "inline-flex" }}>
+                <span style={{ width: 36, height: 36, display: "inline-flex" }}>
                   <FaceComp active={mood === m.value} />
                 </span>
-                <span style={{ fontSize: "0.60rem", color: m.color, fontFamily: "'DM Sans', sans-serif", fontWeight: 500 }}>{m.label}</span>
+                <span style={{ fontSize: "0.58rem", color: m.color, fontFamily: "'DM Sans', sans-serif", fontWeight: 600, textAlign: "center", lineHeight: 1.1 }}>{m.label}</span>
+                <span style={{ fontSize: "0.50rem", color: m.color, fontFamily: "'Space Mono', monospace", opacity: 0.65, textAlign: "center" }}>{(m as any).label_kr}</span>
               </button>
             );
           })}
@@ -258,7 +244,16 @@ const INITIAL_GOALS: Goal[] = [
 const SUNSET_WIDE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410012773/WNs8kMVMKanwFbtYhk72en/adhd-sunset-wide_e4204b59.png";
 
 export default function Home() {
-  const [activeSection, setActiveSection] = useState<Section>("dashboard");
+  // URL-hash based section state — persists across refresh
+  const [activeSection, setActiveSectionState] = useState<Section>(() => {
+    const hash = window.location.hash.slice(1) as Section;
+    const VALID = ["dashboard","focus","tasks","wins","dump","goals","agents","storage"] as const;
+    return (VALID as readonly string[]).includes(hash) ? hash as Section : "dashboard";
+  });
+  const setActiveSection = (s: Section) => {
+    setActiveSectionState(s);
+    window.location.hash = s === "dashboard" ? "" : s;
+  };
   const { durations } = useTimer();
   const { user, loading: authLoading, setUser } = useAuth();
   const today = new Date().toDateString();
