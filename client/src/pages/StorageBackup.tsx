@@ -18,18 +18,24 @@ import {
 import { toast } from "sonner";
 import { AlertTriangle, CheckCircle2, CloudDownload, CloudUpload, Download, HardDrive, RefreshCw, Upload } from "lucide-react";
 
-// Persist Google access token in localStorage — reuse across page loads
-const TOKEN_KEY = "adhd-gdrive-token";
-function getPersistedToken(): string | null {
-  try {
-    const raw = localStorage.getItem(TOKEN_KEY);
-    if (!raw) return null;
-    const { token, expiresAt } = JSON.parse(raw) as { token: string; expiresAt: number };
-    return expiresAt > Date.now() + 120_000 ? token : null;
-  } catch { return null; }
+// Server-side Drive token management
+// Access token cached in memory for 50 minutes (server refreshes from stored refresh token)
+let cachedDriveToken: { token: string; expiresAt: number } | null = null;
+
+async function getServerDriveToken(): Promise<string> {
+  if (cachedDriveToken && cachedDriveToken.expiresAt > Date.now() + 60_000) {
+    return cachedDriveToken.token;
+  }
+  const res = await fetch("/api/drive/token", { credentials: "include" });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? "Drive token fetch failed");
+  cachedDriveToken = { token: data.accessToken, expiresAt: Date.now() + 50 * 60 * 1000 };
+  return data.accessToken;
 }
-function persistToken(token: string) {
-  try { localStorage.setItem(TOKEN_KEY, JSON.stringify({ token, expiresAt: Date.now() + 55 * 60 * 1000 })); } catch {}
+
+function getPersistedToken(): boolean {
+  // Just check if we have a server-side connection (non-async indicator)
+  return localStorage.getItem("adhd-gdrive-connected") === "1";
 }
 
 /* ── Design tokens ── */
@@ -47,69 +53,59 @@ const M = {
 
 /* ── Google Drive OAuth helpers (client-side only) ── */
 const GDRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
-const GDRIVE_DISCOVERY = "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest";
 const BACKUP_FILENAME = "adhd-focus-backup.json";
 const BACKUP_MIME = "application/json";
 
-/** Load Google API scripts lazily */
-function loadGapiScripts(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if ((window as any).gapi && (window as any).google?.accounts) {
-      resolve();
-      return;
-    }
-    const gapiScript = document.createElement("script");
-    gapiScript.src = "https://apis.google.com/js/api.js";
-    gapiScript.onload = () => {
-      (window as any).gapi.load("client", async () => {
-        try {
-          await (window as any).gapi.client.init({
-            discoveryDocs: [GDRIVE_DISCOVERY],
-          });
-          resolve();
-        } catch (e) { reject(e); }
-      });
-    };
-    gapiScript.onerror = reject;
-    document.head.appendChild(gapiScript);
+/** Google API scripts are loaded by loadGapiScripts() in getGoogleAccessToken */
 
-    const gisScript = document.createElement("script");
-    gisScript.src = "https://accounts.google.com/gsi/client";
-    document.head.appendChild(gisScript);
+/** Connect Google Drive via authorization code flow — one time setup */
+function connectGoogleDrive(clientId: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const redirectUri = window.location.origin;
+    const codeClient = (window as any).google.accounts.oauth2.initCodeClient({
+      client_id: clientId,
+      scope: GDRIVE_SCOPE,
+      ux_mode: "popup",
+      access_type: "offline",
+      prompt: "consent",
+      callback: async (response: any) => {
+        if (response.error) { reject(new Error(response.error)); return; }
+        try {
+          const res = await fetch("/api/drive/connect", {
+            method: "POST", credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code: response.code, redirectUri }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error ?? "Connect failed");
+          localStorage.setItem("adhd-gdrive-connected", "1");
+          cachedDriveToken = { token: data.accessToken, expiresAt: Date.now() + 50 * 60 * 1000 };
+          resolve(data.accessToken);
+        } catch (err: any) { reject(err); }
+      },
+    });
+    codeClient.requestCode();
   });
 }
 
-/** Get an access token via Google Identity Services — reuses cached token if still valid */
-function getGoogleAccessToken(clientId: string): Promise<string> {
-  // Return cached token if still valid (with 2-min buffer)
-  const persisted = getPersistedToken();
-  if (persisted) return Promise.resolve(persisted);
-  return new Promise((resolve, reject) => {
-    const tokenClient = (window as any).google.accounts.oauth2.initTokenClient({
-      client_id: clientId,
-      scope: GDRIVE_SCOPE,
-      callback: (response: any) => {
-        if (response.error) {
-          if (response.error === "access_denied" || response.error === "popup_closed_by_user") {
-            reject(new Error("CANCELLED"));
-          } else {
-            reject(new Error(response.error));
-          }
-        } else {
-          persistToken(response.access_token as string);
-          resolve(response.access_token as string);
-        }
-      },
-      error_callback: (err: any) => {
-        if (err?.type === "popup_closed" || err?.type === "popup_failed_to_open") {
-          reject(new Error("CANCELLED"));
-        } else {
-          reject(new Error(err?.type ?? "auth_error"));
-        }
-      },
-    });
-    // No prompt — Google will auto-use previous consent if already granted
-    tokenClient.requestAccessToken({ prompt: "" });
+/** Get Drive access token — from server (uses stored refresh token, no popup after first time) */
+async function getGoogleAccessToken(clientId: string): Promise<string> {
+  // Already connected — get fresh token from server silently
+  if (getPersistedToken()) {
+    try { return await getServerDriveToken(); } catch {}
+  }
+  // First time — run the one-time auth popup
+  await loadGapiScripts(clientId);
+  return connectGoogleDrive(clientId);
+}
+
+function loadGapiScripts(clientId: string): Promise<void> {
+  return new Promise((resolve) => {
+    if ((window as any).google?.accounts?.oauth2) { resolve(); return; }
+    const s = document.createElement("script");
+    s.src = "https://accounts.google.com/gsi/client";
+    s.onload = () => resolve();
+    document.head.appendChild(s);
   });
 }
 
@@ -199,14 +195,14 @@ export default function StorageBackup() {
   useEffect(() => { fetch("/api/config").then(r=>r.json()).then(d=>{ if(d.googleClientId) setGdClientId(d.googleClientId); }).catch(()=>{}); }, []);
   // Auto-backup to Google Drive every 24 hours if token exists
   useEffect(() => {
-    const AUTO_BACKUP_KEY = "adhd-gdrive-auto-backup-ts";
-    const AUTO_INTERVAL = 24 * 60 * 60 * 1000; // 24h
-    const last = Number(localStorage.getItem(AUTO_BACKUP_KEY) ?? 0);
-    const token = getPersistedToken();
-    if (!token || !gdClientId) return;
-    if (Date.now() - last < AUTO_INTERVAL) return;
-    // Silent auto-backup
-    (async () => {
+    const run = async () => {
+      const AUTO_BACKUP_KEY = "adhd-gdrive-auto-backup-ts";
+      const AUTO_INTERVAL = 24 * 60 * 60 * 1000;
+      if (!getPersistedToken() || !gdClientId) return;
+      const last = Number(localStorage.getItem(AUTO_BACKUP_KEY) ?? 0);
+      if (Date.now() - last < AUTO_INTERVAL) return;
+      const token = await getServerDriveToken().catch(() => null);
+      if (!token) return;
       try {
         const backup = exportAppData();
         await uploadToDrive(token, backup);
@@ -214,9 +210,9 @@ export default function StorageBackup() {
         localStorage.setItem(AUTO_BACKUP_KEY, String(now));
         localStorage.setItem("adhd-last-backup", String(now));
         localStorage.setItem("adhd-last-backup-info", `Auto-backed up ${new Date(now).toLocaleString()} · ${Object.keys(backup.appData).length} data categories`);
-        console.log("[ADHD] Auto-backup to Google Drive succeeded");
       } catch { /* silent fail */ }
-    })();
+    };
+    run();
   }, [gdClientId]);
 
 
@@ -508,11 +504,11 @@ export default function StorageBackup() {
 
         <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 4 }}>
           {/* Auto-backup notice — shown once user has a valid token */}
-          {getPersistedToken() && (
+          {getPersistedToken() && gdClientId && (
             <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", background: "oklch(0.97 0.018 340)", border: "1px solid oklch(0.82 0.08 340)", borderRadius: 4 }}>
               <CheckCircle2 size={11} style={{ color: "oklch(0.50 0.14 168)", flexShrink: 0 }} />
               <p style={{ fontSize: 10, color: "oklch(0.40 0.12 168)", fontFamily: "'DM Sans', sans-serif", margin: 0 }}>
-                <strong>Auto-backup enabled</strong> — your data will be backed up to Google Drive automatically every 24 hours.
+                <strong>Google Drive connected</strong> — access token refreshes automatically. Auto-backup runs every 24 hours.
               </p>
             </div>
           )}

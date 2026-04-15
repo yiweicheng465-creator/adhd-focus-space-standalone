@@ -23,6 +23,7 @@ export interface DailyLog {
   score: number;         // 0-100
   focusSessions?: number; // individual 25-min sessions completed
   blocksCompleted?: number; // full 4-session blocks completed
+  journalNote?: string;    // daily journal/notes from wrap-up
 }
 
 const MOOD_COLORS = ["#C8B8D8","#D4B8E0","#E8A8C8","#F0B8D8","#F8C8E8"];
@@ -443,6 +444,12 @@ function DayDetail({ log, dateStr, dateKey: dk, onClose, isPast }: { log?: Daily
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <CheckCircle2 size={13} style={{ color: M.pink, flexShrink: 0 }} />
                 <span style={{ fontSize: 12, color: M.ink }}>{log!.tasksCompleted} {log!.tasksCompleted === 1 ? "task" : "tasks"} completed</span>
+              </div>
+            )}
+            {log?.journalNote && (
+              <div style={{ marginTop: 8, padding: "10px 12px", background: "oklch(0.97 0.012 355)", border: "1px dashed oklch(0.82 0.050 340)", borderRadius: 6 }}>
+                <p style={{ fontSize: 10, fontFamily: "'Space Mono', monospace", letterSpacing: "0.06em", color: M.muted, textTransform: "uppercase", marginBottom: 4 }}>📝 Daily Note</p>
+                <p style={{ fontSize: 12, color: M.ink, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6, whiteSpace: "pre-wrap", margin: 0 }}>{log.journalNote}</p>
               </div>
             )}
           </>

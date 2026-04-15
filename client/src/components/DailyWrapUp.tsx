@@ -306,6 +306,24 @@ interface DailyWrapUpProps {
 export function DailyWrapUp({ tasks, wins, agents, quitCount = 0, onClose }: DailyWrapUpProps) {
   const [copied, setCopied] = useState(false);
   const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [journalNote, setJournalNote] = useState<string>(() => {
+    // Load today's note from daily-logs
+    try {
+      const today = new Date().toDateString();
+      const logs = JSON.parse(localStorage.getItem("adhd-daily-logs") ?? "{}");
+      return logs[today]?.journalNote ?? "";
+    } catch { return ""; }
+  });
+
+  const saveJournalNote = (note: string) => {
+    setJournalNote(note);
+    try {
+      const today = new Date().toDateString();
+      const logs = JSON.parse(localStorage.getItem("adhd-daily-logs") ?? "{}");
+      logs[today] = { ...(logs[today] ?? { dateKey: today }), journalNote: note };
+      localStorage.setItem("adhd-daily-logs", JSON.stringify(logs));
+    } catch {}
+  };
   const [aiLoading, setAiLoading] = useState(false);
 
   const today    = new Date().toDateString();
@@ -522,6 +540,29 @@ export function DailyWrapUp({ tasks, wins, agents, quitCount = 0, onClose }: Dai
               </div>
             </Section>
           )}
+
+          {/* Daily Journal */}
+          <div className="relative z-10 pt-2 pb-4" style={{ borderTop: `1px solid ${M.border}`, marginTop: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <span style={{ fontSize: "1rem" }}>📝</span>
+              <span style={{ fontSize: "1rem", fontWeight: 700, color: M.ink, fontFamily: "'DM Sans', sans-serif" }}>Daily Note</span>
+              <span style={{ fontSize: "0.72rem", color: M.muted, fontFamily: "'DM Sans', sans-serif", fontStyle: "italic" }}>saved to monthly</span>
+            </div>
+            <textarea
+              value={journalNote}
+              onChange={(e) => saveJournalNote(e.target.value)}
+              placeholder="How did today feel? Any thoughts, reflections, or things to remember…"
+              rows={4}
+              style={{
+                width: "100%", boxSizing: "border-box",
+                fontFamily: "'DM Sans', sans-serif", fontSize: "0.875rem",
+                color: M.ink, lineHeight: 1.7, padding: "10px 12px",
+                border: `1px dashed ${M.border}`, borderRadius: 6,
+                background: "oklch(0.990 0.006 355 / 0.60)",
+                resize: "vertical", outline: "none",
+              }}
+            />
+          </div>
 
           {/* AI Day Summary — inside scroll so it scrolls with content */}
           <div className="relative z-10 pt-2 pb-4" style={{ borderTop: `1px solid ${M.border}`, marginTop: 8 }}>

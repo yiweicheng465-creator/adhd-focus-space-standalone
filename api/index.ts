@@ -452,6 +452,77 @@ export default async function handler(req: any, res: any) {
     return;
   }
 
+  // ── POST /api/drive/connect — exchange auth code for refresh token ──────────
+  if (url === "/api/drive/connect" && req.method === "POST") {
+    const user = await getUser(req);
+    if (!user) { json(res, 401, { error: "Not authenticated" }); return; }
+    try {
+      const { code, redirectUri } = await readBody(req);
+      if (!code) { json(res, 400, { error: "code required" }); return; }
+      const clientId = process.env.GOOGLE_CLIENT_ID ?? "";
+      const clientSecret = process.env.GOOGLE_CLIENT_SECRET ?? "";
+      // Exchange auth code for tokens
+      const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ code, client_id: clientId, client_secret: clientSecret, redirect_uri: redirectUri, grant_type: "authorization_code" }).toString(),
+      });
+      const tokens = await tokenRes.json() as { access_token?: string; refresh_token?: string; error?: string };
+      if (tokens.error || !tokens.refresh_token) {
+        json(res, 400, { error: tokens.error ?? "No refresh token returned. Ensure access_type=offline." });
+        return;
+      }
+      const db = getDb();
+      await db.query("UPDATE users SET google_refresh_token = $1 WHERE id = $2", [tokens.refresh_token, user.sub]);
+      await db.end();
+      json(res, 200, { ok: true, accessToken: tokens.access_token });
+    } catch (err: any) {
+      json(res, 500, { error: err?.message ?? "Failed to connect Drive" });
+    }
+    return;
+  }
+
+  // ── GET /api/drive/token — get fresh access token using stored refresh token ─
+  if (url === "/api/drive/token") {
+    const user = await getUser(req);
+    if (!user) { json(res, 401, { error: "Not authenticated" }); return; }
+    try {
+      const db = getDb();
+      const { rows } = await db.query("SELECT google_refresh_token FROM users WHERE id = $1", [user.sub]);
+      await db.end();
+      const refreshToken = rows[0]?.google_refresh_token as string | null;
+      if (!refreshToken) { json(res, 404, { error: "No Google Drive connection. Please connect first." }); return; }
+      const clientId = process.env.GOOGLE_CLIENT_ID ?? "";
+      const clientSecret = process.env.GOOGLE_CLIENT_SECRET ?? "";
+      const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ refresh_token: refreshToken, client_id: clientId, client_secret: clientSecret, grant_type: "refresh_token" }).toString(),
+      });
+      const data = await tokenRes.json() as { access_token?: string; error?: string };
+      if (data.error || !data.access_token) { json(res, 401, { error: "Drive token refresh failed. Reconnect Google Drive." }); return; }
+      json(res, 200, { accessToken: data.access_token });
+    } catch (err: any) {
+      json(res, 500, { error: err?.message ?? "Token refresh failed" });
+    }
+    return;
+  }
+
+  // ── DELETE /api/drive/disconnect — remove stored refresh token ───────────────
+  if (url === "/api/drive/disconnect" && req.method === "DELETE") {
+    const user = await getUser(req);
+    if (!user) { json(res, 401, { error: "Not authenticated" }); return; }
+    try {
+      const db = getDb();
+      await db.query("UPDATE users SET google_refresh_token = NULL WHERE id = $1", [user.sub]);
+      await db.end();
+      json(res, 200, { ok: true });
+    } catch (err: any) {
+      json(res, 500, { error: err?.message ?? "Failed to disconnect" });
+    }
+    return;
+  }
+
   // 404
   json(res, 404, { error: "Not found" });
 }

@@ -20,3 +20,14 @@ BEGIN
     ALTER TABLE users ADD COLUMN ai_usage_count INTEGER DEFAULT 0;
   END IF;
 END$$;
+
+-- Add Google Drive refresh token column (run once)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name='users' AND column_name='google_refresh_token'
+  ) THEN
+    ALTER TABLE users ADD COLUMN google_refresh_token TEXT;
+  END IF;
+END$$;
