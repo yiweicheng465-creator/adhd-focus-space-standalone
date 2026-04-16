@@ -201,7 +201,10 @@ export function AgentTracker({ agents, onAgentsChange, tasks, defaultContext = "
 
   const today        = new Date().toDateString();
   const todayAgents  = agents.filter((a) => new Date(a.startedAt).toDateString() === today);
-  const runningCount = todayAgents.filter((a) => a.status === "running").length;
+  // Running = all agents currently running (can span multiple days)
+  const runningCount = agents.filter((a) => a.status === "running").length;
+  // Paused = all agents currently paused (same logic)
+  const pausedCount  = agents.filter((a) => a.status === "paused").length;
   const doneCount    = todayAgents.filter((a) => a.status === "done").length;
 
   const activeTasks    = tasks.filter((t) => !t.done);
@@ -316,8 +319,8 @@ export function AgentTracker({ agents, onAgentsChange, tasks, defaultContext = "
       <div className="grid grid-cols-2 sm:grid-cols-4" style={{ gap: 10 }}>
         {[
           { icon: PixelAgents,  label: "Running",     value: runningCount,       color: M.coral,   bg: M.coralBg,  border: M.coralBdr },
+          { icon: Pause,        label: "Paused",      value: pausedCount,        color: M.slumber, bg: M.slumBg,   border: M.slumBdr  },
           { icon: CheckCircle2, label: "Done Today",  value: doneCount,          color: M.sage,    bg: M.sageBg,   border: M.sageBdr  },
-          { icon: PixelAgents,  label: "Total Today", value: todayAgents.length, color: M.slumber, bg: M.slumBg,   border: M.slumBdr  },
           {
             icon: Flame,
             label: "Uncovered",
