@@ -534,35 +534,11 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
             <img src={CAT_PINK} alt="" aria-hidden="true" style={{ position: "absolute", top: -8, right: -8, width: 56, opacity: 0.40, pointerEvents: "none", zIndex: 5 }} />
             <FocusTimer onSessionComplete={onSessionComplete} onBlockComplete={onBlockComplete} />
           </div>
-          {/* Speech bubble sticker + background cat stickers */}
-          {!showAI && (
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
-              {/* Cat stickers as background decorations */}
-              <img src={CAT_BLUE} alt="" aria-hidden="true" style={{ position: "absolute", bottom: 10, right: 24, width: 96, opacity: 0.35, pointerEvents: "none", zIndex: 0, transform: "rotate(8deg)" }} />
-              <img src={CAT_OLIVE} alt="" aria-hidden="true" style={{ position: "absolute", bottom: -4, left: 4, width: 80, opacity: 0.28, pointerEvents: "none", zIndex: 0, transform: "rotate(-6deg) scaleX(-1)" }} />
-              {/* Speech bubble — above cats */}
-              <div style={{ position: "relative", transform: "rotate(-2deg)", zIndex: 2 }}>
-                {/* Stars */}
-                <div style={{ position: "absolute", top: -11, left: 6, fontSize: 10, color: "oklch(0.62 0.18 355)", pointerEvents: "none" }}>✦</div>
-                <div style={{ position: "absolute", top: -5, left: 24, fontSize: 7, color: "oklch(0.62 0.18 355)", pointerEvents: "none" }}>✦</div>
-                <div style={{ position: "absolute", bottom: -7, left: 2, fontSize: 12, color: "oklch(0.58 0.18 340)", pointerEvents: "none" }}>★</div>
-                {/* Bubble */}
-                <div style={{ background: "oklch(0.985 0.010 355)", border: "1.5px solid oklch(0.72 0.14 340)", borderRadius: 8, padding: "8px 12px", maxWidth: 130, position: "relative", boxShadow: "2px 2px 0 oklch(0.72 0.14 340 / 0.30)" }}>
-                  <p style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, lineHeight: 1.55, color: "oklch(0.38 0.18 340)", letterSpacing: "0.03em", textTransform: "uppercase", margin: 0 }}>
-                    let it go,<br/>so you can<br/>grow.
-                  </p>
-                  {/* Tail pointing right-down */}
-                  <div style={{ position: "absolute", bottom: -9, right: 16, width: 0, height: 0, borderLeft: "7px solid transparent", borderTop: "9px solid oklch(0.72 0.14 340)" }} />
-                  <div style={{ position: "absolute", bottom: -7, right: 17, width: 0, height: 0, borderLeft: "6px solid transparent", borderTop: "8px solid oklch(0.985 0.010 355)" }} />
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Col 2: Next Up task list — taller when AI is hidden */}
         {(true || showAI) && (
-        <div className="retro-window" style={{ display: "flex", flexDirection: "column", overflow: "hidden", alignSelf: "start", height: showAI ? "378px" : "460px" }}>
+        <div className="retro-window" style={{ display: "flex", flexDirection: "column", overflow: "hidden", alignSelf: "start", height: "378px" }}>
           <div className="retro-titlebar">
             <span>next_up.txt</span>
             <div style={{ display: "flex", alignItems: "center", gap: 5, marginLeft: "auto", marginRight: 6 }}>
