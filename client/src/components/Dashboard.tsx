@@ -725,7 +725,7 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
         </div>)}{/* /retro-window Col 2 */}
 
         {/* Col 3: AI Command Center (toggleable) */}
-        {showAI && <div className="retro-window" style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        {showAI && <div className="retro-window" style={{ display: "flex", flexDirection: "column", overflow: "hidden", alignSelf: "start", height: "460px" }}>
           <div className="retro-titlebar">
             <span>ai_assistant.app</span>
             <div style={{ display: "flex", alignItems: "center", gap: 5, marginLeft: "auto", marginRight: 4 }}>
