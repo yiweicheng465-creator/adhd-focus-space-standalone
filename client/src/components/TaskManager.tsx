@@ -387,7 +387,7 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
 
       {/* Calendar view */}
       {viewMode === "calendar" && (
-        <div className="flex-1 overflow-y-auto" style={{ minHeight: 0 }}>
+        <div className="flex-1 overflow-y-auto" style={{ minHeight: 0, overflowX: "hidden" }}>
           <CalendarView
             tasks={contextFiltered}
             onTasksChange={(updated) => onTasksChange(tasks.map(t => updated.find(u => u.id === t.id) ?? t))}

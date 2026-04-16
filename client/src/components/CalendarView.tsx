@@ -299,7 +299,7 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle, doneFilter = 
             onDragLeave={cancelAdvance}
             onDragOver={e => e.preventDefault()}
             style={{
-              position: "absolute", left: -4, top: 0, bottom: 0, width: 40, zIndex: 20,
+              position: "absolute", left: 0, top: 0, bottom: 0, width: 40, zIndex: 20,
               display: "flex", alignItems: "center", justifyContent: "center",
               background: hoverZone === "left"
                 ? "linear-gradient(to right, oklch(0.58 0.18 340 / 0.22), transparent)"
@@ -316,7 +316,7 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle, doneFilter = 
             onDragLeave={cancelAdvance}
             onDragOver={e => e.preventDefault()}
             style={{
-              position: "absolute", right: -4, top: 0, bottom: 0, width: 40, zIndex: 20,
+              position: "absolute", right: 0, top: 0, bottom: 0, width: 40, zIndex: 20,
               display: "flex", alignItems: "center", justifyContent: "center",
               background: hoverZone === "right"
                 ? "linear-gradient(to left, oklch(0.58 0.18 340 / 0.22), transparent)"
