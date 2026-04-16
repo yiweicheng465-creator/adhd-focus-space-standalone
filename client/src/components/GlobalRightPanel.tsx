@@ -399,7 +399,11 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
             {todayRoutines.map(r => (
               <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", background: "white", borderRadius: 8, border: "1px solid oklch(0.86 0.030 300)", marginBottom: 4 }}>
                 <span style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", color: "oklch(0.28 0.040 320)" }}>{r.name}</span>
-                <button onClick={() => markDone(r)} style={{ padding: "3px 10px", borderRadius: 6, background: "transparent", color: "oklch(0.48 0.14 285)", border: "2px solid oklch(0.62 0.14 285)", cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: "0.50rem", letterSpacing: "0.06em", fontWeight: 700 }}>✓ Done</button>
+                <button onClick={() => markDone(r)} title="Mark done" style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid oklch(0.62 0.14 285)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.15s" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "oklch(0.62 0.14 285)"; (e.currentTarget as HTMLButtonElement).style.color = "white"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "oklch(0.48 0.14 285)"; }}>
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="oklch(0.48 0.14 285)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </button>
               </div>
             ))}
           </div>
