@@ -151,7 +151,6 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
       {/* Cat sticker: salmon sitting cat — bottom-right corner */}
       <img src={CAT_SALMON} alt="" aria-hidden="true" style={{ position: "absolute", bottom: 0, right: 0, width: 70, opacity: 0.38, pointerEvents: "none", zIndex: 5 }} />
       {showLifeCoach && <LifeCoachModal onClose={() => setShowLifeCoach(false)} onClear={() => setInsightKey(k => k + 1)} onDashboardUpdate={() => { setInsightKey(k => k + 1); onDashboardUpdate?.(); }} goals={goals} />}
-                )}
       {/* Add goal */}
       <div className="flex flex-col gap-2">
         <div className="flex gap-2">
