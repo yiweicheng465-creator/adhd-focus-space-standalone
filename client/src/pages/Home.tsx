@@ -624,21 +624,7 @@ export default function Home() {
               <MoodPill mood={mood} onMoodChange={setMood} />
             </div>
 
-            {/* AI assistant toggle — only on dashboard */}
-            {safeSection === "dashboard" && (
-              <button
-                onClick={() => {
-                  // Dispatch event to Dashboard to toggle AI
-                  window.dispatchEvent(new CustomEvent("toggleDashboardAI"));
-                }}
-                className="flex items-center gap-2 transition-all px-3 py-3"
-                style={{ color: "#C070A0", background: "transparent", border: "none", cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: "0.60rem", letterSpacing: "0.10em", textTransform: "uppercase" }}
-                title="Toggle AI assistant"
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2"/></svg>
-                <span className="hidden sm:inline">AI</span>
-              </button>
-            )}
+
             {/* Wrap-up */}
             <button
               onClick={() => setWrapUpOpen(true)}
