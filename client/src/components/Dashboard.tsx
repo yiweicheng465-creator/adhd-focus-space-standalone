@@ -536,7 +536,7 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
 
         {/* Col 2: Next Up task list — taller when AI is hidden */}
         {(true || showAI) && (
-        <div className="retro-window" style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
+        <div className="retro-window" style={{ display: "flex", flexDirection: "column", height: "378px", overflow: "hidden" }}>
           <div className="retro-titlebar">
             <span>next_up.txt</span>
             <div style={{ display: "flex", alignItems: "center", gap: 5, marginLeft: "auto", marginRight: 6 }}>
@@ -576,7 +576,7 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
             ) : (
               [...activeTasks]
                 .sort((a, b) => (PRIORITY_ORDER[a.priority] ?? 2) - (PRIORITY_ORDER[b.priority] ?? 2))
-                .slice(0, showAI ? 7 : 15)
+                // no slice — show all, scrollable
                 .map((t) => {
                   const pd = PRIORITY_DOTS[t.priority] ?? PRIORITY_DOTS.normal;
                   const ctxColor = getContextConfig(t.context).color;
@@ -641,21 +641,12 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
                   );
                 })
             )}
-            {activeTasks.length > (showAI ? 7 : 15) && (
-              <button
-                onClick={() => onNavigate("tasks")}
-                className="m-btn-link"
-                style={{ fontSize: 9, textAlign: "center", paddingTop: 4, width: "100%", justifyContent: "center" }}
-              >
-                +{activeTasks.length - (showAI ? 7 : 15)} more →
-              </button>
-            )}
           </div>
           </div>{/* /inner padding div */}
         </div>)}{/* /retro-window Col 2 */}
 
         {/* Col 3: AI Command Center (toggleable) */}
-        {showAI && <div className="retro-window" style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
+        {showAI && <div className="retro-window" style={{ display: "flex", flexDirection: "column", height: "378px", overflow: "hidden" }}>
           <div className="retro-titlebar">
             <span>ai_assistant.app</span>
             <div style={{ display: "flex", alignItems: "center", gap: 5, marginLeft: "auto", marginRight: 4 }}>
