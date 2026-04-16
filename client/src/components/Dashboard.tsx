@@ -540,7 +540,6 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
               {/* Cat stickers as background decorations */}
               <img src={CAT_BLUE} alt="" aria-hidden="true" style={{ position: "absolute", bottom: -10, right: -8, width: 82, opacity: 0.35, pointerEvents: "none", zIndex: 0, transform: "rotate(8deg)" }} />
               <img src={CAT_OLIVE} alt="" aria-hidden="true" style={{ position: "absolute", bottom: -4, left: -12, width: 66, opacity: 0.28, pointerEvents: "none", zIndex: 0, transform: "rotate(-6deg) scaleX(-1)" }} />
-              <img src={CAT_SALMON} alt="" aria-hidden="true" style={{ position: "absolute", top: 4, left: 8, width: 52, opacity: 0.30, pointerEvents: "none", zIndex: 0, transform: "rotate(-10deg)" }} />
               {/* Speech bubble — above cats */}
               <div style={{ position: "relative", transform: "rotate(-2deg)", zIndex: 2 }}>
                 {/* Stars */}
