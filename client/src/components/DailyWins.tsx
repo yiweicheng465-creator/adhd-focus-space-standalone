@@ -300,8 +300,8 @@ function WinCard({
       <div style={{ position: "relative", flexShrink: 0, marginTop: 2 }}>
         <button
           ref={setWinBtnRef(win.id)}
-          onClick={() => !isArchiveView && setEditingWinId(isEditing ? null : win.id)}
-          title={isArchiveView ? iconDef.label : "Click to change category"}
+          onClick={() => !isArchiveView && !isRoutineWin && setEditingWinId(isEditing ? null : win.id)}
+          title={isRoutineWin ? "Routine win" : isArchiveView ? iconDef.label : "Click to change category"}
           style={{
             width: 28,
             height: 28,
@@ -321,7 +321,7 @@ function WinCard({
             if (!isEditing && !isArchiveView) (e.currentTarget as HTMLButtonElement).style.background = "transparent";
           }}
         >
-          {isBlockWin
+          {(isBlockWin || isRoutineWin)
             ? <span style={{ fontSize: "1rem", lineHeight: 1 }}>💫</span>
             : <iconDef.Component size={16} color={isArchiveView ? M.archiveClr : iconDef.color} />
           }
