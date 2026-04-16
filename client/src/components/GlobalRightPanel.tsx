@@ -25,10 +25,10 @@ interface Props {
 
 // Pink → purple → blue gradient per button
 const BTN_COLORS = [
-  { active: "oklch(0.58 0.18 355)", idle: "oklch(0.94 0.020 355)", text: "oklch(0.42 0.14 355)" }, // AI: pink
-  { active: "oklch(0.55 0.16 310)", idle: "oklch(0.93 0.018 310)", text: "oklch(0.40 0.12 310)" }, // Coach: pink-purple
-  { active: "oklch(0.52 0.14 270)", idle: "oklch(0.92 0.016 270)", text: "oklch(0.38 0.12 270)" }, // Timer: purple
-  { active: "oklch(0.50 0.12 240)", idle: "oklch(0.92 0.014 240)", text: "oklch(0.36 0.10 240)" }, // Routine: blue
+  { active: "oklch(0.55 0.18 355)", idle: "oklch(0.88 0.08 355)", text: "oklch(0.40 0.16 355)" }, // AI: pink
+  { active: "oklch(0.52 0.16 315)", idle: "oklch(0.87 0.07 315)", text: "oklch(0.38 0.14 315)" }, // Coach: pink-purple
+  { active: "oklch(0.48 0.15 275)", idle: "oklch(0.86 0.07 275)", text: "oklch(0.36 0.13 275)" }, // Timer: purple
+  { active: "oklch(0.46 0.14 245)", idle: "oklch(0.85 0.07 245)", text: "oklch(0.34 0.12 245)" }, // Routine: blue
 ];
 
 const BTN_STYLE = (active: boolean, idx: number = 0): React.CSSProperties => {
@@ -335,16 +335,6 @@ Be specific and personal. Use the person's exact words/goals.`,
 
 /* ── Routine Popup ─────────────────────────────────────────── */
 const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-// Pink → purple → blue gradient per day
-const DAY_COLORS = [
-  "oklch(0.62 0.14 355)",  // Mon: pink
-  "oklch(0.60 0.13 330)",  // Tue: pink-purple
-  "oklch(0.58 0.13 305)",  // Wed: purple
-  "oklch(0.57 0.13 285)",  // Thu: purple-blue
-  "oklch(0.58 0.12 260)",  // Fri: blue
-  "oklch(0.64 0.08 240)",  // Sat: light blue
-  "oklch(0.68 0.06 220)",  // Sun: lighter blue
-];
 const ROUTINE_KEY = "adhd-routines";
 
 function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (text: string, iconIdx: number) => void }) {
@@ -400,12 +390,11 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
               <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Routine name…" autoFocus
                 style={{ padding: "5px 8px", borderRadius: 4, border: "1px solid oklch(0.82 0.050 340)", fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", outline: "none" }} />
               <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                {DAYS.map((d, i) => {
-                  const dayColor = DAY_COLORS[i];
+                {DAYS.map((d) => {
                   const active = newDays.includes(d);
                   return (
                     <button key={d} onClick={() => setNewDays(p => p.includes(d) ? p.filter(x => x !== d) : [...p, d])}
-                      style={{ padding: "2px 7px", borderRadius: 10, fontSize: "0.55rem", fontFamily: "'Space Mono', monospace", border: `1px solid ${active ? dayColor : "oklch(0.82 0.050 340)"}`, background: active ? `${dayColor}25` : "transparent", color: active ? dayColor : "oklch(0.60 0.040 330)", cursor: "pointer", fontWeight: active ? 700 : 400 }}>
+                      style={{ padding: "2px 7px", borderRadius: 10, fontSize: "0.55rem", fontFamily: "'Space Mono', monospace", border: `1px solid ${active ? "oklch(0.55 0.14 285)" : "oklch(0.82 0.050 340)"}`, background: active ? "oklch(0.55 0.14 285 / 0.15)" : "transparent", color: active ? "oklch(0.45 0.14 285)" : "oklch(0.60 0.040 330)", cursor: "pointer", fontWeight: active ? 700 : 400 }}>
                       {d}
                     </button>
                   );
