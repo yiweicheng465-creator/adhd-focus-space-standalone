@@ -243,12 +243,12 @@ export function EisenhowerMatrix({
       </div>}
 
       {/* ── Axis labels + grid ── */}
-      <div style={{ position: "relative", paddingLeft: 36, paddingBottom: 26 }}>
+      <div style={{ position: "relative", paddingLeft: 42, paddingBottom: 30, paddingRight: 8, paddingTop: 8 }}>
 
         {/* Y-axis: Importance */}
         <div style={{
           position: "absolute",
-          left: -2, top: "50%",
+          left: 4, top: "50%",
           width: 20,
           transform: "translateX(-50%) translateY(-50%) rotate(-90deg)",
           transformOrigin: "center center",

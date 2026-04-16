@@ -545,15 +545,18 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
                 <span className="retro-titlebar-btn">✕</span>
               </div>
             </div>
-            <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
-              <div style={{ position: "absolute", top: 0, left: 0, transform: "scale(0.44)", transformOrigin: "top left", width: "227%", height: "227%" }}>
-                <EisenhowerMatrix
-                  tasks={activeContext === "all" ? tasks : tasks.filter(t => t.context === activeContext)}
-                  onTasksChange={(filtered) => onTasksChange ? onTasksChange(tasks.map(t => filtered.find(f => f.id === t.id) ?? t)) : undefined}
-                  quadrantMap={quadrantMap}
-                  onQuadrantMapChange={handleQuadrantMapChange}
-                  hideHeader
-                />
+            {/* Unscaled padding wrapper keeps breathing room; inner div scales content */}
+            <div style={{ flex: 1, overflow: "hidden", padding: "6px 10px 6px 6px" }}>
+              <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}>
+                <div style={{ position: "absolute", top: 0, left: 0, transform: "scale(0.40)", transformOrigin: "top left", width: "250%", height: "250%" }}>
+                  <EisenhowerMatrix
+                    tasks={activeContext === "all" ? tasks : tasks.filter(t => t.context === activeContext)}
+                    onTasksChange={(filtered) => onTasksChange ? onTasksChange(tasks.map(t => filtered.find(f => f.id === t.id) ?? t)) : undefined}
+                    quadrantMap={quadrantMap}
+                    onQuadrantMapChange={handleQuadrantMapChange}
+                    hideHeader
+                  />
+                </div>
               </div>
             </div>
           </div>
