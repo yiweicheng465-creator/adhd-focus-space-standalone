@@ -534,34 +534,9 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
           </div>
         </div>
 
-        {/* Col 2: Next Up (AI on) or Priority Matrix (AI off) */}
-        {!showAI ? (
-          <div className="retro-window" style={{ height: "378px", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-            <div className="retro-titlebar">
-              <span>priority_matrix.exe</span>
-              <div className="retro-titlebar-buttons">
-                <span className="retro-titlebar-btn">_</span>
-                <span className="retro-titlebar-btn">□</span>
-                <span className="retro-titlebar-btn">✕</span>
-              </div>
-            </div>
-            {/* Unscaled padding wrapper keeps breathing room; inner div scales content */}
-            <div style={{ flex: 1, overflow: "hidden", padding: "6px 10px 6px 6px" }}>
-              <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}>
-                <div style={{ position: "absolute", top: 0, left: 0, transform: "scale(0.40)", transformOrigin: "top left", width: "250%", height: "250%" }}>
-                  <EisenhowerMatrix
-                    tasks={activeContext === "all" ? tasks : tasks.filter(t => t.context === activeContext)}
-                    onTasksChange={(filtered) => onTasksChange ? onTasksChange(tasks.map(t => filtered.find(f => f.id === t.id) ?? t)) : undefined}
-                    quadrantMap={quadrantMap}
-                    onQuadrantMapChange={handleQuadrantMapChange}
-                    hideHeader
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-        <div className="retro-window" style={{ display: "flex", flexDirection: "column", height: "378px", overflow: "hidden" }}>
+        {/* Col 2: Next Up task list — taller when AI is hidden */}
+        {(true || showAI) && (
+        <div className="retro-window" style={{ display: "flex", flexDirection: "column", height: showAI ? "378px" : "480px", overflow: "hidden" }}>
           <div className="retro-titlebar">
             <span>next_up.txt</span>
             <div style={{ display: "flex", alignItems: "center", gap: 5, marginLeft: "auto", marginRight: 6 }}>
@@ -601,7 +576,7 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
             ) : (
               [...activeTasks]
                 .sort((a, b) => (PRIORITY_ORDER[a.priority] ?? 2) - (PRIORITY_ORDER[b.priority] ?? 2))
-                .slice(0, 7)
+                .slice(0, showAI ? 7 : 15)
                 .map((t) => {
                   const pd = PRIORITY_DOTS[t.priority] ?? PRIORITY_DOTS.normal;
                   const ctxColor = getContextConfig(t.context).color;
@@ -666,13 +641,13 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
                   );
                 })
             )}
-            {activeTasks.length > 7 && (
+            {activeTasks.length > (showAI ? 7 : 15) && (
               <button
                 onClick={() => onNavigate("tasks")}
                 className="m-btn-link"
                 style={{ fontSize: 9, textAlign: "center", paddingTop: 4, width: "100%", justifyContent: "center" }}
               >
-                +{activeTasks.length - 7} more →
+                +{activeTasks.length - (showAI ? 7 : 15)} more →
               </button>
             )}
           </div>
