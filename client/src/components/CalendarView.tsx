@@ -59,6 +59,27 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle }: Props) {
   // dragOverTask: when hovering over a specific task (for within-day reorder)
   const [dragOverTask, setDragOverTask] = useState<{ id: string; pos: "before" | "after" } | null>(null);
   const dragOverTaskRef = React.useRef<{ id: string; pos: "before" | "after" } | null>(null);
+  // Refs to deduplicate drag state updates — avoid setState on every mousemove pixel
+  const dragOverDateRef = useRef<string | null>(null);
+  const dragIdRef = useRef<string | null>(null);
+
+  // Throttled setters — only update React state when value actually changes
+  const setDragOverDateDedup = (ymd: string | null) => {
+    if (dragOverDateRef.current === ymd) return;
+    dragOverDateRef.current = ymd;
+    setDragOverDate(ymd);
+  };
+  const setDragIdDedup = (id: string | null) => {
+    if (dragIdRef.current === id) return;
+    dragIdRef.current = id;
+    setDragId(id);
+  };
+  const setDragOverTaskDedup = (v: { id: string; pos: "before" | "after" } | null) => {
+    const cur = dragOverTaskRef.current;
+    if (cur?.id === v?.id && cur?.pos === v?.pos) return;
+    dragOverTaskRef.current = v;
+    setDragOverTask(v);
+  };
   // dayOrder: persisted per-day task ordering (date → ordered task IDs)
   const [dayOrder, setDayOrder] = useState<Record<string, string[]>>(() => {
     try { return JSON.parse(localStorage.getItem("adhd-calendar-day-order") ?? "{}"); } catch { return {}; }
@@ -113,7 +134,7 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle }: Props) {
       onTasksChange(tasks.map(t => t.id === dragId ? { ...t, dueDate: newDue } : t));
     }
 
-    setDragId(null); setDragOverDate(null); setDragOverTask(null);
+    setDragIdDedup(null); setDragOverDateDedup(null); setDragOverTaskDedup(null);
   }
 
   // ── Compact task chip ───────────────────────────────────────────────────────
@@ -127,22 +148,20 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle }: Props) {
         <div
           draggable
           onDragStart={(e) => {
-            setDragId(task.id);
-            // Set drag image to avoid grey ghost
+            setDragIdDedup(task.id);
             e.dataTransfer.effectAllowed = "move";
           }}
           onDragEnd={() => {
-            setDragId(null);
-            setDragOverDate(null);
-            setDragOverTask(null);
-            dragOverTaskRef.current = null;
+            setDragIdDedup(null);
+            setDragOverDateDedup(null);
+            setDragOverTaskDedup(null);
           }}
           onDragOver={(e) => {
             e.preventDefault(); e.stopPropagation();
             const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
             const pos = e.clientY < rect.top + rect.height / 2 ? "before" : "after";
-            setDragOverTask({ id: task.id, pos });
-            setDragOverDate(dayYMD);
+            setDragOverTaskDedup({ id: task.id, pos });
+            setDragOverDateDedup(dayYMD);
           }}
           onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleDrop(dayYMD, task.id); }}
           title={task.text}
@@ -189,8 +208,8 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle }: Props) {
 
     return (
       <div
-        onDragOver={e => { e.preventDefault(); setDragOverDate(ymd); }}
-        onDragLeave={() => setDragOverDate(null)}
+        onDragOver={e => { e.preventDefault(); setDragOverDateDedup(ymd); }}
+        onDragLeave={() => setDragOverDateDedup(null)}
         onDrop={() => handleDrop(ymd)}
         style={{
           flex: 1, display: "flex", flexDirection: "column",
@@ -342,8 +361,8 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle }: Props) {
             return (
               <div
                 key={ymd}
-                onDragOver={e => { e.preventDefault(); setDragOverDate(ymd); }}
-                onDragLeave={() => setDragOverDate(null)}
+                onDragOver={e => { e.preventDefault(); setDragOverDateDedup(ymd); }}
+                onDragLeave={() => setDragOverDateDedup(null)}
                 onDrop={() => handleDrop(ymd)}
                 style={{
                   border: isToday ? `1.5px solid ${M.coralBdr}` : isOver ? `1.5px dashed ${M.coral}` : `1px solid ${M.border}`,
@@ -362,8 +381,8 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle }: Props) {
                   <div
                     key={t.id}
                     draggable
-                    onDragStart={e => { e.stopPropagation(); setDragId(t.id); }}
-                    onDragEnd={() => { setDragId(null); setDragOverDate(null); }}
+                    onDragStart={e => { e.stopPropagation(); setDragIdDedup(t.id); }}
+                    onDragEnd={() => { setDragIdDedup(null); setDragOverDateDedup(null); }}
                     onClick={e => e.stopPropagation()}
                     title={t.text}
                     style={{

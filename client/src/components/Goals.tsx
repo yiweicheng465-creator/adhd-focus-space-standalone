@@ -152,7 +152,7 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
       <button data-life-coach-trigger onClick={() => setShowLifeCoach(true)} style={{ display: "none" }} />
       {/* Cat sticker: salmon sitting cat — bottom-right corner */}
       <img src={CAT_SALMON} alt="" aria-hidden="true" style={{ position: "absolute", bottom: 0, right: 0, width: 70, opacity: 0.38, pointerEvents: "none", zIndex: 5 }} />
-      {showLifeCoach && <LifeCoachModal onClose={() => setShowLifeCoach(false)} onClear={() => setInsightKey(k => k + 1)} goals={goals} />}
+      {showLifeCoach && <LifeCoachModal onClose={() => setShowLifeCoach(false)} onClear={() => setInsightKey(k => k + 1)} onDashboardUpdate={() => setInsightKey(k => k + 1)} goals={goals} />}
 
 
       {/* Life Coach insights — top of page */}
@@ -180,7 +180,7 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
       })()}
 
       {/* 🧭 Life Dashboard — above typing bar */}
-      {(() => {
+      {insightKey >= 0 && (() => {
         try {
           const data = JSON.parse(localStorage.getItem("adhd-life-dashboard") ?? "null");
           if (!data || (!data.life && !data.career)) return null;
@@ -538,7 +538,7 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
 }
 
 /* ── Life Coach AI Modal ──────────────────────────────────────────────────── */
-function LifeCoachModal({ onClose, onClear, goals }: { onClose: () => void; onClear?: () => void; goals: Goal[] }) {
+function LifeCoachModal({ onClose, onClear, onDashboardUpdate, goals }: { onClose: () => void; onClear?: () => void; onDashboardUpdate?: () => void; goals: Goal[] }) {
   const STORAGE_KEY = "adhd-life-coach-chat";
   const [mode, setMode] = useState<"pick" | "chat">(() => {
     try { const s = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}"); return s.messages?.length ? "chat" : "pick"; } catch { return "pick"; }
@@ -616,6 +616,7 @@ Be specific and personal.`,
         const existing = (() => { try { return JSON.parse(localStorage.getItem("adhd-life-dashboard") ?? "{}"); } catch { return {}; } })();
         existing[type] = { ...parsed, updatedAt: new Date().toISOString() };
         localStorage.setItem("adhd-life-dashboard", JSON.stringify(existing));
+        onDashboardUpdate?.();
       }
     } catch {}
   };
