@@ -180,9 +180,13 @@ export function ClickableContextBadge({ context, allContexts, onChange }: {
   onChange: (ctx: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [dropPos, setDropPos] = useState<{ top: number; left: number } | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
+  // Compute position from DOM on every render when needed
+  const pos = open && btnRef.current ? (() => {
+    const r = btnRef.current!.getBoundingClientRect();
+    return { top: r.bottom + 4, left: r.left };
+  })() : null;
   const cfg = getContextConfig(context);
   const Icon = cfg.icon;
 
@@ -194,15 +198,13 @@ export function ClickableContextBadge({ context, allContexts, onChange }: {
         dropRef.current && !dropRef.current.contains(e.target as Node)
       ) setOpen(false);
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    // Use capture to ensure we catch the event before anything else
+    document.addEventListener("mousedown", handler, true);
+    return () => document.removeEventListener("mousedown", handler, true);
   }, [open]);
 
-  const handleOpen = () => {
-    if (!open && btnRef.current) {
-      const rect = btnRef.current.getBoundingClientRect();
-      setDropPos({ top: rect.bottom + 4, left: rect.left });
-    }
+  const handleOpen = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setOpen(o => !o);
   };
 
@@ -222,7 +224,7 @@ export function ClickableContextBadge({ context, allContexts, onChange }: {
         <Icon style={{ width: 9, height: 9 }} />
         {cfg.label}
       </button>
-      {open && dropPos && (
+      {open && pos && (
         <div ref={dropRef} style={{
           position: "fixed", top: dropPos.top, left: dropPos.left, zIndex: 99999,
           background: "#fdf4f8", border: "1.5px solid oklch(0.82 0.050 340)",
