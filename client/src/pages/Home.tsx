@@ -227,7 +227,7 @@ const SECTION_META: Record<Section, { title: string; icon: React.ElementType }> 
   tasks:      { title: "My Tasks",     icon: Star     },
   wins:       { title: "Daily Wins",   icon: Sparkles        },
   dump:       { title: "Brain Dump",   icon: Brain           },
-  goals:      { title: "Weekly Goals", icon: GoalFlagIcon      },
+  goals:      { title: "Goals", icon: GoalFlagIcon      },
   agents:     { title: "AI Agents",    icon: Bot             },
   storage:    { title: "Storage & Backup", icon: Star            },
 };
