@@ -533,14 +533,23 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
             <img src={CAT_PINK} alt="" aria-hidden="true" style={{ position: "absolute", top: -8, right: -8, width: 56, opacity: 0.40, pointerEvents: "none", zIndex: 5 }} />
             <FocusTimer onSessionComplete={onSessionComplete} onBlockComplete={onBlockComplete} />
           </div>
-          {/* Stickers in empty space below timer — only visible in bigger view */}
+          {/* Speech bubble note below timer — fills space in bigger view */}
           {!showAI && (
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: "16px 8px", position: "relative" }}>
-              <img src={CAT_BLUE} alt="" aria-hidden="true" style={{ width: 90, opacity: 0.55, pointerEvents: "none" }} />
-              <img src={CAT_OLIVE} alt="" aria-hidden="true" style={{ width: 76, opacity: 0.45, pointerEvents: "none" }} />
-              {/* little motivational note */}
-              <div style={{ textAlign: "center", fontFamily: "'Space Mono', monospace", fontSize: "0.42rem", color: "oklch(0.62 0.040 330)", letterSpacing: "0.08em", lineHeight: 1.8, opacity: 0.7 }}>
-                one task<br/>at a time ✦
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "12px 10px" }}>
+              <div style={{ position: "relative", transform: "rotate(-1.5deg)" }}>
+                {/* Stars */}
+                <div style={{ position: "absolute", top: -14, left: 6, fontSize: 11, color: "oklch(0.62 0.18 355)", pointerEvents: "none" }}>✦</div>
+                <div style={{ position: "absolute", top: -6, left: 26, fontSize: 8, color: "oklch(0.62 0.18 355)", pointerEvents: "none" }}>✦</div>
+                <div style={{ position: "absolute", bottom: -10, left: 2, fontSize: 13, color: "oklch(0.58 0.18 340)", pointerEvents: "none" }}>★</div>
+                {/* Bubble */}
+                <div style={{ background: "oklch(0.985 0.010 355)", border: "1.5px solid oklch(0.72 0.14 340)", borderRadius: 8, padding: "10px 14px", maxWidth: 148, position: "relative", boxShadow: "2px 2px 0 oklch(0.72 0.14 340 / 0.30)" }}>
+                  <p style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, lineHeight: 1.55, color: "oklch(0.38 0.18 340)", letterSpacing: "0.03em", textTransform: "uppercase", margin: 0 }}>
+                    let it go,<br/>so you can<br/>grow.
+                  </p>
+                  {/* Tail */}
+                  <div style={{ position: "absolute", bottom: -10, right: 18, width: 0, height: 0, borderLeft: "8px solid transparent", borderRight: "0px solid transparent", borderTop: "10px solid oklch(0.72 0.14 340)" }} />
+                  <div style={{ position: "absolute", bottom: -8, right: 19, width: 0, height: 0, borderLeft: "7px solid transparent", borderRight: "0px solid transparent", borderTop: "9px solid oklch(0.985 0.010 355)" }} />
+                </div>
               </div>
             </div>
           )}
