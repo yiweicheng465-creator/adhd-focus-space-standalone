@@ -523,7 +523,7 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
       {/* AI toggle handled by GlobalRightPanel's AI button (dispatches toggleDashboardAI) */}
 
       {/* ── MIDDLE: 3-column grid ── */}
-      <div style={{ display: "grid", gridTemplateColumns: showAI ? "1fr 1fr 1fr" : "1fr 2fr", gap: 10, alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: showAI ? "1fr 1fr 1fr" : "1fr 2fr", gap: 10, alignItems: "stretch" }}>
 
         {/* Col 1: Focus Timer — FocusTimer has its own CYBER_PET.EXE chrome, no outer title bar */}
         <div style={{ display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
@@ -536,7 +536,7 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
 
         {/* Col 2: Next Up task list — taller when AI is hidden */}
         {(true || showAI) && (
-        <div className="retro-window" style={{ display: "flex", flexDirection: "column", height: showAI ? "378px" : "480px", overflow: "hidden" }}>
+        <div className="retro-window" style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
           <div className="retro-titlebar">
             <span>next_up.txt</span>
             <div style={{ display: "flex", alignItems: "center", gap: 5, marginLeft: "auto", marginRight: 6 }}>
@@ -655,7 +655,7 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
         </div>)}{/* /retro-window Col 2 */}
 
         {/* Col 3: AI Command Center (toggleable) */}
-        {showAI && <div className="retro-window" style={{ display: "flex", flexDirection: "column", height: "378px", overflow: "hidden" }}>
+        {showAI && <div className="retro-window" style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
           <div className="retro-titlebar">
             <span>ai_assistant.app</span>
             <div style={{ display: "flex", alignItems: "center", gap: 5, marginLeft: "auto", marginRight: 4 }}>
