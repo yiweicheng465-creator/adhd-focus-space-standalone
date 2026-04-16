@@ -533,36 +533,42 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
             <img src={CAT_PINK} alt="" aria-hidden="true" style={{ position: "absolute", top: -8, right: -8, width: 56, opacity: 0.40, pointerEvents: "none", zIndex: 5 }} />
             <FocusTimer onSessionComplete={onSessionComplete} onBlockComplete={onBlockComplete} />
           </div>
-          {/* Speech bubble sticker — overlaps timer from below, tail points UP to START */}
+          {/* Speech bubble sticker — tail points LEFT toward START button */}
           {!showAI && (
-            <div style={{ flex: 1, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: 0, position: "relative" }}>
-              <div style={{ position: "relative", transform: "rotate(2deg)", marginTop: "-18px", zIndex: 10 }}>
-                {/* Sparkles */}
-                <div style={{ position: "absolute", top: 18, left: -16, fontSize: 13, color: "oklch(0.62 0.18 355)", pointerEvents: "none", transform: "rotate(-15deg)" }}>✦</div>
-                <div style={{ position: "absolute", top: 8, right: -14, fontSize: 9, color: "oklch(0.58 0.18 340)", pointerEvents: "none" }}>✦</div>
-                <div style={{ position: "absolute", bottom: -8, left: -10, fontSize: 14, color: "oklch(0.60 0.18 340)", pointerEvents: "none" }}>★</div>
-                <div style={{ position: "absolute", bottom: -4, right: -8, fontSize: 9, color: "oklch(0.62 0.18 355)", pointerEvents: "none" }}>◆</div>
-                {/* Tail pointing UP — overlaps the timer's START area */}
-                <div style={{ position: "absolute", top: -10, left: "50%", transform: "translateX(-50%)", width: 0, height: 0, borderLeft: "10px solid transparent", borderRight: "10px solid transparent", borderBottom: "11px solid oklch(0.65 0.16 340)" }} />
-                <div style={{ position: "absolute", top: -8, left: "50%", transform: "translateX(-50%)", width: 0, height: 0, borderLeft: "9px solid transparent", borderRight: "9px solid transparent", borderBottom: "10px solid oklch(0.985 0.010 355)" }} />
-                {/* Bubble body — hand-drawn style with thick pink border */}
-                <div style={{
-                  background: "oklch(0.985 0.010 355)",
-                  border: "3px solid oklch(0.65 0.16 340)",
-                  borderRadius: 14,
-                  padding: "14px 18px",
-                  maxWidth: 152,
-                  position: "relative",
-                  boxShadow: "3px 3px 0 oklch(0.65 0.16 340 / 0.25), -1px -1px 0 oklch(0.65 0.16 340 / 0.10)",
-                  outline: "1.5px solid oklch(0.65 0.16 340 / 0.30)",
-                  outlineOffset: "3px",
-                }}>
-                  <p style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, lineHeight: 1.6, color: "oklch(0.42 0.18 340)", letterSpacing: "0.04em", textTransform: "uppercase", margin: 0, fontWeight: 700 }}>
-                    let it go,<br/>so you can<br/>grow.
-                  </p>
+            <>
+              <style>{`
+                @keyframes bubble-glow {
+                  0%,100% { box-shadow: 0 0 6px #D45898aa, 0 0 18px #D4589855, 0 0 2px #D4589833; }
+                  50%     { box-shadow: 0 0 14px #D45898dd, 0 0 32px #D4589888, 0 0 48px #D4589822; }
+                }
+              `}</style>
+              <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ position: "relative", transform: "rotate(-2deg)", zIndex: 10 }}>
+                  {/* Sparkles — matching reference */}
+                  <div style={{ position: "absolute", top: -18, left: -4, fontSize: 16, color: "#C060A0", pointerEvents: "none", fontWeight: 900 }}>✦</div>
+                  <div style={{ position: "absolute", top: -10, right: -10, fontSize: 10, color: "#C060A0", pointerEvents: "none" }}>✦</div>
+                  <div style={{ position: "absolute", bottom: -14, left: 0, fontSize: 18, color: "#8840A0", pointerEvents: "none" }}>★</div>
+                  {/* LEFT-pointing tail — outer (border color) */}
+                  <div style={{ position: "absolute", left: -13, top: "50%", transform: "translateY(-50%)", width: 0, height: 0, borderTop: "11px solid transparent", borderBottom: "11px solid transparent", borderRight: "13px solid #C060A0" }} />
+                  {/* LEFT-pointing tail — inner (fill color) */}
+                  <div style={{ position: "absolute", left: -9, top: "50%", transform: "translateY(-50%)", width: 0, height: 0, borderTop: "8px solid transparent", borderBottom: "8px solid transparent", borderRight: "9px solid white" }} />
+                  {/* Bubble body */}
+                  <div style={{
+                    background: "white",
+                    border: "2.5px solid #C060A0",
+                    borderRadius: 16,
+                    padding: "14px 20px",
+                    maxWidth: 158,
+                    position: "relative",
+                    animation: "bubble-glow 2.4s ease-in-out infinite",
+                  }}>
+                    <p style={{ fontFamily: "'Space Mono', monospace", fontSize: 11.5, lineHeight: 1.65, color: "#7030A0", letterSpacing: "0.04em", textTransform: "uppercase", margin: 0, fontWeight: 700 }}>
+                      let it go,<br/>so you can<br/>grow.
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            </>
           )}
         </div>
 
