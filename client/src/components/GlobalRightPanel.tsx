@@ -363,13 +363,24 @@ Be specific and personal. Use the person's exact words/goals.`,
 /* ── Routine Popup ─────────────────────────────────────────── */
 const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 const ROUTINE_KEY = "adhd-routines";
+// Maps to WIN_ICONS indices in DailyWins (0=Health,1=Study,2=Work,3=Social,4=Creative,5=Mindful,6=Fitness,7=Nutrition)
+const ROUTINE_CATS = [
+  { emoji: "❤️", label: "Health" }, { emoji: "📖", label: "Study" },
+  { emoji: "💼", label: "Work" },   { emoji: "👥", label: "Social" },
+  { emoji: "🎨", label: "Creative"},{ emoji: "🧘", label: "Mindful" },
+  { emoji: "💪", label: "Fitness" },{ emoji: "🍎", label: "Nutrition" },
+];
+
+type Routine = { id: string; name: string; days: string[]; iconIdx: number };
 
 function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (text: string, iconIdx: number) => void }) {
-  const [routines, setRoutines] = useState<{ id: string; name: string; days: string[] }[]>(() => {
+  const [routines, setRoutines] = useState<Routine[]>(() => {
     try { return JSON.parse(localStorage.getItem(ROUTINE_KEY) ?? "[]"); } catch { return []; }
   });
   const [newName, setNewName] = useState("");
   const [newDays, setNewDays] = useState<string[]>(["Mon","Tue","Wed","Thu","Fri"]);
+  const [newIconIdx, setNewIconIdx] = useState(0);
+  const [pickerOpenId, setPickerOpenId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const today = DAYS[(new Date().getDay() + 6) % 7]; // Mon=0
   const todayKey = new Date().toISOString().slice(0, 10);
@@ -387,14 +398,23 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
     localStorage.setItem("adhd-routine-done", JSON.stringify({ date: todayKey, ids: [...ids] }));
   };
 
-  const saveRoutines = (r: typeof routines) => { setRoutines(r); localStorage.setItem(ROUTINE_KEY, JSON.stringify(r)); };
-  const addRoutine = () => { if (!newName.trim()) return; saveRoutines([...routines, { id: `r-${Date.now()}`, name: newName.trim(), days: newDays }]); setNewName(""); setAdding(false); };
+  const saveRoutines = (r: Routine[]) => { setRoutines(r); localStorage.setItem(ROUTINE_KEY, JSON.stringify(r)); };
+  const addRoutine = () => {
+    if (!newName.trim()) return;
+    saveRoutines([...routines, { id: `r-${Date.now()}`, name: newName.trim(), days: newDays, iconIdx: newIconIdx }]);
+    setNewName(""); setNewIconIdx(0); setAdding(false);
+  };
   const deleteRoutine = (id: string) => saveRoutines(routines.filter(r => r.id !== id));
+  const changeIcon = (id: string, idx: number) => {
+    saveRoutines(routines.map(r => r.id === id ? { ...r, iconIdx: idx } : r));
+    setPickerOpenId(null);
+  };
   const todayRoutines = routines.filter(r => r.days.includes(today));
 
-  const markDone = (r: { id: string; name: string }) => {
-    if (doneToday.has(r.id)) return; // already done today
-    const win = { id: `routine-${Date.now()}`, text: `🔄 ${r.name}`, iconIdx: 98 };
+  const markDone = (r: Routine) => {
+    if (doneToday.has(r.id)) return;
+    const iconIdx = typeof r.iconIdx === "number" ? r.iconIdx : 0;
+    const win = { id: `routine-${Date.now()}`, text: `${ROUTINE_CATS[iconIdx]?.emoji ?? "🔄"} ${r.name}`, iconIdx };
     try {
       const wins = JSON.parse(localStorage.getItem("adhd-wins") ?? "[]");
       wins.unshift({ ...win, createdAt: new Date().toISOString() });
@@ -414,8 +434,16 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
             <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.48rem", letterSpacing: "0.10em", color: "oklch(0.55 0.12 285)", textTransform: "uppercase", marginBottom: 6 }}>Today ({today})</p>
             {todayRoutines.map(r => {
                 const done = doneToday.has(r.id);
+                const cat = ROUTINE_CATS[r.iconIdx ?? 0] ?? ROUTINE_CATS[0];
+                const isPickerOpen = pickerOpenId === r.id;
                 return (
-                  <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", background: done ? "oklch(0.96 0.012 285)" : "white", borderRadius: 8, border: `1px solid ${done ? "oklch(0.78 0.10 285)" : "oklch(0.86 0.030 300)"}`, marginBottom: 4, transition: "all 0.2s" }}>
+                  <div key={r.id} style={{ position: "relative", marginBottom: 4 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", background: done ? "oklch(0.96 0.012 285)" : "white", borderRadius: 8, border: `1px solid ${done ? "oklch(0.78 0.10 285)" : "oklch(0.86 0.030 300)"}`, transition: "all 0.2s" }}>
+                    {/* Category emoji — click to change */}
+                    <button onClick={() => !done && setPickerOpenId(isPickerOpen ? null : r.id)} title={cat.label}
+                      style={{ fontSize: "0.85rem", lineHeight: 1, background: "none", border: "none", cursor: done ? "default" : "pointer", padding: 0, flexShrink: 0 }}>
+                      {cat.emoji}
+                    </button>
                     <span style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", color: done ? "oklch(0.55 0.10 285)" : "oklch(0.28 0.040 320)", textDecoration: done ? "line-through" : "none", opacity: done ? 0.7 : 1 }}>{r.name}</span>
                     <button
                       onClick={() => markDone(r)}
@@ -430,6 +458,17 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
                         : <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="oklch(0.62 0.14 285)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.3"/></svg>
                       }
                     </button>
+                  </div>
+                  {isPickerOpen && (
+                    <div style={{ position: "absolute", top: "100%", left: 0, zIndex: 200, background: "white", border: "1px solid oklch(0.86 0.030 300)", borderRadius: 8, padding: 6, display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", marginTop: 2 }}>
+                      {ROUTINE_CATS.map((cat, idx) => (
+                        <button key={idx} onClick={() => changeIcon(r.id, idx)} title={cat.label}
+                          style={{ fontSize: "1rem", padding: "4px", borderRadius: 6, border: `1.5px solid ${idx === r.iconIdx ? "oklch(0.55 0.14 285)" : "transparent"}`, background: idx === r.iconIdx ? "oklch(0.55 0.14 285 / 0.10)" : "transparent", cursor: "pointer" }}>
+                          {cat.emoji}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   </div>
                 );
               })}
@@ -446,6 +485,15 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
             <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8, padding: "8px", background: "oklch(0.97 0.010 300)", borderRadius: 8 }}>
               <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Routine name…" autoFocus
                 style={{ padding: "5px 8px", borderRadius: 4, border: "1px solid oklch(0.82 0.050 340)", fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", outline: "none" }} />
+              {/* Category picker for new routine */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 2 }}>
+                {ROUTINE_CATS.map((cat, idx) => (
+                  <button key={idx} onClick={() => setNewIconIdx(idx)} title={cat.label}
+                    style={{ fontSize: "0.85rem", padding: "3px", borderRadius: 5, border: `1.5px solid ${idx === newIconIdx ? "oklch(0.55 0.14 285)" : "transparent"}`, background: idx === newIconIdx ? "oklch(0.55 0.14 285 / 0.12)" : "transparent", cursor: "pointer" }}>
+                    {cat.emoji}
+                  </button>
+                ))}
+              </div>
               <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                 {DAYS.map((d) => {
                   const active = newDays.includes(d);
@@ -463,13 +511,17 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
               </div>
             </div>
           )}
-          {routines.map(r => (
-            <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0" }}>
-              <span style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem", color: "oklch(0.35 0.040 320)" }}>{r.name}</span>
-              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.42rem", color: "oklch(0.60 0.040 330)" }}>{r.days.join(",")}</span>
-              <button onClick={() => deleteRoutine(r.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "oklch(0.65 0.050 330)", fontSize: "0.70rem" }}>×</button>
-            </div>
-          ))}
+          {routines.map(r => {
+            const cat = ROUTINE_CATS[r.iconIdx ?? 0] ?? ROUTINE_CATS[0];
+            return (
+              <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0" }}>
+                <span style={{ fontSize: "0.80rem", flexShrink: 0 }}>{cat.emoji}</span>
+                <span style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem", color: "oklch(0.35 0.040 320)" }}>{r.name}</span>
+                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.42rem", color: "oklch(0.60 0.040 330)" }}>{r.days.join(",")}</span>
+                <button onClick={() => deleteRoutine(r.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "oklch(0.65 0.050 330)", fontSize: "0.70rem" }}>×</button>
+              </div>
+            );
+          })}
         </div>
       </div>
     </PopupShell>
