@@ -542,12 +542,14 @@ export default function StorageBackup() {
       <Section title="What Gets Backed Up">
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
           {[
-            "Tasks", "Goals", "Wins", "Agents",
-            "Brain Dump entries", "Daily logs", "Focus sessions",
-            "Mood history", "Display name", "Work mode",
-            "Theme & hue settings", "Film grain settings",
-            "Quick chips", "Block streak", "AI chat history",
+            "Tasks (with due dates & goal links)", "Goals (with archive status)",
+            "Wins", "Agents + prompts", "Brain Dump entries",
+            "Daily logs + My Diary", "Focus sessions", "Mood history",
+            "Display name", "Work mode", "Theme & hue",
+            "Film grain settings", "Custom quick chips",
+            "Block streak", "AI chat history", "Life Coach conversation",
             "Calendar day order", "Priority matrix order",
+            "Goal task order", "Life Coach insights",
           ].map((item) => (
             <div key={item} style={{ display: "flex", alignItems: "center", gap: 5 }}>
               <span style={{ fontSize: 9, color: M.sage }}>✓</span>
