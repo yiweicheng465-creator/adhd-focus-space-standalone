@@ -60,7 +60,11 @@ export async function callAI(
     }
   }
 
-  // Track total API calls in localStorage
+  trackApiCall();
+  return data.content as string;
+}
+
+function trackApiCall() {
   try {
     const today = new Date().toDateString();
     const total = Number(localStorage.getItem("adhd-api-calls-total") ?? 0) + 1;
@@ -68,7 +72,6 @@ export async function callAI(
     const todayCount = Number(localStorage.getItem(dayKey) ?? 0) + 1;
     localStorage.setItem("adhd-api-calls-total", String(total));
     localStorage.setItem(dayKey, String(todayCount));
-    // Clean old daily keys (keep only last 7 days)
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
       if (k?.startsWith("adhd-api-calls-") && k !== dayKey && k !== "adhd-api-calls-total") {
@@ -79,8 +82,6 @@ export async function callAI(
       }
     }
   } catch {}
-
-  return data.content as string;
 }
 
 /**
@@ -129,7 +130,7 @@ export async function callAIStream(
         const parsed = JSON.parse(line.slice(6)) as { delta?: string; done?: boolean; error?: string };
         if (parsed.error) throw new Error(parsed.error);
         if (parsed.delta) onChunk(parsed.delta);
-        if (parsed.done) { onDone(); return; }
+        if (parsed.done) { trackApiCall(); onDone(); return; }
       } catch (e) {
         if (e instanceof Error && e.message !== line) throw e;
       }

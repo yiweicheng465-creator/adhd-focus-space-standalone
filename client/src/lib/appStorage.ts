@@ -38,6 +38,7 @@ export const APP_STORAGE_KEYS = [
 
   // ── Streaks & scores ──
   "adhd-block-streak-data",
+  "adhd-api-calls-total",       // total AI calls ever
 
   // ── Sound & music ──
   "adhd-sfx-enabled",
@@ -97,7 +98,7 @@ export function exportAppData(): AppBackup {
   // Also capture any dynamic daily-checkin-skip keys
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
-    if (k && (k.startsWith("adhd-checkin-") || k.startsWith("adhd-block-streak"))) {
+    if (k && (k.startsWith("adhd-checkin-") || k.startsWith("adhd-block-streak") || k.startsWith("adhd-api-calls-"))) {
       try {
         const raw = localStorage.getItem(k)!;
         try { appData[k] = JSON.parse(raw); } catch { appData[k] = raw; }
