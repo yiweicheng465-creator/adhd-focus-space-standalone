@@ -576,14 +576,28 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
 
           {/* Retro task list — dashed-border rows with icon box */}
           {(() => {
-            const todayYMD = new Date().toISOString().slice(0, 10);
+            // Use LOCAL date to avoid UTC offset issues
+            const n = new Date();
+            const todayYMD = `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+            const sortFn = (a: typeof activeTasks[0], b: typeof activeTasks[0]) => {
+              const aOvr = a.dueDate && a.dueDate < todayYMD;
+              const bOvr = b.dueDate && b.dueDate < todayYMD;
+              const aTdy = a.dueDate === todayYMD;
+              const bTdy = b.dueDate === todayYMD;
+              if (aOvr && !bOvr) return -1;
+              if (!aOvr && bOvr) return 1;
+              if (aTdy && !bTdy && !bOvr) return -1;
+              if (!aTdy && bTdy && !aOvr) return 1;
+              return (PRIORITY_ORDER[a.priority] ?? 2) - (PRIORITY_ORDER[b.priority] ?? 2);
+            };
+            // Sort FIRST, then filter/slice
+            const sorted = [...activeTasks].sort(sortFn);
             const filtered = showAI
-              ? activeTasks
+              ? sorted
               : nextUpFilter === "today"
-                ? activeTasks.filter(t => !t.dueDate || t.dueDate === todayYMD)
-                : activeTasks;
-            const MAX = showAI ? 7 : filtered.length;
-            const displayTasks = filtered.slice(0, MAX);
+                ? sorted.filter(t => !t.dueDate || t.dueDate === todayYMD)
+                : sorted;
+            const displayTasks = showAI ? filtered.slice(0, 7) : filtered;
             return (
           <div className="retro-task-list" style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
             {displayTasks.length === 0 ? (
@@ -596,20 +610,7 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
                 <button className="m-btn-primary" onClick={() => onNavigate("tasks")}>Add a task</button>
               </div>
             ) : (
-              [...displayTasks]
-                .sort((a, b) => {
-                  const td = new Date().toISOString().slice(0, 10);
-                  const aOvr = a.dueDate && a.dueDate < td;
-                  const bOvr = b.dueDate && b.dueDate < td;
-                  const aTdy = a.dueDate === td;
-                  const bTdy = b.dueDate === td;
-                  if (aOvr && !bOvr) return -1;
-                  if (!aOvr && bOvr) return 1;
-                  if (aTdy && !bTdy && !bOvr) return -1;
-                  if (!aTdy && bTdy && !aOvr) return 1;
-                  return (PRIORITY_ORDER[a.priority] ?? 2) - (PRIORITY_ORDER[b.priority] ?? 2);
-                })
-                // no slice — show all, scrollable
+              displayTasks // already sorted above
                 .map((t) => {
                   const pd = PRIORITY_DOTS[t.priority] ?? PRIORITY_DOTS.normal;
                   const ctxColor = getContextConfig(t.context).color;
@@ -638,9 +639,8 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
 
                       {/* Due date — only in bigger view (AI off) */}
                       {!showAI && !isCompleting && t.dueDate && (() => {
-                        const td = new Date().toISOString().slice(0, 10);
-                        const isOverdue = t.dueDate < td;
-                        const isToday = t.dueDate === td;
+                        const isOverdue = t.dueDate < todayYMD;
+                        const isToday = t.dueDate === todayYMD;
                         const d = new Date(t.dueDate + "T00:00:00");
                         const label = isToday ? "Today" : d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
                         return (
