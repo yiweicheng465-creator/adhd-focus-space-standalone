@@ -171,10 +171,17 @@ export function TimerPill({ onGoToFocus }: { onGoToFocus: () => void }) {
     return () => document.removeEventListener("mousedown", handler);
   }, [showPopover]);
 
-  // Auto-stop music when timer is paused
+  // Stop music on pause, resume on resume if it was playing
+  const [wasPlayingRef] = useState({ value: false });
   useEffect(() => {
     if (phase === "paused" && sound.musicEnabled) {
+      wasPlayingRef.value = true;
       sound.toggleMusic();
+    } else if (phase === "running" && wasPlayingRef.value && !sound.musicEnabled) {
+      wasPlayingRef.value = false;
+      sound.toggleMusic();
+    } else if (phase !== "paused") {
+      wasPlayingRef.value = false;
     }
   }, [phase]);
 

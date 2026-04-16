@@ -97,10 +97,17 @@ function TimerPopup({ onClose }: { onClose: () => void }) {
   const ss = String(remaining % 60).padStart(2, "0");
   const isActive = phase === "running" || phase === "paused";
 
-  // Stop music when timer is paused
+  // Track if music was playing before pause, resume it on resume
+  const [wasPlayingMusic, setWasPlayingMusic] = useState(false);
   useEffect(() => {
     if (phase === "paused" && sound.musicEnabled) {
-      sound.toggleMusic();
+      setWasPlayingMusic(true);
+      sound.toggleMusic(); // stop music
+    } else if (phase === "running" && wasPlayingMusic && !sound.musicEnabled) {
+      setWasPlayingMusic(false);
+      sound.toggleMusic(); // resume music
+    } else if (phase !== "paused") {
+      setWasPlayingMusic(false);
     }
   }, [phase]);
   const modeColor = mode === "focus" ? "oklch(0.52 0.10 32)" : mode === "short" ? "oklch(0.60 0.07 138)" : "oklch(0.58 0.08 220)";
