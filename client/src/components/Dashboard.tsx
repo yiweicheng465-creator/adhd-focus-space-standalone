@@ -533,6 +533,17 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
             <img src={CAT_PINK} alt="" aria-hidden="true" style={{ position: "absolute", top: -8, right: -8, width: 56, opacity: 0.40, pointerEvents: "none", zIndex: 5 }} />
             <FocusTimer onSessionComplete={onSessionComplete} onBlockComplete={onBlockComplete} />
           </div>
+          {/* Stickers in empty space below timer — only visible in bigger view */}
+          {!showAI && (
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: "16px 8px", position: "relative" }}>
+              <img src={CAT_BLUE} alt="" aria-hidden="true" style={{ width: 90, opacity: 0.55, pointerEvents: "none" }} />
+              <img src={CAT_OLIVE} alt="" aria-hidden="true" style={{ width: 76, opacity: 0.45, pointerEvents: "none" }} />
+              {/* little motivational note */}
+              <div style={{ textAlign: "center", fontFamily: "'Space Mono', monospace", fontSize: "0.42rem", color: "oklch(0.62 0.040 330)", letterSpacing: "0.08em", lineHeight: 1.8, opacity: 0.7 }}>
+                one task<br/>at a time ✦
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Col 2: Next Up task list — taller when AI is hidden */}
