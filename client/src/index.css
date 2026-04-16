@@ -316,7 +316,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    transition: box-shadow 0.08s, transform 0.08s;
+    transition: box-shadow 0.08s;
     cursor: pointer;
   }
   .m-btn-primary:hover {
@@ -345,7 +345,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    transition: box-shadow 0.08s, transform 0.08s;
+    transition: box-shadow 0.08s;
     cursor: pointer;
   }
   .m-btn-dark:hover {
@@ -520,7 +520,7 @@ input[type="radio"]:not(:disabled) {
   border: 1.5px solid oklch(0.82 0.018 68 / 0.6);
   border-radius: 4px;
   position: relative;
-  transition: box-shadow 0.08s, transform 0.08s;
+  transition: box-shadow 0.08s;
   margin-bottom: 5px;
 }
 /* Dotted vertical connector line between rows */
@@ -535,7 +535,6 @@ input[type="radio"]:not(:disabled) {
 }
 .retro-task-row:hover {
   box-shadow: 2px 2px 0px oklch(0.72 0.022 68);
-  transform: translate(-1px, -1px);
 }
 .retro-task-row.done {
   opacity: 0.50;
