@@ -223,23 +223,28 @@ function AIChatPopup({ onClose, goals }: { onClose: () => void; goals: Goal[] })
     } catch { setLoading(false); }
   };
 
+  // Match dashboard AI colors exactly
+  const PINK = "oklch(0.58 0.18 340)";
+  const PINK_BORDER = "oklch(0.82 0.070 340)";
+  const PINK_MSG_BG = "oklch(0.940 0.040 355)";
+
   return (
     <PopupShell onClose={onClose} title="🤖 AI Assistant" width={320} onClear={history.length > 0 ? clearHistory : undefined}>
       <div style={{ flex: 1, overflowY: "auto", padding: "8px 12px", display: "flex", flexDirection: "column", gap: 6, minHeight: 200, maxHeight: 320 }}>
-        {history.length === 0 && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.80rem", color: "oklch(0.60 0.040 330)", fontStyle: "italic", textAlign: "center", marginTop: 20 }}>Ask me anything about your tasks & goals.</p>}
+        {history.length === 0 && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.80rem", color: "oklch(0.55 0.060 340)", fontStyle: "italic", textAlign: "center", marginTop: 20 }}>Ask me anything about your tasks & goals.</p>}
         {history.map((m, i) => (
           <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
-            <div style={{ maxWidth: "85%", padding: "6px 10px", borderRadius: m.role === "user" ? "10px 10px 2px 10px" : "10px 10px 10px 2px", background: m.role === "user" ? "oklch(0.55 0.14 285)" : "white", color: m.role === "user" ? "white" : "oklch(0.28 0.040 320)", fontSize: "0.82rem", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5, border: m.role === "assistant" ? "1px solid oklch(0.86 0.030 300)" : "none" }}>
+            <div style={{ maxWidth: "85%", padding: "6px 10px", borderRadius: m.role === "user" ? "10px 10px 2px 10px" : "10px 10px 10px 2px", background: m.role === "user" ? PINK : PINK_MSG_BG, color: m.role === "user" ? "white" : "oklch(0.28 0.040 320)", fontSize: "0.82rem", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5, border: m.role === "assistant" ? `1px solid ${PINK_BORDER}` : "none" }}>
               {m.role === "assistant" && m.content ? <Streamdown>{m.content}</Streamdown> : m.content || (loading && i === history.length-1 ? "▊" : "")}
             </div>
           </div>
         ))}
         <div ref={bottomRef} />
       </div>
-      <div style={{ padding: "8px 10px", borderTop: "1px solid oklch(0.86 0.030 300)", display: "flex", gap: 6 }}>
+      <div style={{ padding: "8px 10px", borderTop: `1px solid ${PINK_BORDER}`, display: "flex", gap: 6 }}>
         <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") send(); }} placeholder="Ask…" autoComplete="off"
-          style={{ flex: 1, padding: "6px 10px", borderRadius: 6, border: "1px solid oklch(0.86 0.030 300)", fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", outline: "none" }} />
-        <button onClick={send} disabled={loading || !input.trim()} style={{ padding: "6px 12px", borderRadius: 6, background: input.trim() ? "oklch(0.55 0.14 285)" : "transparent", border: `1px solid ${input.trim() ? "oklch(0.55 0.14 285)" : "oklch(0.86 0.030 300)"}`, color: input.trim() ? "white" : "oklch(0.60 0.040 330)", cursor: "pointer" }}>
+          style={{ flex: 1, padding: "6px 10px", borderRadius: 6, border: `1px solid ${PINK_BORDER}`, fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", outline: "none", background: "oklch(0.975 0.018 355)" }} />
+        <button onClick={send} disabled={loading || !input.trim()} style={{ padding: "6px 12px", borderRadius: 6, background: input.trim() ? PINK : "transparent", border: `1px solid ${input.trim() ? PINK : PINK_BORDER}`, color: input.trim() ? "white" : "oklch(0.60 0.060 340)", cursor: "pointer" }}>
           {loading ? <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} /> : "→"}
         </button>
       </div>
