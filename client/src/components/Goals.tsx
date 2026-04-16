@@ -635,7 +635,7 @@ Be specific and personal.`,
       <div style={{ background: "#fdf4f8", borderRadius: 16, width: "min(480px, 94vw)", height: "min(560px, 90vh)", display: "flex", flexDirection: "column", boxShadow: "0 24px 60px rgba(140,40,90,0.25)", overflow: "hidden" }}
         onClick={e => e.stopPropagation()}>
         {/* Header */}
-        <div style={{ padding: "12px 16px", borderBottom: "1px solid oklch(0.82 0.050 340 / 0.5)", background: "rgba(249,214,232,0.5)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ padding: "12px 16px", borderBottom: "1px solid oklch(0.80 0.06 285 / 0.5)", background: "oklch(0.93 0.022 285)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ fontSize: "1.1rem" }}>🧭</span>
             <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "1rem", fontWeight: 700, color: "oklch(0.28 0.040 320)", fontStyle: "italic" }}>
@@ -656,7 +656,7 @@ Be specific and personal.`,
               AI will guide you through building your life framework — values, vision, and an actionable roadmap.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
-              <button onClick={() => startChat("life")} style={{ padding: "14px 20px", borderRadius: 10, background: "oklch(0.58 0.18 340 / 0.08)", border: "1.5px solid oklch(0.58 0.18 340 / 0.30)", cursor: "pointer", textAlign: "left", display: "flex", gap: 12, alignItems: "center" }}>
+              <button onClick={() => startChat("life")} style={{ padding: "14px 20px", borderRadius: 10, background: "oklch(0.55 0.12 285 / 0.08)", border: "1.5px solid oklch(0.55 0.12 285 / 0.30)", cursor: "pointer", textAlign: "left", display: "flex", gap: 12, alignItems: "center" }}>
                 <span style={{ fontSize: "1.4rem" }}>🌱</span>
                 <div>
                   <p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 700, color: "oklch(0.28 0.040 320)", margin: 0, fontSize: "0.90rem" }}>Life Planning</p>
@@ -680,10 +680,10 @@ Be specific and personal.`,
                 <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
                   <div style={{
                     maxWidth: "85%", padding: "8px 12px", borderRadius: m.role === "user" ? "12px 12px 2px 12px" : "12px 12px 12px 2px",
-                    background: m.role === "user" ? "oklch(0.58 0.18 340)" : "white",
+                    background: m.role === "user" ? "oklch(0.55 0.14 285)" : "white",
                     color: m.role === "user" ? "white" : "oklch(0.28 0.040 320)",
                     fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", lineHeight: 1.6,
-                    border: m.role === "coach" ? "1px solid oklch(0.82 0.050 340 / 0.5)" : "none",
+                    border: m.role === "coach" ? "1px solid oklch(0.82 0.040 285 / 0.5)" : "none",
                   }}>
                     {m.text || (streaming && i === messages.length - 1 ? "▊" : "")}
                   </div>
@@ -692,15 +692,15 @@ Be specific and personal.`,
               <div ref={bottomRef} />
             </div>
             {/* Input */}
-            <div style={{ padding: "10px 14px", borderTop: "1px solid oklch(0.82 0.050 340 / 0.5)", display: "flex", gap: 8 }}>
+            <div style={{ padding: "10px 14px", borderTop: "1px solid oklch(0.82 0.040 285 / 0.5)", display: "flex", gap: 8 }}>
               <input
                 value={input} onChange={e => setInput(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
                 placeholder="Share your thoughts…"
                 autoComplete="off"
-                style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: "1px solid oklch(0.82 0.050 340)", background: "white", fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", outline: "none" }}
+                style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: "1px solid oklch(0.82 0.040 285)", background: "white", fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", outline: "none" }}
               />
-              <button onClick={send} disabled={streaming || !input.trim()} style={{ padding: "8px 14px", borderRadius: 8, background: input.trim() ? "oklch(0.58 0.18 340)" : "transparent", border: `1px solid ${input.trim() ? "oklch(0.58 0.18 340)" : "oklch(0.82 0.050 340)"}`, color: input.trim() ? "white" : "oklch(0.52 0.040 330)", cursor: "pointer" }}>
+              <button onClick={send} disabled={streaming || !input.trim()} style={{ padding: "8px 14px", borderRadius: 8, background: input.trim() ? "oklch(0.55 0.14 285)" : "transparent", border: `1px solid ${input.trim() ? "oklch(0.55 0.14 285)" : "oklch(0.82 0.040 285)"}`, color: input.trim() ? "white" : "oklch(0.52 0.040 330)", cursor: "pointer" }}>
                 →
               </button>
             </div>
