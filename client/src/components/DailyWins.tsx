@@ -273,8 +273,10 @@ function WinCard({
   onUnarchive: (winId: string) => void;
   onDelete: (winId: string) => void;
 }) {
-  // iconIdx 99 = special block-complete flame icon
-  const isBlockWin = win.iconIdx === 99 || win.iconIdx === 97 || win.iconIdx === 98;
+  // 99 = block complete, 97 = focus session — special display only
+  // 98 = old routine wins (now use real category idx 0-7) — treat as normal
+  const isBlockWin = win.iconIdx === 99 || win.iconIdx === 97;
+  const isRoutineWin = win.id.startsWith("routine-");
   const iconIdx = isBlockWin ? 0 : (typeof win.iconIdx === "number" ? win.iconIdx % WIN_ICONS.length : 0);
   const iconDef = WIN_ICONS[iconIdx];
   const blockColor = "oklch(0.55 0.13 35)"; // deep terracotta for block wins
@@ -335,8 +337,8 @@ function WinCard({
       </div>
 
       <div className="flex-1 min-w-0">
-        {/* FOCUS TIMER pill — shown prominently above the win text for session/block wins */}
-        {(isBlockWin || win.id.startsWith("session-")) && !isArchiveView && (
+        {/* FOCUS TIMER pill — shown for session/block wins only, not routine wins */}
+        {(isBlockWin || win.id.startsWith("session-")) && !isRoutineWin && !isArchiveView && (
           <div
             style={{
               display: "inline-flex",
