@@ -37,12 +37,22 @@ export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin }: Props)
   const [panel, setPanel] = useState<"ai" | "coach" | "timer" | "routine" | null>(null);
   const toggle = (p: "ai" | "coach" | "timer" | "routine") => setPanel(v => v === p ? null : p);
 
+  const handleAIClick = () => {
+    // On dashboard page, toggle the built-in AI panel instead of spawning a popup
+    const hash = window.location.hash.replace("#", "") || "dashboard";
+    if (hash === "dashboard" || hash === "") {
+      window.dispatchEvent(new CustomEvent("toggleDashboardAI"));
+    } else {
+      toggle("ai");
+    }
+  };
+
   return (
     <>
       {/* Right-edge button stack */}
       <div style={{ position: "fixed", right: 0, top: "50%", transform: "translateY(-50%)", zIndex: 50, display: "flex", flexDirection: "column", gap: 2 }}>
         {/* AI */}
-        <button style={BTN_STYLE(panel === "ai")} onClick={() => toggle("ai")} title="AI Assistant">
+        <button style={BTN_STYLE(panel === "ai")} onClick={handleAIClick} title="AI Assistant">
           <Bot size={14} />
           <span style={{ writingMode: "vertical-rl", fontSize: "0.38rem" }}>AI</span>
         </button>
@@ -75,10 +85,18 @@ function TimerButton({ active, onClick }: { active: boolean; onClick: () => void
   const isActive = phase === "running" || phase === "paused";
   const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
   const ss = String(remaining % 60).padStart(2, "0");
-  const modeColor = mode === "focus" ? "oklch(0.52 0.10 32)" : mode === "short" ? "oklch(0.60 0.07 138)" : "oklch(0.58 0.08 220)";
+  const modeColor = mode === "focus" ? "#b85c38" : mode === "short" ? "#4a9e6b" : "#4a7eb8";
+  const modeLightBg = mode === "focus" ? "#fff1ec" : mode === "short" ? "#edf7f1" : "#ecf2fb";
   return (
     <button
-      style={{ ...BTN_STYLE(active || isActive), background: isActive ? (active ? modeColor : modeColor + "22") : active ? "oklch(0.55 0.14 285)" : "oklch(0.92 0.020 300)", color: isActive ? (active ? "white" : modeColor) : active ? "white" : "oklch(0.45 0.12 285)" }}
+      style={{
+        ...BTN_STYLE(active || isActive),
+        ...(isActive ? {
+          background: modeLightBg,
+          color: modeColor,
+          border: `2px solid ${modeColor}`,
+        } : {}),
+      }}
       onClick={onClick} title="Timer"
     >
       <span style={{ fontFamily: "'Space Mono', monospace", fontSize: isActive ? "0.52rem" : "0.38rem", fontWeight: 700, letterSpacing: "-0.02em" }}>
@@ -110,7 +128,7 @@ function TimerPopup({ onClose }: { onClose: () => void }) {
       setWasPlayingMusic(false);
     }
   }, [phase]);
-  const modeColor = mode === "focus" ? "oklch(0.52 0.10 32)" : mode === "short" ? "oklch(0.60 0.07 138)" : "oklch(0.58 0.08 220)";
+  const modeColor = mode === "focus" ? "#b85c38" : mode === "short" ? "#4a9e6b" : "#4a7eb8";
 
   return (
     <PopupShell onClose={onClose} title="⏱ Timer" width={200}>
@@ -140,6 +158,7 @@ function AIChatPopup({ onClose, goals }: { onClose: () => void; goals: Goal[] })
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const clearHistory = () => { setHistory([]); localStorage.removeItem(CHAT_KEY); };
 
   useEffect(() => {
     localStorage.setItem(CHAT_KEY, JSON.stringify(history.slice(-MAX)));
@@ -165,7 +184,7 @@ function AIChatPopup({ onClose, goals }: { onClose: () => void; goals: Goal[] })
   };
 
   return (
-    <PopupShell onClose={onClose} title="🤖 AI Assistant" width={320}>
+    <PopupShell onClose={onClose} title="🤖 AI Assistant" width={320} onClear={history.length > 0 ? clearHistory : undefined}>
       <div style={{ flex: 1, overflowY: "auto", padding: "8px 12px", display: "flex", flexDirection: "column", gap: 6, minHeight: 200, maxHeight: 320 }}>
         {history.length === 0 && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.80rem", color: "oklch(0.60 0.040 330)", fontStyle: "italic", textAlign: "center", marginTop: 20 }}>Ask me anything about your tasks & goals.</p>}
         {history.map((m, i) => (
@@ -297,6 +316,16 @@ Be specific and personal. Use the person's exact words/goals.`,
 
 /* ── Routine Popup ─────────────────────────────────────────── */
 const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+// Pink → purple → blue gradient per day
+const DAY_COLORS = [
+  "oklch(0.62 0.14 355)",  // Mon: pink
+  "oklch(0.60 0.13 330)",  // Tue: pink-purple
+  "oklch(0.58 0.13 305)",  // Wed: purple
+  "oklch(0.57 0.13 285)",  // Thu: purple-blue
+  "oklch(0.58 0.12 260)",  // Fri: blue
+  "oklch(0.64 0.08 240)",  // Sat: light blue
+  "oklch(0.68 0.06 220)",  // Sun: lighter blue
+];
 const ROUTINE_KEY = "adhd-routines";
 
 function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (text: string, iconIdx: number) => void }) {
@@ -326,7 +355,7 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
   };
 
   return (
-    <PopupShell onClose={onClose} title="🔄 Daily Routine" width={300}>
+    <PopupShell onClose={onClose} title="💫 Daily Routine" width={300}>
       <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
         {/* Today's routines */}
         {todayRoutines.length > 0 && (
@@ -335,7 +364,7 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
             {todayRoutines.map(r => (
               <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", background: "white", borderRadius: 8, border: "1px solid oklch(0.86 0.030 300)", marginBottom: 4 }}>
                 <span style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", color: "oklch(0.28 0.040 320)" }}>{r.name}</span>
-                <button onClick={() => markDone(r)} style={{ padding: "3px 10px", borderRadius: 6, background: "oklch(0.55 0.14 285)", color: "white", border: "none", cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: "0.50rem", letterSpacing: "0.06em", fontWeight: 700 }}>Done ✓</button>
+                <button onClick={() => markDone(r)} style={{ padding: "3px 10px", borderRadius: 6, background: "transparent", color: "oklch(0.48 0.14 285)", border: "2px solid oklch(0.62 0.14 285)", cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: "0.50rem", letterSpacing: "0.06em", fontWeight: 700 }}>✓ Done</button>
               </div>
             ))}
           </div>
@@ -352,12 +381,16 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
               <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Routine name…" autoFocus
                 style={{ padding: "5px 8px", borderRadius: 4, border: "1px solid oklch(0.82 0.050 340)", fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", outline: "none" }} />
               <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                {DAYS.map(d => (
-                  <button key={d} onClick={() => setNewDays(p => p.includes(d) ? p.filter(x => x !== d) : [...p, d])}
-                    style={{ padding: "2px 7px", borderRadius: 10, fontSize: "0.55rem", fontFamily: "'Space Mono', monospace", border: `1px solid ${newDays.includes(d) ? "oklch(0.55 0.14 285)" : "oklch(0.82 0.050 340)"}`, background: newDays.includes(d) ? "oklch(0.55 0.14 285 / 0.15)" : "transparent", color: newDays.includes(d) ? "oklch(0.45 0.14 285)" : "oklch(0.60 0.040 330)", cursor: "pointer" }}>
-                    {d}
-                  </button>
-                ))}
+                {DAYS.map((d, i) => {
+                  const dayColor = DAY_COLORS[i];
+                  const active = newDays.includes(d);
+                  return (
+                    <button key={d} onClick={() => setNewDays(p => p.includes(d) ? p.filter(x => x !== d) : [...p, d])}
+                      style={{ padding: "2px 7px", borderRadius: 10, fontSize: "0.55rem", fontFamily: "'Space Mono', monospace", border: `1px solid ${active ? dayColor : "oklch(0.82 0.050 340)"}`, background: active ? `${dayColor}25` : "transparent", color: active ? dayColor : "oklch(0.60 0.040 330)", cursor: "pointer", fontWeight: active ? 700 : 400 }}>
+                      {d}
+                    </button>
+                  );
+                })}
               </div>
               <div style={{ display: "flex", gap: 6 }}>
                 <button onClick={addRoutine} style={{ flex: 1, padding: "5px", borderRadius: 6, background: "oklch(0.55 0.14 285)", color: "white", border: "none", cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: "0.55rem" }}>Save</button>

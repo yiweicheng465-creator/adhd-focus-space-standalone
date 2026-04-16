@@ -520,25 +520,7 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
         </div>
       </div>
 
-      {/* Right-side AI toggle button — like Life Coach */}
-      <button
-        onClick={toggleAI}
-        style={{
-          position: "fixed", right: 0, top: "40%", transform: "translateY(-50%)",
-          zIndex: 40, background: showAI ? "oklch(0.58 0.18 340)" : "oklch(0.92 0.025 340)",
-          color: showAI ? "white" : "oklch(0.45 0.14 340)",
-          border: "none", borderRadius: "8px 0 0 8px", padding: "14px 8px",
-          cursor: "pointer", boxShadow: "-2px 0 12px oklch(0.58 0.18 340 / 0.20)",
-          display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
-          fontFamily: "'Space Mono', monospace", fontSize: "0.42rem", letterSpacing: "0.12em",
-        }}
-        title={showAI ? "Hide AI assistant" : "Show AI assistant"}
-      >
-        <Bot size={14} />
-        <span style={{ writingMode: "vertical-rl", textOrientation: "mixed", fontSize: "0.40rem" }}>
-          {showAI ? "HIDE AI" : "AI"}
-        </span>
-      </button>
+      {/* AI toggle handled by GlobalRightPanel's AI button (dispatches toggleDashboardAI) */}
 
       {/* ── MIDDLE: 3-column grid ── */}
       <div style={{ display: "grid", gridTemplateColumns: showAI ? "1fr 1fr 1fr" : "1fr 2fr", gap: 10, alignItems: "start" }}>

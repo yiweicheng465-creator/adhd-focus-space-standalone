@@ -7,7 +7,7 @@ import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Plus, Sparkles, Trash2, TrendingUp, CheckCircle2, Circle } from "lucide-react";
-import { callAIStream } from "@/lib/ai";
+import { callAIStream, callAI } from "@/lib/ai";
 import { toast } from "sonner";
 import { nanoid } from "nanoid";
 import {
@@ -302,12 +302,13 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
               className="group p-4 transition-all relative overflow-hidden"
               style={{
                 background: done
-                  ? "oklch(0.935 0.025 280)"
+                  ? "oklch(0.960 0.006 280)"
                   : `oklch(${0.968 - goal.progress * 0.00013} ${0.018 + goal.progress * 0.00017} ${340 - goal.progress * 0.4})`,
-                border: dragOverGoalId === goal.id ? `2px dashed oklch(0.58 0.18 340)` : `1px solid ${done ? "oklch(0.80 0.06 280)" : M.border}`,
+                border: dragOverGoalId === goal.id ? `2px dashed oklch(0.58 0.18 340)` : `1px solid ${done ? "oklch(0.87 0.015 280)" : M.border}`,
                 borderRadius: 14,
+                opacity: done ? 0.72 : 1,
                 boxShadow: done
-                  ? "0 2px 12px oklch(0.58 0.18 340 / 0.12), 0 1px 3px oklch(0.28 0.04 320 / 0.06)"
+                  ? "none"
                   : "0 2px 12px oklch(0.55 0.12 285 / 0.06), 0 1px 3px oklch(0.28 0.04 320 / 0.04)",
               }}
               onDragOver={(e) => { e.preventDefault(); setDragOverGoalId(goal.id); }}
@@ -599,6 +600,26 @@ Ask one question at a time. Be direct, practical, and encouraging. Keep response
     setMessages([{ role: "coach", text: starter }]);
   };
 
+  const generateDashboard = async (allMsgs: typeof messages, type: "life" | "career") => {
+    if (allMsgs.filter(m => m.role === "user").length < 2) return;
+    try {
+      const convo = allMsgs.map(m => `${m.role === "user" ? "Me" : "Coach"}: ${m.text}`).join("\n");
+      const result = await callAI(
+        `Read this ${type === "life" ? "life planning" : "career coaching"} conversation and write a brief personal summary.
+Return JSON: {"direction":"1 sentence about main direction","insights":["2-3 key insight bullets"],"nextStep":"1 concrete action to take"}
+Be specific and personal.`,
+        convo
+      );
+      const match = result.match(/\{[\s\S]*\}/);
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        const existing = (() => { try { return JSON.parse(localStorage.getItem("adhd-life-dashboard") ?? "{}"); } catch { return {}; } })();
+        existing[type] = { ...parsed, updatedAt: new Date().toISOString() };
+        localStorage.setItem("adhd-life-dashboard", JSON.stringify(existing));
+      }
+    } catch {}
+  };
+
   const send = async () => {
     if (!input.trim() || streaming) return;
     const userMsg = input.trim();
@@ -619,7 +640,12 @@ Ask one question at a time. Be direct, practical, and encouraging. Keep response
           updated[updated.length - 1] = { role: "coach", text: updated[updated.length - 1].text + delta };
           return updated;
         }),
-        () => setStreaming(false)
+        () => {
+          setStreaming(false);
+          // Generate dashboard after 2+ user messages or every 2 thereafter
+          const userMsgCount = newMsgs.filter(m => m.role === "user").length;
+          if (userMsgCount >= 2) generateDashboard(newMsgs, coachType);
+        }
       );
     } catch { setStreaming(false); }
   };

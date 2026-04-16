@@ -7,7 +7,7 @@
    - Month: shows full month grid
    ============================================================ */
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import type { Task } from "./TaskManager";
 import { ChevronLeft, ChevronRight, List, CalendarDays } from "lucide-react";
 
@@ -224,7 +224,7 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle }: Props) {
         </div>
 
         {/* Tasks — scrollable */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "5px 4px", minHeight: 60, maxHeight: 280 }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: "5px 4px", minHeight: 80, maxHeight: 480 }}>
           {dayTasks.map(t => <TaskChip key={t.id} task={t} dayYMD={ymd} />)}
           {isOver && dragId && (
             <div style={{ textAlign: "center", fontSize: "0.48rem", fontFamily: "'Space Mono', monospace", color: M.coral, opacity: 0.8 }}>
@@ -237,10 +237,23 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle }: Props) {
   }
 
   // ── Week view ───────────────────────────────────────────────────────────────
+  const advanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function startAdvance(dir: -1 | 1) {
+    if (advanceTimerRef.current) return;
+    advanceTimerRef.current = setTimeout(() => {
+      setWeekStart(d => addDays(d, dir * 7));
+      advanceTimerRef.current = null;
+    }, 600);
+  }
+  function cancelAdvance() {
+    if (advanceTimerRef.current) { clearTimeout(advanceTimerRef.current); advanceTimerRef.current = null; }
+  }
+
   function WeekView() {
     const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, height: "100%" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, height: "100%", position: "relative" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <button onClick={() => setWeekStart(d => addDays(d, -7))} style={{ background: "none", border: "none", cursor: "pointer", color: M.muted, display: "flex" }}>
             <ChevronLeft size={16} />
@@ -252,7 +265,28 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle }: Props) {
             <ChevronRight size={16} />
           </button>
         </div>
-        <div style={{ display: "flex", gap: 4, flex: 1, minHeight: 0 }}>
+        <div style={{ display: "flex", gap: 4, flex: 1, minHeight: 0, position: "relative" }}>
+          {/* Drag-to-advance zones: appear when dragging */}
+          {dragId && (
+            <>
+              <div
+                onDragEnter={() => startAdvance(-1)}
+                onDragLeave={cancelAdvance}
+                onDragOver={e => e.preventDefault()}
+                style={{ position: "absolute", left: -4, top: 0, bottom: 0, width: 36, zIndex: 20, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(to right, oklch(0.58 0.18 340 / 0.18), transparent)", borderRadius: "6px 0 0 6px", cursor: "w-resize" }}
+              >
+                <ChevronLeft size={20} style={{ color: M.coral, opacity: 0.8 }} />
+              </div>
+              <div
+                onDragEnter={() => startAdvance(1)}
+                onDragLeave={cancelAdvance}
+                onDragOver={e => e.preventDefault()}
+                style={{ position: "absolute", right: -4, top: 0, bottom: 0, width: 36, zIndex: 20, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(to left, oklch(0.58 0.18 340 / 0.18), transparent)", borderRadius: "0 6px 6px 0", cursor: "e-resize" }}
+              >
+                <ChevronRight size={20} style={{ color: M.coral, opacity: 0.8 }} />
+              </div>
+            </>
+          )}
           {days.map(d => <DayColumn key={toYMD(d)} day={d} />)}
         </div>
       </div>
@@ -315,18 +349,22 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle }: Props) {
                   border: isToday ? `1.5px solid ${M.coralBdr}` : isOver ? `1.5px dashed ${M.coral}` : `1px solid ${M.border}`,
                   borderRadius: 4, padding: "3px 3px 4px",
                   background: isToday ? M.coralBg : isOver ? "oklch(0.97 0.018 340)" : "transparent",
-                  minHeight: 52, overflow: "hidden",
+                  minHeight: 88, overflow: "hidden", cursor: "pointer",
                 }}
               >
-                <div style={{ textAlign: "right", fontFamily: "'DM Sans', sans-serif", fontSize: "0.68rem", fontWeight: isToday ? 700 : 400, color: isToday ? M.coral : isPast ? M.muted : M.ink, marginBottom: 2 }}>
+                <div
+                  onClick={() => setSelectedDay(ymd)}
+                  style={{ textAlign: "right", fontFamily: "'DM Sans', sans-serif", fontSize: "0.68rem", fontWeight: isToday ? 700 : 400, color: isToday ? M.coral : isPast ? M.muted : M.ink, marginBottom: 2 }}
+                >
                   {day.getDate()}
                 </div>
-                {dayTasks.slice(0, 3).map(t => (
+                {dayTasks.slice(0, 5).map(t => (
                   <div
                     key={t.id}
                     draggable
-                    onDragStart={() => setDragId(t.id)}
+                    onDragStart={e => { e.stopPropagation(); setDragId(t.id); }}
                     onDragEnd={() => { setDragId(null); setDragOverDate(null); }}
+                    onClick={e => e.stopPropagation()}
                     title={t.text}
                     style={{
                       background: PRIORITY_COLOR[t.priority] + "22",
@@ -341,9 +379,9 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle }: Props) {
                     {t.text}
                   </div>
                 ))}
-                {dayTasks.length > 3 && (
-                  <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.42rem", color: M.muted }}>
-                    +{dayTasks.length - 3} more
+                {dayTasks.length > 5 && (
+                  <div onClick={() => setSelectedDay(ymd)} style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.42rem", color: M.coral, cursor: "pointer" }}>
+                    +{dayTasks.length - 5} more
                   </div>
                 )}
               </div>
