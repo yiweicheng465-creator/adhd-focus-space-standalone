@@ -183,8 +183,8 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
             placeholder="goal... #health #learning"
             className="flex-1"
             style={{
-              background: M.card,
-              border: `1px solid ${liveTag ? "oklch(0.58 0.18 340)" : "oklch(0.82 0.050 340)"}`,
+              background: "oklch(0.97 0.018 355)",
+              border: `1px solid ${liveTag ? "oklch(0.58 0.18 340)" : "oklch(0.82 0.070 340)"}`,
               fontFamily: "'DM Sans', sans-serif",
               transition: "border-color 0.2s",
               fontSize: "0.8rem",
@@ -254,10 +254,8 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
               className="group p-4 transition-all relative overflow-hidden"
               style={{
                 background: done
-                  ? "oklch(0.96 0.030 340)"
-                  : goal.progress === 0
-                  ? "oklch(0.985 0.005 300)"
-                  : `oklch(${0.985 - goal.progress * 0.0002} ${goal.progress * 0.0003} ${340 - goal.progress * 0.4})`,
+                  ? "oklch(0.955 0.035 340)"
+                  : `oklch(${0.968 - goal.progress * 0.00013} ${0.018 + goal.progress * 0.00017} ${340 - goal.progress * 0.4})`,
                 border: dragOverGoalId === goal.id ? `2px dashed oklch(0.58 0.18 340)` : `1px solid ${done ? "oklch(0.82 0.08 340)" : M.border}`,
                 borderRadius: 14,
                 boxShadow: done
