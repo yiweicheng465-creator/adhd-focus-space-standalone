@@ -550,47 +550,42 @@ export function DailyWins({ wins, onWinsChange }: DailyWinsProps) {
       </div>
 
       {/* Add win input row */}
-      <div className="flex flex-col gap-2">
-        {/* Inline category pills */}
-        <div className="flex gap-1.5 flex-wrap">
-          {WIN_ICONS.map((icon, idx) => {
-            const isSelected = selectedIcon === idx;
-            return (
-              <button
-                key={icon.key}
-                onClick={() => setSelectedIcon(idx)}
-                title={icon.label}
-                className="flex items-center gap-1 px-2 py-1 transition-all"
-                style={{
-                  borderRadius: 20,
-                  border: `1.5px solid ${isSelected ? icon.color : M.border}`,
-                  background: isSelected ? `${icon.color}15` : "transparent",
-                  cursor: "pointer",
-                  fontSize: "0.58rem",
-                  fontFamily: "'DM Sans', sans-serif",
-                  color: isSelected ? icon.color : M.muted,
-                  fontWeight: isSelected ? 600 : 400,
-                }}
-              >
-                <icon.Component size={10} color={isSelected ? icon.color : M.muted} />
-                {icon.label}
-              </button>
-            );
-          })}
-        </div>
-        <div className="flex gap-2">
-          <Input
-            value={newWin}
-            onChange={(e) => setNewWin(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && addWin()}
-            placeholder="What did you accomplish? ✦"
-            className="flex-1"
-            style={{ background: M.card, border: `1px solid ${M.border}`, fontFamily: "'DM Sans', sans-serif" }}
+      <div className="flex gap-2 items-center" style={{ position: "relative" }}>
+        {/* Icon picker button — click to open popover */}
+        <button
+          ref={newPickerBtnRef}
+          onClick={() => setShowNewPicker(v => !v)}
+          title={`Category: ${SelectedIconDef.label}`}
+          style={{
+            width: 38, height: 38, flexShrink: 0,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            borderRadius: 8,
+            border: `1.5px solid ${showNewPicker ? SelectedIconDef.color : M.border}`,
+            background: showNewPicker ? `${SelectedIconDef.color}15` : M.card,
+            cursor: "pointer", transition: "all 0.15s",
+          }}
+        >
+          <SelectedIconDef.Component size={18} color={SelectedIconDef.color} />
+        </button>
+        {showNewPicker && (
+          <IconPickerPopover
+            current={selectedIcon}
+            onSelect={(idx) => { setSelectedIcon(idx); setShowNewPicker(false); }}
+            onClose={() => setShowNewPicker(false)}
+            anchorRef={newPickerBtnRef}
           />
-          <button onClick={addWin} className="m-btn-primary shrink-0">
-            <Plus className="w-3.5 h-3.5" />
-          </button>
-        </div>
+        )}
+        <Input
+          value={newWin}
+          onChange={(e) => setNewWin(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && addWin()}
+          placeholder="What did you accomplish? ✦"
+          className="flex-1"
+          style={{ background: M.card, border: `1px solid ${M.border}`, fontFamily: "'DM Sans', sans-serif" }}
+        />
+        <button onClick={addWin} className="m-btn-primary shrink-0">
+          <Plus className="w-3.5 h-3.5" />
+        </button>
       </div>
 
       {/* ── Active wins list ── */}
