@@ -108,33 +108,32 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle }: Props) {
   }
 
   function handleDrop(targetYMD: string, targetTaskId?: string) {
-    if (!dragId) return;
-    const task = tasks.find(t => t.id === dragId);
+    // Use ref — not state — so we get the value even if setState hasn't flushed
+    const currentDragId = dragIdRef.current;
+    if (!currentDragId) return;
+    const task = tasks.find(t => t.id === currentDragId);
     if (!task) return;
 
     const sourceYMD = task.dueDate ?? todayYMD;
 
-    if (targetTaskId && targetTaskId !== dragId) {
-      // Within-day or cross-day reorder onto a specific task
+    if (targetTaskId && targetTaskId !== currentDragId) {
       const finalYMD = targetYMD;
-      // Move task to targetYMD if different
       if (sourceYMD !== finalYMD) {
         const newDue = (finalYMD === todayYMD && !task.dueDate) ? undefined : finalYMD;
-        onTasksChange(tasks.map(t => t.id === dragId ? { ...t, dueDate: newDue } : t));
+        onTasksChange(tasks.map(t => t.id === currentDragId ? { ...t, dueDate: newDue } : t));
       }
-      // Reorder within that day
-      const dayTasks = getTasksForDay(finalYMD).map(t => t.id).filter(id => id !== dragId);
+      const dayTasks = getTasksForDay(finalYMD).map(t => t.id).filter(id => id !== currentDragId);
       const targetIdx = dayTasks.indexOf(targetTaskId);
-      const insertIdx = dragOverTask?.pos === "before" ? targetIdx : targetIdx + 1;
-      dayTasks.splice(Math.max(0, insertIdx), 0, dragId);
+      const insertIdx = dragOverTaskRef.current?.pos === "before" ? targetIdx : targetIdx + 1;
+      dayTasks.splice(Math.max(0, insertIdx), 0, currentDragId);
       saveDayOrder({ ...dayOrder, [finalYMD]: dayTasks });
     } else if (!targetTaskId) {
-      // Dropped on empty column area — just move to that day, append at end
       const newDue = (targetYMD === todayYMD && !task.dueDate) ? undefined : targetYMD;
-      onTasksChange(tasks.map(t => t.id === dragId ? { ...t, dueDate: newDue } : t));
+      onTasksChange(tasks.map(t => t.id === currentDragId ? { ...t, dueDate: newDue } : t));
     }
 
-    setDragIdDedup(null); setDragOverDateDedup(null); setDragOverTaskDedup(null);
+    dragIdRef.current = null; setDragId(null);
+    setDragOverDateDedup(null); setDragOverTaskDedup(null);
   }
 
   // ── Compact task chip ───────────────────────────────────────────────────────
@@ -148,11 +147,12 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle }: Props) {
         <div
           draggable
           onDragStart={(e) => {
-            setDragIdDedup(task.id);
+            dragIdRef.current = task.id; // ref only — no setState, no re-render
+            e.dataTransfer.setData("taskId", task.id);
             e.dataTransfer.effectAllowed = "move";
           }}
           onDragEnd={() => {
-            setDragIdDedup(null);
+            dragIdRef.current = null; setDragId(null);
             setDragOverDateDedup(null);
             setDragOverTaskDedup(null);
           }}
@@ -381,8 +381,8 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle }: Props) {
                   <div
                     key={t.id}
                     draggable
-                    onDragStart={e => { e.stopPropagation(); setDragIdDedup(t.id); }}
-                    onDragEnd={() => { setDragIdDedup(null); setDragOverDateDedup(null); }}
+                    onDragStart={e => { e.stopPropagation(); dragIdRef.current = t.id; e.dataTransfer.setData("taskId", t.id); }}
+                    onDragEnd={() => { dragIdRef.current = null; setDragId(null); setDragOverDateDedup(null); }}
                     onClick={e => e.stopPropagation()}
                     title={t.text}
                     style={{
@@ -540,8 +540,6 @@ function DayDetailModal({ selectedDay, onClose, getTasksForDay, dayOrder, saveDa
         {/* Task list */}
         {/* Notebook-style layout: single vertical spine line on the left */}
         <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", position: "relative" }}>
-          {/* Single continuous vertical spine */}
-          {!editingId && <div style={{ position: "absolute", left: 54, top: 0, bottom: 0, width: 1, background: "oklch(0.82 0.050 340 / 0.55)", pointerEvents: "none", zIndex: 0 }} />}
           {filtered.length === 0
             ? <p style={{ padding: "16px 14px", fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", color: M.muted, fontStyle: "italic" }}>No tasks for this day.</p>
             : filtered.map((task, i) => (
