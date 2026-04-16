@@ -456,10 +456,18 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
                   {isPickerOpen && (
                     <div style={{ position: "absolute", top: "100%", left: 0, zIndex: 200, background: "white", border: "1px solid oklch(0.86 0.030 300)", borderRadius: 8, padding: 6, display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", marginTop: 2, width: 148 }}>
                       {WIN_ICONS.map((ic, idx) => (
-                        <button key={idx} onClick={() => changeIcon(r.id, idx)} title={ic.label}
-                          style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "5px", borderRadius: 6, border: `1.5px solid ${idx === (r.iconIdx ?? 0) ? ic.color : "transparent"}`, background: idx === (r.iconIdx ?? 0) ? `${ic.color}18` : "transparent", cursor: "pointer" }}>
-                          <ic.Component size={16} color={ic.color} />
-                        </button>
+                        <div key={idx} style={{ position: "relative" }}
+                          onMouseEnter={e => { const t = e.currentTarget.querySelector<HTMLElement>(".tip"); if (t) t.style.opacity = "1"; }}
+                          onMouseLeave={e => { const t = e.currentTarget.querySelector<HTMLElement>(".tip"); if (t) t.style.opacity = "0"; }}
+                        >
+                          <span className="tip" style={{ position: "absolute", bottom: "calc(100% + 3px)", left: "50%", transform: "translateX(-50%)", background: "oklch(0.28 0.018 65)", color: "white", fontSize: "0.50rem", fontFamily: "'DM Sans', sans-serif", padding: "2px 5px", borderRadius: 3, whiteSpace: "nowrap", pointerEvents: "none", opacity: 0, transition: "opacity 0.08s", zIndex: 300 }}>
+                            {ic.label}
+                          </span>
+                          <button onClick={() => changeIcon(r.id, idx)}
+                            style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "5px", borderRadius: 6, border: `1.5px solid ${idx === (r.iconIdx ?? 0) ? ic.color : "transparent"}`, background: idx === (r.iconIdx ?? 0) ? `${ic.color}18` : "transparent", cursor: "pointer" }}>
+                            <ic.Component size={16} color={ic.color} />
+                          </button>
+                        </div>
                       ))}
                     </div>
                   )}
@@ -492,10 +500,18 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
               {pickerOpenId === "new" && (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, padding: 6, background: "white", borderRadius: 8, border: "1px solid oklch(0.86 0.030 300)" }}>
                   {WIN_ICONS.map((ic, idx) => (
-                    <button key={idx} onClick={() => { setNewIconIdx(idx); setPickerOpenId(null); }} title={ic.label}
-                      style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", aspectRatio: "1", borderRadius: 6, border: `1.5px solid ${idx === newIconIdx ? ic.color : "transparent"}`, background: idx === newIconIdx ? `${ic.color}18` : "transparent", cursor: "pointer" }}>
-                      <ic.Component size={18} color={ic.color} />
-                    </button>
+                    <div key={idx} style={{ position: "relative" }}
+                      onMouseEnter={e => { const t = e.currentTarget.querySelector<HTMLElement>(".tip"); if (t) t.style.opacity = "1"; }}
+                      onMouseLeave={e => { const t = e.currentTarget.querySelector<HTMLElement>(".tip"); if (t) t.style.opacity = "0"; }}
+                    >
+                      <span className="tip" style={{ position: "absolute", bottom: "calc(100% + 3px)", left: "50%", transform: "translateX(-50%)", background: "oklch(0.28 0.018 65)", color: "white", fontSize: "0.50rem", fontFamily: "'DM Sans', sans-serif", padding: "2px 5px", borderRadius: 3, whiteSpace: "nowrap", pointerEvents: "none", opacity: 0, transition: "opacity 0.08s", zIndex: 300 }}>
+                        {ic.label}
+                      </span>
+                      <button onClick={() => { setNewIconIdx(idx); setPickerOpenId(null); }}
+                        style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", aspectRatio: "1", borderRadius: 6, border: `1.5px solid ${idx === newIconIdx ? ic.color : "transparent"}`, background: idx === newIconIdx ? `${ic.color}18` : "transparent", cursor: "pointer" }}>
+                        <ic.Component size={18} color={ic.color} />
+                      </button>
+                    </div>
                   ))}
                 </div>
               )}

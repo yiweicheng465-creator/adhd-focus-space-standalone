@@ -216,31 +216,27 @@ export function IconPickerPopover({
       {WIN_ICONS.map((icon, idx) => {
         const active = idx === current;
         return (
-          <button
-            key={icon.key}
-            onClick={() => { onSelect(idx); onClose(); }}
-            title={icon.label}
-            style={{
-              width: 40,
-              height: 40,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              borderRadius: 8,
-              border: `1.5px solid ${active ? icon.color : "transparent"}`,
-              background: active ? `${icon.color}18` : "transparent",
-              cursor: "pointer",
-              transition: "background 0.12s, border-color 0.12s",
-            }}
-            onMouseEnter={(e) => {
-              if (!active) (e.currentTarget as HTMLButtonElement).style.background = `${icon.color}12`;
-            }}
-            onMouseLeave={(e) => {
-              if (!active) (e.currentTarget as HTMLButtonElement).style.background = "transparent";
-            }}
+          <div key={icon.key} style={{ position: "relative" }}
+            onMouseEnter={e => { const t = e.currentTarget.querySelector<HTMLElement>(".tip"); if (t) t.style.opacity = "1"; }}
+            onMouseLeave={e => { const t = e.currentTarget.querySelector<HTMLElement>(".tip"); if (t) t.style.opacity = "0"; }}
           >
-            <icon.Component size={20} color={icon.color} />
-          </button>
+            <span className="tip" style={{ position: "absolute", bottom: "calc(100% + 4px)", left: "50%", transform: "translateX(-50%)", background: "oklch(0.28 0.018 65)", color: "white", fontSize: "0.55rem", fontFamily: "'DM Sans', sans-serif", padding: "2px 6px", borderRadius: 4, whiteSpace: "nowrap", pointerEvents: "none", opacity: 0, transition: "opacity 0.08s", zIndex: 10 }}>
+              {icon.label}
+            </span>
+            <button
+              onClick={() => { onSelect(idx); onClose(); }}
+              style={{
+                width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center",
+                borderRadius: 8, border: `1.5px solid ${active ? icon.color : "transparent"}`,
+                background: active ? `${icon.color}18` : "transparent", cursor: "pointer",
+                transition: "background 0.12s, border-color 0.12s",
+              }}
+              onMouseEnter={(e) => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = `${icon.color}12`; }}
+              onMouseLeave={(e) => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+            >
+              <icon.Component size={20} color={icon.color} />
+            </button>
+          </div>
         );
       })}
     </div>
