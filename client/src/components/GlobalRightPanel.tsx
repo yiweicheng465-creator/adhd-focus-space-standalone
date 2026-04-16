@@ -96,6 +96,13 @@ function TimerPopup({ onClose }: { onClose: () => void }) {
   const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
   const ss = String(remaining % 60).padStart(2, "0");
   const isActive = phase === "running" || phase === "paused";
+
+  // Stop music when timer is paused
+  useEffect(() => {
+    if (phase === "paused" && sound.musicEnabled) {
+      sound.toggleMusic();
+    }
+  }, [phase]);
   const modeColor = mode === "focus" ? "oklch(0.52 0.10 32)" : mode === "short" ? "oklch(0.60 0.07 138)" : "oklch(0.58 0.08 220)";
 
   return (
@@ -107,7 +114,7 @@ function TimerPopup({ onClose }: { onClose: () => void }) {
         {isActive && <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.55rem", color: modeColor, letterSpacing: "0.12em" }}>{mode?.toUpperCase()}</div>}
         <div style={{ display: "flex", gap: 8, width: "100%" }}>
           <button onClick={handleStartPause} style={{ flex: 1, padding: "8px", borderRadius: 6, border: `1px solid ${modeColor}60`, background: modeColor + "15", color: modeColor, cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: "0.60rem", fontWeight: 700 }}>
-            {phase === "running" ? "⏸ Pause" : "▶ Start"}
+            {phase === "running" ? "⏸ Pause" : phase === "paused" ? "▶ Resume" : "▶ Start"}
           </button>
         </div>
         <button onClick={sound.toggleMusic} style={{ width: "100%", padding: "6px", borderRadius: 6, border: "1px solid oklch(0.82 0.050 340)", background: sound.musicEnabled ? "oklch(0.96 0.020 340)" : "transparent", color: "oklch(0.52 0.040 330)", cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: "0.55rem" }}>

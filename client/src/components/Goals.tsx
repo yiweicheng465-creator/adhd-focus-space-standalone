@@ -102,7 +102,13 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
   // Detect hashtag in current input for live preview
   const { tag: liveTag } = parseHashtag(newGoal);
 
-  const visibleGoals = (showArchived ? archivedGoals : activeGoals).filter((g) => activeContext === "all" ? true : g.context === activeContext);
+  const visibleGoals = (showArchived ? archivedGoals : activeGoals)
+    .filter((g) => activeContext === "all" ? true : g.context === activeContext)
+    .sort((a, b) => {
+      if (a.progress === 100 && b.progress < 100) return 1;  // done → bottom
+      if (a.progress < 100 && b.progress === 100) return -1;
+      return 0;
+    });
 
   const addGoal = () => {
     if (!newGoal.trim()) return;
@@ -254,9 +260,9 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
               className="group p-4 transition-all relative overflow-hidden"
               style={{
                 background: done
-                  ? "oklch(0.955 0.035 340)"
+                  ? "oklch(0.935 0.025 280)"
                   : `oklch(${0.968 - goal.progress * 0.00013} ${0.018 + goal.progress * 0.00017} ${340 - goal.progress * 0.4})`,
-                border: dragOverGoalId === goal.id ? `2px dashed oklch(0.58 0.18 340)` : `1px solid ${done ? "oklch(0.82 0.08 340)" : M.border}`,
+                border: dragOverGoalId === goal.id ? `2px dashed oklch(0.58 0.18 340)` : `1px solid ${done ? "oklch(0.80 0.06 280)" : M.border}`,
                 borderRadius: 14,
                 boxShadow: done
                   ? "0 2px 12px oklch(0.58 0.18 340 / 0.12), 0 1px 3px oklch(0.28 0.04 320 / 0.06)"
