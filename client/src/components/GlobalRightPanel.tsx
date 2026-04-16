@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Bot, Loader2 } from "lucide-react";
-import { callAIStream } from "@/lib/ai";
+import { callAIStream, callAI } from "@/lib/ai";
 import { useTimer } from "@/contexts/TimerContext";
 import { useSoundContext } from "@/contexts/SoundContext";
 import { Streamdown } from "streamdown";
@@ -211,6 +211,26 @@ function CoachPopup({ onClose, goals }: { onClose: () => void; goals: Goal[] }) 
   const startChat = (type: "life" | "career") => { setCoachType(type); setMode("chat"); setMessages([{ role: "coach", text: STARTERS[type] }]); };
   const clear = () => { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem("adhd-life-coach-insights"); setMessages([]); setMode("pick"); };
 
+  const generateSummary = async (allMsgs: typeof messages, type: "life" | "career") => {
+    if (allMsgs.length < 4) return; // need enough convo to summarize
+    try {
+      const convo = allMsgs.map(m => `${m.role === "user" ? "Me" : "Coach"}: ${m.text}`).join("\n");
+      const result = await callAI(
+        `Read this ${type === "life" ? "life planning" : "career coaching"} conversation and write a brief, personal 人生看板 summary.
+Return JSON: {"direction":"1 sentence about main life/career direction","insights":["3-4 key insight bullets"],"nextStep":"1 concrete action to take"}
+Be specific and personal. Use the person's exact words/goals.`,
+        convo
+      );
+      const match = result.match(/\{[\s\S]*\}/);
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        const existing = (() => { try { return JSON.parse(localStorage.getItem("adhd-life-dashboard") ?? "{}"); } catch { return {}; } })();
+        existing[type] = { ...parsed, updatedAt: new Date().toISOString() };
+        localStorage.setItem("adhd-life-dashboard", JSON.stringify(existing));
+      }
+    } catch {} // silent fail
+  };
+
   const send = async () => {
     if (!input.trim() || streaming) return;
     const msg = input.trim(); setInput("");
@@ -220,7 +240,14 @@ function CoachPopup({ onClose, goals }: { onClose: () => void; goals: Goal[] }) 
     try {
       await callAIStream(SYSTEMS[coachType], `Conversation:\n${newMsgs.map(m => `${m.role}: ${m.text}`).join("\n")}\n\nContinue as coach.`,
         (delta) => setMessages(prev => { const u = [...prev]; u[u.length-1] = { ...u[u.length-1], text: u[u.length-1].text + delta }; return u; }),
-        () => { setStreaming(false); }
+        () => {
+          setStreaming(false);
+          // Generate/update summary after every few exchanges
+          const finalMsgs = [...newMsgs, { role: "coach" as const, text: "" }];
+          if (finalMsgs.length % 4 === 0 || finalMsgs.length >= 6) {
+            generateSummary(finalMsgs, coachType);
+          }
+        }
       );
     } catch { setStreaming(false); }
   };

@@ -179,6 +179,48 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
         } catch { return null; }
       })()}
 
+      {/* 🧭 Life Dashboard — above typing bar */}
+      {(() => {
+        try {
+          const data = JSON.parse(localStorage.getItem("adhd-life-dashboard") ?? "null");
+          if (!data || (!data.life && !data.career)) return null;
+          return (
+            <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid oklch(0.82 0.040 285)", background: "oklch(0.975 0.010 285)" }}>
+              {/* Header */}
+              <div style={{ padding: "8px 14px", background: "oklch(0.58 0.12 285 / 0.10)", borderBottom: "1px solid oklch(0.82 0.040 285)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "0.85rem", fontWeight: 700, fontStyle: "italic", color: "oklch(0.35 0.10 285)" }}>🧭 Life Dashboard</span>
+                <button onClick={() => setShowLifeCoach(true)} style={{ fontSize: "0.48rem", fontFamily: "'Space Mono', monospace", color: "oklch(0.55 0.12 285)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 0, letterSpacing: "0.06em" }}>
+                  Update with Coach →
+                </button>
+              </div>
+              {/* Sections */}
+              <div style={{ padding: "10px 14px", display: "grid", gridTemplateColumns: data.life && data.career ? "1fr 1fr" : "1fr", gap: 12 }}>
+                {data.life && (
+                  <div>
+                    <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.44rem", letterSpacing: "0.10em", color: "oklch(0.55 0.12 285)", textTransform: "uppercase", marginBottom: 5 }}>🌱 Life Direction</p>
+                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem", fontWeight: 600, color: "oklch(0.28 0.040 320)", margin: "0 0 5px", lineHeight: 1.4 }}>{data.life.direction}</p>
+                    {data.life.insights?.map((ins: string, i: number) => (
+                      <p key={i} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.72rem", color: "oklch(0.40 0.040 320)", margin: "2px 0", lineHeight: 1.4 }}>• {ins}</p>
+                    ))}
+                    {data.life.nextStep && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.70rem", color: "oklch(0.55 0.12 285)", marginTop: 5, fontStyle: "italic" }}>→ {data.life.nextStep}</p>}
+                  </div>
+                )}
+                {data.career && (
+                  <div>
+                    <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.44rem", letterSpacing: "0.10em", color: "oklch(0.55 0.12 285)", textTransform: "uppercase", marginBottom: 5 }}>🚀 Career Direction</p>
+                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem", fontWeight: 600, color: "oklch(0.28 0.040 320)", margin: "0 0 5px", lineHeight: 1.4 }}>{data.career.direction}</p>
+                    {data.career.insights?.map((ins: string, i: number) => (
+                      <p key={i} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.72rem", color: "oklch(0.40 0.040 320)", margin: "2px 0", lineHeight: 1.4 }}>• {ins}</p>
+                    ))}
+                    {data.career.nextStep && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.70rem", color: "oklch(0.55 0.12 285)", marginTop: 5, fontStyle: "italic" }}>→ {data.career.nextStep}</p>}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        } catch { return null; }
+      })()}
+
       {/* Add goal */}
       <div className="flex flex-col gap-2">
         <div className="flex gap-2">
