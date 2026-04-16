@@ -684,6 +684,7 @@ export default function Home() {
                 focusSessions={focusSessions}
                 allCategories={allCategories}
                 onQuickDump={(text) => setPendingDump(text)}
+                onTasksChange={handleTasksChange}
                 onTaskToggle={(id) => {
                   const updated = tasks.map((t) => t.id === id ? { ...t, done: !t.done } : t);
                   handleTasksChange(updated);

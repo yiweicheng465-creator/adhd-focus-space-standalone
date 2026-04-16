@@ -45,6 +45,7 @@ if (typeof document !== "undefined" && !document.getElementById(STICKER_STYLE_ID
 import { FocusTimer } from "./FocusTimer";
 import { ContextSwitcher, getContextConfig, type ActiveContext } from "./ContextSwitcher";
 import type { Task } from "./TaskManager";
+import { EisenhowerMatrix, priorityToQuadrant } from "./EisenhowerMatrix";
 import type { Win } from "./DailyWins";
 import type { Goal } from "./Goals";
 import type { Agent } from "./AgentTracker";
@@ -93,6 +94,7 @@ interface DashboardProps {
   onSessionComplete: () => void;
   onBlockComplete?: () => void;
   onTaskToggle?: (taskId: string) => void;
+  onTasksChange?: (tasks: Task[]) => void;
   onTaskCreate?: (task: Task) => void;
   onGoalCreate?: (goal: Goal) => void;
   onAgentCreate?: (agent: Agent) => void;
@@ -154,13 +156,21 @@ type ChatMessage = { role: "user" | "assistant"; content: string };
 export function Dashboard({
   tasks, wins, goals, agents, mood, blockStreak = 0, focusSessions = 0,
   onNavigate, onSessionComplete, onBlockComplete, allCategories, onQuickDump,
-  onTaskToggle, onTaskCreate, onGoalCreate, onAgentCreate, onWinCreate,
+  onTaskToggle, onTaskCreate, onGoalCreate, onAgentCreate, onWinCreate, onTasksChange,
   displayName,
 }: DashboardProps) {
   const [activeContext, setActiveContext] = useState<ActiveContext>("all");
   const [quickCapture, setQuickCapture] = useState("");
   const [completing, setCompleting] = useState<string | null>(null);
   const dumpInputRef = useRef<HTMLInputElement>(null);
+  const [quadrantMap, setQuadrantMap] = useState<Record<string, string>>(() => {
+    try { return JSON.parse(localStorage.getItem("adhd-quadrant-map") ?? "{}"); } catch { return {}; }
+  });
+  const handleQuadrantMapChange = (m: Record<string, string>) => {
+    setQuadrantMap(m);
+    try { localStorage.setItem("adhd-quadrant-map", JSON.stringify(m)); } catch {}
+  };
+
   const [showAI, setShowAI] = useState<boolean>(() => {
     return localStorage.getItem("adhd-dashboard-show-ai") !== "false";
   });
@@ -510,6 +520,26 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
         </div>
       </div>
 
+      {/* Right-side AI toggle button — like Life Coach */}
+      <button
+        onClick={toggleAI}
+        style={{
+          position: "fixed", right: 0, top: "40%", transform: "translateY(-50%)",
+          zIndex: 40, background: showAI ? "oklch(0.58 0.18 340)" : "oklch(0.92 0.025 340)",
+          color: showAI ? "white" : "oklch(0.45 0.14 340)",
+          border: "none", borderRadius: "8px 0 0 8px", padding: "14px 8px",
+          cursor: "pointer", boxShadow: "-2px 0 12px oklch(0.58 0.18 340 / 0.20)",
+          display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+          fontFamily: "'Space Mono', monospace", fontSize: "0.42rem", letterSpacing: "0.12em",
+        }}
+        title={showAI ? "Hide AI assistant" : "Show AI assistant"}
+      >
+        <Bot size={14} />
+        <span style={{ writingMode: "vertical-rl", textOrientation: "mixed", fontSize: "0.40rem" }}>
+          {showAI ? "HIDE AI" : "AI"}
+        </span>
+      </button>
+
       {/* ── MIDDLE: 3-column grid ── */}
       <div style={{ display: "grid", gridTemplateColumns: showAI ? "1fr 1fr 1fr" : "1fr 2fr", gap: 10, alignItems: "start" }}>
 
@@ -522,7 +552,27 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
           </div>
         </div>
 
-        {/* Col 2: Next Up — cute cards with checkboxes + MIT button */}
+        {/* Col 2: Next Up (AI on) or Priority Matrix (AI off) */}
+        {!showAI ? (
+          <div className="retro-window" style={{ display: "flex", flexDirection: "column", minHeight: 378, overflow: "auto", padding: "0 0 8px" }}>
+            <div className="retro-titlebar" style={{ flexShrink: 0 }}>
+              <span>priority_matrix.exe</span>
+              <div className="retro-titlebar-buttons">
+                <span className="retro-titlebar-btn">_</span>
+                <span className="retro-titlebar-btn">□</span>
+                <span className="retro-titlebar-btn">✕</span>
+              </div>
+            </div>
+            <div style={{ padding: "8px 12px" }}>
+              <EisenhowerMatrix
+                tasks={tasks}
+                onTasksChange={onTasksChange ?? (() => {})}
+                quadrantMap={quadrantMap}
+                onQuadrantMapChange={handleQuadrantMapChange}
+              />
+            </div>
+          </div>
+        ) : (
         <div className="retro-window" style={{ display: "flex", flexDirection: "column", height: "378px", overflow: "hidden" }}>
           <div className="retro-titlebar">
             <span>next_up.txt</span>
@@ -639,7 +689,7 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
             )}
           </div>
           </div>{/* /inner padding div */}
-        </div>{/* /retro-window Col 2 */}
+        </div>)}{/* /retro-window Col 2 */}
 
         {/* Col 3: AI Command Center (toggleable) */}
         {showAI && <div className="retro-window" style={{ display: "flex", flexDirection: "column", height: "378px", overflow: "hidden" }}>
