@@ -125,8 +125,9 @@ function TimerButton({ active, onClick }: { active: boolean; onClick: () => void
   const isActive = phase === "running" || phase === "paused";
   const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
   const ss = String(remaining % 60).padStart(2, "0");
-  const modeColor = mode === "focus" ? "#b85c38" : mode === "short" ? "#4a9e6b" : "#4a7eb8";
-  const modeLightBg = mode === "focus" ? "#fff1ec" : mode === "short" ? "#edf7f1" : "#ecf2fb";
+  // Use timer button's own color (dusty lavender) at different depths
+  const modeColor = "oklch(0.42 0.12 275)";    // darker lavender for text/border
+  const modeLightBg = BTN_COLORS[2].active;     // same as button active bg
   return (
     <button
       style={{
@@ -168,10 +169,10 @@ function TimerPopup({ onClose }: { onClose: () => void }) {
       setWasPlayingMusic(false);
     }
   }, [phase]);
-  const modeColor = mode === "focus" ? "#b85c38" : mode === "short" ? "#4a9e6b" : "#4a7eb8";
+  const modeColor = "oklch(0.42 0.12 275)"; // dusty lavender — matches timer button
 
   return (
-    <PopupShell onClose={onClose} title="⏱ Timer" width={200}>
+    <PopupShell onClose={onClose} title="⏱ Timer" width={200} headerColor={BTN_COLORS[2].active}>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: 8 }}>
         <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "2rem", fontWeight: 700, color: isActive ? modeColor : "oklch(0.45 0.040 330)", letterSpacing: "-0.02em" }}>
           {mm}:{ss}
@@ -229,7 +230,7 @@ function AIChatPopup({ onClose, goals }: { onClose: () => void; goals: Goal[] })
   const PINK_MSG_BG = "oklch(0.940 0.040 355)";
 
   return (
-    <PopupShell onClose={onClose} title="🤖 AI Assistant" width={320} onClear={history.length > 0 ? clearHistory : undefined}>
+    <PopupShell onClose={onClose} title="🤖 AI Assistant" width={320} onClear={history.length > 0 ? clearHistory : undefined} headerColor={BTN_COLORS[0].active}>
       <div style={{ flex: 1, overflowY: "auto", padding: "8px 12px", display: "flex", flexDirection: "column", gap: 6, minHeight: 200, maxHeight: 320 }}>
         {history.length === 0 && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.80rem", color: "oklch(0.55 0.060 340)", fontStyle: "italic", textAlign: "center", marginTop: 20 }}>Ask me anything about your tasks & goals.</p>}
         {history.map((m, i) => (
@@ -324,7 +325,7 @@ Be specific and personal. Use the person's exact words/goals.`,
   };
 
   return (
-    <PopupShell onClose={onClose} title="🧭 Life Coach" width={320} onClear={messages.length > 0 ? clear : undefined}>
+    <PopupShell onClose={onClose} title="🧭 Life Coach" width={320} onClear={messages.length > 0 ? clear : undefined} headerColor={BTN_COLORS[1].active}>
       {mode === "pick" ? (
         <div style={{ padding: "16px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
           <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.80rem", color: "oklch(0.45 0.040 330)", lineHeight: 1.5, margin: 0 }}>AI guides you through building your life framework.</p>
@@ -405,7 +406,7 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
   };
 
   return (
-    <PopupShell onClose={onClose} title="💫 Daily Routine" width={300}>
+    <PopupShell onClose={onClose} title="💫 Daily Routine" width={300} headerColor={BTN_COLORS[3].active}>
       <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
         {/* Today's routines */}
         {todayRoutines.length > 0 && (
@@ -479,14 +480,15 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
 const M_MUTED = "oklch(0.52 0.040 330)";
 
 /* ── Shared popup shell ──────────────────────────────────────── */
-function PopupShell({ onClose, title, width = 300, children, onClear }: { onClose: () => void; title: string; width?: number; children: React.ReactNode; onClear?: () => void; }) {
+function PopupShell({ onClose, title, width = 300, children, onClear, headerColor }: { onClose: () => void; title: string; width?: number; children: React.ReactNode; onClear?: () => void; headerColor?: string; }) {
+  const hdr = headerColor ?? "oklch(0.93 0.025 355)";
   return (
-    <div style={{ position: "fixed", right: 42, top: "50%", transform: "translateY(-50%)", zIndex: 100, width, background: "#fdf4f8", borderRadius: 14, boxShadow: "0 20px 48px rgba(120,40,180,0.18), 0 4px 12px rgba(0,0,0,0.08)", display: "flex", flexDirection: "column", overflow: "hidden", border: "1px solid oklch(0.86 0.030 300)" }}>
-      <div style={{ padding: "10px 14px", borderBottom: "1px solid oklch(0.86 0.030 300)", background: "oklch(0.97 0.012 300)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+    <div style={{ position: "fixed", right: 42, top: "50%", transform: "translateY(-50%)", zIndex: 100, width, background: "#fdf4f8", borderRadius: 14, boxShadow: "0 20px 48px rgba(120,40,180,0.18), 0 4px 12px rgba(0,0,0,0.08)", display: "flex", flexDirection: "column", overflow: "hidden", border: `1px solid ${hdr}` }}>
+      <div style={{ padding: "10px 14px", borderBottom: `1px solid ${hdr}`, background: hdr, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "0.90rem", fontWeight: 700, color: "oklch(0.28 0.040 320)", fontStyle: "italic" }}>{title}</span>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          {onClear && <button onClick={onClear} style={{ fontSize: "0.48rem", fontFamily: "'Space Mono', monospace", padding: "2px 6px", border: "1px solid oklch(0.72 0.050 330)", borderRadius: 3, background: "transparent", color: "oklch(0.55 0.050 330)", cursor: "pointer" }}>Clear</button>}
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1rem", color: "oklch(0.52 0.040 330)", lineHeight: 1 }}>×</button>
+          {onClear && <button onClick={onClear} style={{ fontSize: "0.48rem", fontFamily: "'Space Mono', monospace", padding: "2px 6px", border: "1px solid oklch(0.72 0.050 330)", borderRadius: 3, background: "transparent", color: "oklch(0.45 0.050 330)", cursor: "pointer" }}>Clear</button>}
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1rem", color: "oklch(0.45 0.040 330)", lineHeight: 1 }}>×</button>
         </div>
       </div>
       {children}
