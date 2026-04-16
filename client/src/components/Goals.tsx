@@ -389,8 +389,13 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
 
               {/* Linked tasks */}
               {(() => {
-                const linked = tasks.filter((t) => t.goalId === goal.id);
-                if (linked.length === 0) return null;
+                const linkedRaw = tasks.filter((t) => t.goalId === goal.id);
+                if (linkedRaw.length === 0) return null;
+                // Apply saved order
+                const order = goalTaskOrder[goal.id];
+                const linked = order
+                  ? [...order.map(id => linkedRaw.find(t => t.id === id)).filter(Boolean) as typeof linkedRaw, ...linkedRaw.filter(t => !order.includes(t.id))]
+                  : linkedRaw;
                 return (
                   <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${M.border}` }}>
                     <p style={{ fontSize: "0.58rem", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.10em", textTransform: "uppercase", color: M.muted, marginBottom: 6 }}>Contributing tasks</p>

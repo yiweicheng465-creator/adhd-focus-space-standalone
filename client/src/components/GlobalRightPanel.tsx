@@ -20,6 +20,7 @@ interface ChatMessage { role: "user" | "assistant"; content: string; }
 interface Props {
   goals?: Goal[];
   onGoToSection?: (s: string) => void;
+  onLogWin?: (text: string, iconIdx: number) => void;
 }
 
 const BTN_STYLE = (active: boolean): React.CSSProperties => ({
@@ -32,9 +33,9 @@ const BTN_STYLE = (active: boolean): React.CSSProperties => ({
   transition: "all 0.15s", minWidth: 34,
 });
 
-export function GlobalRightPanel({ goals = [], onGoToSection }: Props) {
-  const [panel, setPanel] = useState<"ai" | "coach" | "timer" | null>(null);
-  const toggle = (p: "ai" | "coach" | "timer") => setPanel(v => v === p ? null : p);
+export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin }: Props) {
+  const [panel, setPanel] = useState<"ai" | "coach" | "timer" | "routine" | null>(null);
+  const toggle = (p: "ai" | "coach" | "timer" | "routine") => setPanel(v => v === p ? null : p);
 
   return (
     <>
@@ -52,12 +53,18 @@ export function GlobalRightPanel({ goals = [], onGoToSection }: Props) {
         </button>
         {/* Timer */}
         <TimerButton active={panel === "timer"} onClick={() => toggle("timer")} />
+        {/* Routine */}
+        <button style={BTN_STYLE(panel === "routine")} onClick={() => toggle("routine")} title="Daily Routine">
+          <span style={{ fontSize: "0.85rem", lineHeight: 1 }}>🔄</span>
+          <span style={{ writingMode: "vertical-rl", fontSize: "0.38rem" }}>ROUTINE</span>
+        </button>
       </div>
 
       {/* Popups */}
       {panel === "ai" && <AIChatPopup onClose={() => setPanel(null)} goals={goals} />}
       {panel === "coach" && <CoachPopup onClose={() => setPanel(null)} goals={goals} />}
       {panel === "timer" && <TimerPopup onClose={() => setPanel(null)} />}
+      {panel === "routine" && <RoutinePopup onClose={() => setPanel(null)} onLogWin={onLogWin} />}
     </>
   );
 }
@@ -246,6 +253,90 @@ function CoachPopup({ onClose, goals }: { onClose: () => void; goals: Goal[] }) 
     </PopupShell>
   );
 }
+
+/* ── Routine Popup ─────────────────────────────────────────── */
+const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const ROUTINE_KEY = "adhd-routines";
+
+function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (text: string, iconIdx: number) => void }) {
+  const [routines, setRoutines] = useState<{ id: string; name: string; days: string[] }[]>(() => {
+    try { return JSON.parse(localStorage.getItem(ROUTINE_KEY) ?? "[]"); } catch { return []; }
+  });
+  const [newName, setNewName] = useState("");
+  const [newDays, setNewDays] = useState<string[]>(["Mon","Tue","Wed","Thu","Fri"]);
+  const [adding, setAdding] = useState(false);
+  const today = DAYS[(new Date().getDay() + 6) % 7]; // Mon=0
+
+  const saveRoutines = (r: typeof routines) => { setRoutines(r); localStorage.setItem(ROUTINE_KEY, JSON.stringify(r)); };
+  const addRoutine = () => { if (!newName.trim()) return; saveRoutines([...routines, { id: `r-${Date.now()}`, name: newName.trim(), days: newDays }]); setNewName(""); setAdding(false); };
+  const deleteRoutine = (id: string) => saveRoutines(routines.filter(r => r.id !== id));
+  const todayRoutines = routines.filter(r => r.days.includes(today));
+
+  const markDone = (r: { id: string; name: string }) => {
+    const win = { id: `routine-${Date.now()}`, text: `🔄 ${r.name}`, iconIdx: 98 };
+    // Save to adhd-wins
+    try {
+      const wins = JSON.parse(localStorage.getItem("adhd-wins") ?? "[]");
+      wins.unshift({ ...win, createdAt: new Date().toISOString() });
+      localStorage.setItem("adhd-wins", JSON.stringify(wins));
+    } catch {}
+    onLogWin?.(win.text, win.iconIdx);
+    import("sonner").then(({ toast }) => toast.success(`✓ ${r.name} logged as win!`));
+  };
+
+  return (
+    <PopupShell onClose={onClose} title="🔄 Daily Routine" width={300}>
+      <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
+        {/* Today's routines */}
+        {todayRoutines.length > 0 && (
+          <div>
+            <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.48rem", letterSpacing: "0.10em", color: "oklch(0.55 0.12 285)", textTransform: "uppercase", marginBottom: 6 }}>Today ({today})</p>
+            {todayRoutines.map(r => (
+              <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", background: "white", borderRadius: 8, border: "1px solid oklch(0.86 0.030 300)", marginBottom: 4 }}>
+                <span style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", color: "oklch(0.28 0.040 320)" }}>{r.name}</span>
+                <button onClick={() => markDone(r)} style={{ padding: "3px 10px", borderRadius: 6, background: "oklch(0.55 0.14 285)", color: "white", border: "none", cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: "0.50rem", letterSpacing: "0.06em", fontWeight: 700 }}>Done ✓</button>
+              </div>
+            ))}
+          </div>
+        )}
+        {todayRoutines.length === 0 && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.80rem", color: "oklch(0.60 0.040 330)", fontStyle: "italic" }}>No routines set for {today}.</p>}
+        {/* All routines */}
+        <div style={{ borderTop: "1px solid oklch(0.86 0.030 300)", paddingTop: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+            <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.46rem", letterSpacing: "0.10em", color: M_MUTED, textTransform: "uppercase", margin: 0 }}>All Routines</p>
+            <button onClick={() => setAdding(v => !v)} style={{ fontSize: "0.55rem", fontFamily: "'Space Mono', monospace", padding: "2px 8px", border: "1px solid oklch(0.55 0.14 285)", borderRadius: 4, background: "transparent", color: "oklch(0.55 0.14 285)", cursor: "pointer" }}>+ Add</button>
+          </div>
+          {adding && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8, padding: "8px", background: "oklch(0.97 0.010 300)", borderRadius: 8 }}>
+              <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Routine name…" autoFocus
+                style={{ padding: "5px 8px", borderRadius: 4, border: "1px solid oklch(0.82 0.050 340)", fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", outline: "none" }} />
+              <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                {DAYS.map(d => (
+                  <button key={d} onClick={() => setNewDays(p => p.includes(d) ? p.filter(x => x !== d) : [...p, d])}
+                    style={{ padding: "2px 7px", borderRadius: 10, fontSize: "0.55rem", fontFamily: "'Space Mono', monospace", border: `1px solid ${newDays.includes(d) ? "oklch(0.55 0.14 285)" : "oklch(0.82 0.050 340)"}`, background: newDays.includes(d) ? "oklch(0.55 0.14 285 / 0.15)" : "transparent", color: newDays.includes(d) ? "oklch(0.45 0.14 285)" : "oklch(0.60 0.040 330)", cursor: "pointer" }}>
+                    {d}
+                  </button>
+                ))}
+              </div>
+              <div style={{ display: "flex", gap: 6 }}>
+                <button onClick={addRoutine} style={{ flex: 1, padding: "5px", borderRadius: 6, background: "oklch(0.55 0.14 285)", color: "white", border: "none", cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: "0.55rem" }}>Save</button>
+                <button onClick={() => setAdding(false)} style={{ padding: "5px 10px", borderRadius: 6, background: "transparent", border: "1px solid oklch(0.82 0.050 340)", color: "oklch(0.60 0.040 330)", cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: "0.55rem" }}>Cancel</button>
+              </div>
+            </div>
+          )}
+          {routines.map(r => (
+            <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0" }}>
+              <span style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem", color: "oklch(0.35 0.040 320)" }}>{r.name}</span>
+              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.42rem", color: "oklch(0.60 0.040 330)" }}>{r.days.join(",")}</span>
+              <button onClick={() => deleteRoutine(r.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "oklch(0.65 0.050 330)", fontSize: "0.70rem" }}>×</button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </PopupShell>
+  );
+}
+const M_MUTED = "oklch(0.52 0.040 330)";
 
 /* ── Shared popup shell ──────────────────────────────────────── */
 function PopupShell({ onClose, title, width = 300, children, onClear }: { onClose: () => void; title: string; width?: number; children: React.ReactNode; onClear?: () => void; }) {

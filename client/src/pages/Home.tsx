@@ -443,6 +443,8 @@ export default function Home() {
     recordFocusSession(durations.focus);
     setConfettiTrigger(true);
     setFocusSessions((s) => s + 1);
+    // Add focus session win to total count (special iconIdx 97)
+    setWins((prev: any) => [{ id: `fs-${Date.now()}`, text: `${durations.focus}min focus session`, iconIdx: 97, createdAt: new Date() }, ...prev]);
   };
 
   const handleBlockComplete = () => {
@@ -870,7 +872,7 @@ export default function Home() {
       </main>
 
       {/* ── Global overlays ── */}
-      <GlobalRightPanel goals={goals} />
+      <GlobalRightPanel goals={goals} onLogWin={(text, iconIdx) => setWins((prev: any) => [{ id: `routine-${Date.now()}`, text, iconIdx, createdAt: new Date() }, ...prev])} />
       <GlobalQuickAdd
         onAddTask={(t) => setTasks((p) => [t, ...p])}
         onAddGoal={(text, context) => {

@@ -21,6 +21,7 @@ export const APP_STORAGE_KEYS = [
   "adhd-goal-task-order",
   "adhd-life-coach-chat",
   "adhd-life-coach-insights",
+  "adhd-routines",
   "adhd-work-mode",
   "adhd-deleted-categories",
   "adhd-display-name",
