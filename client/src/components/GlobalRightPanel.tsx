@@ -11,7 +11,7 @@ import { useTimer } from "@/contexts/TimerContext";
 import { useSoundContext } from "@/contexts/SoundContext";
 import { Streamdown } from "streamdown";
 import type { Goal } from "./Goals";
-import { WIN_ICONS, IconPickerPopover } from "./DailyWins";
+import { WIN_ICONS } from "./DailyWins";
 
 const CHAT_KEY = "adhd-ai-chat-history"; // same key as Dashboard
 const MAX = 10;
@@ -375,7 +375,6 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
   const [newDays, setNewDays] = useState<string[]>(["Mon","Tue","Wed","Thu","Fri"]);
   const [newIconIdx, setNewIconIdx] = useState(0);
   const [pickerOpenId, setPickerOpenId] = useState<string | null>(null);
-  const newIconBtnRef = useRef<HTMLButtonElement>(null);
   const [adding, setAdding] = useState(false);
   const today = DAYS[(new Date().getDay() + 6) % 7]; // Mon=0
   const todayKey = new Date().toISOString().slice(0, 10);
@@ -455,11 +454,14 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
                     </button>
                   </div>
                   {isPickerOpen && (
-                    <IconPickerPopover
-                      current={r.iconIdx ?? 0}
-                      onSelect={(idx) => changeIcon(r.id, idx)}
-                      onClose={() => setPickerOpenId(null)}
-                    />
+                    <div style={{ position: "absolute", top: "100%", left: 0, zIndex: 200, background: "white", border: "1px solid oklch(0.86 0.030 300)", borderRadius: 8, padding: 6, display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", marginTop: 2, width: 148 }}>
+                      {WIN_ICONS.map((ic, idx) => (
+                        <button key={idx} onClick={() => changeIcon(r.id, idx)} title={ic.label}
+                          style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "5px", borderRadius: 6, border: `1.5px solid ${idx === (r.iconIdx ?? 0) ? ic.color : "transparent"}`, background: idx === (r.iconIdx ?? 0) ? `${ic.color}18` : "transparent", cursor: "pointer" }}>
+                          <ic.Component size={16} color={ic.color} />
+                        </button>
+                      ))}
+                    </div>
                   )}
                   </div>
                 );
@@ -475,23 +477,28 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
           </div>
           {adding && (
             <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8, padding: "8px", background: "oklch(0.97 0.010 300)", borderRadius: 8 }}>
-              <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Routine name…" autoFocus
-                style={{ padding: "5px 8px", borderRadius: 4, border: "1px solid oklch(0.82 0.050 340)", fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", outline: "none" }} />
-              {/* Category picker — single SVG icon button + popover (same as DailyWins) */}
-              <div style={{ display: "flex", alignItems: "center", gap: 6, position: "relative" }}>
+              {/* Icon + input inline (like DailyWins) */}
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 {(() => { const ic = WIN_ICONS[newIconIdx]; return (
-                  <button ref={newIconBtnRef} onClick={() => setPickerOpenId(pickerOpenId === "new" ? null : "new")} title={ic.label}
-                    style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6, border: `1.5px solid ${pickerOpenId === "new" ? ic.color : "oklch(0.82 0.050 340)"}`, background: pickerOpenId === "new" ? `${ic.color}15` : "transparent", cursor: "pointer" }}>
+                  <button onClick={() => setPickerOpenId(pickerOpenId === "new" ? null : "new")} title={ic.label}
+                    style={{ width: 32, height: 32, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6, border: `1.5px solid ${pickerOpenId === "new" ? ic.color : "oklch(0.82 0.050 340)"}`, background: pickerOpenId === "new" ? `${ic.color}15` : "white", cursor: "pointer" }}>
                     <ic.Component size={16} color={ic.color} />
                   </button>
                 ); })()}
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.72rem", color: "oklch(0.55 0.040 330)" }}>
-                  {WIN_ICONS[newIconIdx].label}
-                </span>
-                {pickerOpenId === "new" && (
-                  <IconPickerPopover current={newIconIdx} onSelect={(idx) => { setNewIconIdx(idx); setPickerOpenId(null); }} onClose={() => setPickerOpenId(null)} anchorRef={newIconBtnRef} />
-                )}
+                <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Routine name…" autoFocus
+                  style={{ flex: 1, padding: "5px 8px", borderRadius: 4, border: "1px solid oklch(0.82 0.050 340)", fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", outline: "none" }} />
               </div>
+              {/* Inline icon grid — no floating popover (avoids overflow:hidden clip) */}
+              {pickerOpenId === "new" && (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, padding: 6, background: "white", borderRadius: 8, border: "1px solid oklch(0.86 0.030 300)" }}>
+                  {WIN_ICONS.map((ic, idx) => (
+                    <button key={idx} onClick={() => { setNewIconIdx(idx); setPickerOpenId(null); }} title={ic.label}
+                      style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", aspectRatio: "1", borderRadius: 6, border: `1.5px solid ${idx === newIconIdx ? ic.color : "transparent"}`, background: idx === newIconIdx ? `${ic.color}18` : "transparent", cursor: "pointer" }}>
+                      <ic.Component size={18} color={ic.color} />
+                    </button>
+                  ))}
+                </div>
+              )}
               <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                 {DAYS.map((d) => {
                   const active = newDays.includes(d);
