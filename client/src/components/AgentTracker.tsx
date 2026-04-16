@@ -17,6 +17,13 @@ import { toast } from "sonner";
 import { callAI } from "@/lib/ai";
 import { nanoid } from "nanoid";
 import type { Task } from "./TaskManager";
+
+function parseHashtag(raw: string): { cleanText: string; tag: string | null } {
+  const match = raw.match(/(^|\s)#([\w-]+)(\s|$)/);
+  if (!match) return { cleanText: raw.trim(), tag: null };
+  const cleanText = raw.replace(/(^|\s)#[\w-]+(\s|$)/g, " ").replace(/\s{2,}/g, " ").trim();
+  return { cleanText, tag: match[2].toLowerCase() };
+}
 import {
   ContextSwitcher, ContextBadge, getContextConfig,
   type ItemContext, type ActiveContext,
@@ -225,14 +232,16 @@ export function AgentTracker({ agents, onAgentsChange, tasks, defaultContext = "
       toast.error("Give the agent a name.");
       return;
     }
+    const { cleanText, tag } = parseHashtag(name);
+    const context = (tag ?? newCtx) as ItemContext;
     const agent: Agent = {
-      id: nanoid(), name: name.trim(), task: taskDesc.trim() || name.trim(),
-      status: "running", context: newCtx,
+      id: nanoid(), name: cleanText || name.trim(), task: taskDesc.trim() || cleanText || name.trim(),
+      status: "running", context,
       linkedTaskId: linkedTaskId || undefined, startedAt: new Date(),
     };
     onAgentsChange([agent, ...agents]);
     setName(""); setTaskDesc(""); setLinkedTaskId("");
-      };
+  };
 
   const createAgentFromTask = (task: Task) => {
     const agent: Agent = {
@@ -402,12 +411,22 @@ export function AgentTracker({ agents, onAgentsChange, tasks, defaultContext = "
 
         {/* Name + task-link inline row */}
         <div className="flex gap-2 items-center">
-          <Input
-            value={name} onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && addAgent()}
-            placeholder="Agent name (e.g. Manus, Claude)"
-            style={{ flex: 1, background: "oklch(0.997 0.003 355)", border: `1px solid ${M.border}`, borderRadius: 8, fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", color: M.ink, height: 42 }}
-          />
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 3 }}>
+            <Input
+              value={name} onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addAgent()}
+              placeholder="Agent name... #tag"
+              style={{ background: "oklch(0.997 0.003 355)", border: `1px solid ${parseHashtag(name).tag ? M.coral : M.border}`, borderRadius: 8, fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", color: M.ink, height: 42, transition: "border-color 0.2s" }}
+            />
+            {parseHashtag(name).tag && (
+              <div style={{ fontSize: "0.62rem", fontFamily: "'DM Sans', sans-serif", color: M.muted, display: "flex", alignItems: "center", gap: 4 }}>
+                <span style={{ color: M.coral }}>◆</span> Tag:{" "}
+                <span style={{ background: M.coral + "15", color: M.coral, border: `1px solid ${M.coral}30`, padding: "0 6px", borderRadius: 3, fontSize: "0.60rem", letterSpacing: "0.06em" }}>
+                  #{parseHashtag(name).tag}
+                </span>
+              </div>
+            )}
+          </div>
           <select
             value={linkedTaskId}
             onChange={(e) => {
