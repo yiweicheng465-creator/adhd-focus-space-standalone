@@ -457,7 +457,7 @@ function DayDetailModal({ selectedDay, onClose, getTasksForDay, dayOrder, saveDa
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(140,40,90,0.18)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
       onClick={onClose}>
-      <div style={{ background: "#fdf4f8", borderRadius: 16, width: "min(420px, 94vw)", maxHeight: "80vh", display: "flex", flexDirection: "column", boxShadow: "0 24px 60px rgba(140,40,90,0.28), 0 8px 24px rgba(0,0,0,0.10)", overflow: "hidden" }}
+      <div style={{ background: "#fdf4f8", borderRadius: 16, width: "min(600px, 96vw)", maxHeight: "85vh", display: "flex", flexDirection: "column", boxShadow: "0 24px 60px rgba(140,40,90,0.28), 0 8px 24px rgba(0,0,0,0.10)", overflow: "hidden" }}
         onClick={e => e.stopPropagation()}>
 
         {/* Header */}
@@ -484,7 +484,7 @@ function DayDetailModal({ selectedDay, onClose, getTasksForDay, dayOrder, saveDa
         {/* Notebook-style layout: single vertical spine line on the left */}
         <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", position: "relative" }}>
           {/* Single continuous vertical spine */}
-          <div style={{ position: "absolute", left: 64, top: 0, bottom: 0, width: 1, background: "oklch(0.82 0.050 340 / 0.45)", pointerEvents: "none", zIndex: 0 }} />
+          <div style={{ position: "absolute", left: 50, top: 0, bottom: 0, width: 1, background: "oklch(0.82 0.050 340 / 0.55)", pointerEvents: "none", zIndex: 0 }} />
           {filtered.length === 0
             ? <p style={{ padding: "16px 14px", fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", color: M.muted, fontStyle: "italic" }}>No tasks for this day.</p>
             : filtered.map((task, i) => (
@@ -509,20 +509,24 @@ function DayDetailModal({ selectedDay, onClose, getTasksForDay, dayOrder, saveDa
                     setDragId(null); setDragOverTask(null);
                   }}
                   style={{
-                    display: "flex", alignItems: "center", gap: 8, padding: "9px 14px 9px 12px", position: "relative", zIndex: 1,
+                    display: "flex", alignItems: "center", gap: 0, padding: "8px 16px 8px 12px", position: "relative", zIndex: 1,
                     cursor: "grab", background: editingId === task.id ? "oklch(0.97 0.015 340)" : "transparent",
                     borderTop: dragOverTask?.id === task.id && dragOverTask.pos === "before" ? `2px solid oklch(0.58 0.18 340)` : "none",
                   }}
                 >
-                  {/* Time + circle on left of spine */}
-                  <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.44rem", color: M.muted, opacity: 0.6, flexShrink: 0, minWidth: 32, textAlign: "right" }}>
+                  {/* Time — left of spine */}
+                  <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.43rem", color: M.muted, opacity: 0.65, flexShrink: 0, width: 36, textAlign: "right", lineHeight: 1 }}>
                     {timeRef(i)}
                   </span>
-                  <button onClick={() => onTaskToggle(task.id)} style={{ flexShrink: 0, width: 13, height: 13, borderRadius: "50%", border: `1.5px solid ${PRIORITY_COLOR[task.priority] ?? "oklch(0.58 0.18 340)"}`, background: task.done ? PRIORITY_COLOR[task.priority] : "white", cursor: "pointer", padding: 0, position: "relative", zIndex: 1 }} />
-                  {/* Task text — right of spine */}
+                  {/* Gap crosses the spine line */}
+                  <div style={{ width: 12, flexShrink: 0 }} />
+                  {/* Circle — RIGHT of spine */}
+                  <button onClick={() => onTaskToggle(task.id)} style={{ flexShrink: 0, width: 13, height: 13, borderRadius: "50%", border: `1.5px solid ${PRIORITY_COLOR[task.priority] ?? "oklch(0.58 0.18 340)"}`, background: task.done ? PRIORITY_COLOR[task.priority] : "#fdf4f8", cursor: "pointer", padding: 0, position: "relative", zIndex: 1 }} />
+                  {/* Task text */}
                   <span
                     onClick={() => editingId === task.id ? setEditingId(null) : openEdit(task)}
-                    style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", color: M.ink, lineHeight: 1.5, cursor: "pointer", textDecoration: task.done ? "line-through" : "none", opacity: task.done ? 0.5 : 1, wordBreak: "break-word", paddingLeft: 2 }}
+                    style={{ flex: 1, minWidth: 0, fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", color: M.ink, lineHeight: 1.5, cursor: "pointer", textDecoration: task.done ? "line-through" : "none", opacity: task.done ? 0.5 : 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                    title={task.text}
                   >
                     {task.text}
                   </span>
