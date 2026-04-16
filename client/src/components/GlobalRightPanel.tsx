@@ -371,6 +371,20 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
   const [newDays, setNewDays] = useState<string[]>(["Mon","Tue","Wed","Thu","Fri"]);
   const [adding, setAdding] = useState(false);
   const today = DAYS[(new Date().getDay() + 6) % 7]; // Mon=0
+  const todayKey = new Date().toISOString().slice(0, 10);
+
+  // Track which routines were completed today (reset daily)
+  const [doneToday, setDoneToday] = useState<Set<string>>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("adhd-routine-done") ?? "{}");
+      return new Set(saved.date === todayKey ? saved.ids : []);
+    } catch { return new Set(); }
+  });
+
+  const saveDoneToday = (ids: Set<string>) => {
+    setDoneToday(ids);
+    localStorage.setItem("adhd-routine-done", JSON.stringify({ date: todayKey, ids: [...ids] }));
+  };
 
   const saveRoutines = (r: typeof routines) => { setRoutines(r); localStorage.setItem(ROUTINE_KEY, JSON.stringify(r)); };
   const addRoutine = () => { if (!newName.trim()) return; saveRoutines([...routines, { id: `r-${Date.now()}`, name: newName.trim(), days: newDays }]); setNewName(""); setAdding(false); };
@@ -378,13 +392,14 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
   const todayRoutines = routines.filter(r => r.days.includes(today));
 
   const markDone = (r: { id: string; name: string }) => {
+    if (doneToday.has(r.id)) return; // already done today
     const win = { id: `routine-${Date.now()}`, text: `🔄 ${r.name}`, iconIdx: 98 };
-    // Save to adhd-wins
     try {
       const wins = JSON.parse(localStorage.getItem("adhd-wins") ?? "[]");
       wins.unshift({ ...win, createdAt: new Date().toISOString() });
       localStorage.setItem("adhd-wins", JSON.stringify(wins));
     } catch {}
+    saveDoneToday(new Set([...doneToday, r.id]));
     onLogWin?.(win.text, win.iconIdx);
     import("sonner").then(({ toast }) => toast.success(`✓ ${r.name} logged as win!`));
   };
@@ -397,14 +412,27 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
           <div>
             <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.48rem", letterSpacing: "0.10em", color: "oklch(0.55 0.12 285)", textTransform: "uppercase", marginBottom: 6 }}>Today ({today})</p>
             {todayRoutines.map(r => (
-              <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", background: "white", borderRadius: 8, border: "1px solid oklch(0.86 0.030 300)", marginBottom: 4 }}>
-                <span style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", color: "oklch(0.28 0.040 320)" }}>{r.name}</span>
-                <button onClick={() => markDone(r)} title="Mark done" style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid oklch(0.62 0.14 285)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.15s" }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "oklch(0.62 0.14 285)"; (e.currentTarget as HTMLButtonElement).style.color = "white"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "oklch(0.48 0.14 285)"; }}>
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="oklch(0.48 0.14 285)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                </button>
-              </div>
+              {(() => {
+                const done = doneToday.has(r.id);
+                return (
+                  <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", background: done ? "oklch(0.96 0.012 285)" : "white", borderRadius: 8, border: `1px solid ${done ? "oklch(0.78 0.10 285)" : "oklch(0.86 0.030 300)"}`, marginBottom: 4, transition: "all 0.2s" }}>
+                    <span style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", color: done ? "oklch(0.55 0.10 285)" : "oklch(0.28 0.040 320)", textDecoration: done ? "line-through" : "none", opacity: done ? 0.7 : 1 }}>{r.name}</span>
+                    <button
+                      onClick={() => markDone(r)}
+                      disabled={done}
+                      title={done ? "Done today!" : "Mark done"}
+                      style={{ width: 28, height: 28, borderRadius: "50%", border: `2px solid ${done ? "oklch(0.55 0.14 285)" : "oklch(0.72 0.10 285)"}`, background: done ? "oklch(0.55 0.14 285)" : "transparent", cursor: done ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.2s" }}
+                      onMouseEnter={e => { if (!done) { (e.currentTarget as HTMLButtonElement).style.background = "oklch(0.62 0.14 285)"; } }}
+                      onMouseLeave={e => { if (!done) { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; } }}
+                    >
+                      {done
+                        ? <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        : <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="oklch(0.62 0.14 285)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.3"/></svg>
+                      }
+                    </button>
+                  </div>
+                );
+              })()}
             ))}
           </div>
         )}
