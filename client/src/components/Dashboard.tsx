@@ -823,7 +823,7 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
             return (
               <div key={w.id} style={{ display: "flex", alignItems: "center", gap: 5, padding: "3px 9px", border: `1px solid ${BORDER}`, background: CREAM, color: INK, fontSize: 11, borderRadius: 6 }}>
                 {isRoutine ? <span style={{ fontSize: 11, lineHeight: 1 }}>💫</span> : <PixelTrophy size={10} color={TC} />}
-                <span>{w.text}</span>
+                <span>{isRoutine ? w.text.replace(/^[\p{Emoji}\s]+/u, "").trim() || w.text : w.text}</span>
               </div>
             );
           })}
