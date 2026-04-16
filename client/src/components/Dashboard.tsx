@@ -554,19 +554,11 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
 
         {/* Col 2: Next Up (AI on) or Priority Matrix (AI off) */}
         {!showAI ? (
-          <div className="retro-window" style={{ display: "flex", flexDirection: "column", minHeight: 378, overflow: "auto", padding: "0 0 8px" }}>
-            <div className="retro-titlebar" style={{ flexShrink: 0 }}>
-              <span>priority_matrix.exe</span>
-              <div className="retro-titlebar-buttons">
-                <span className="retro-titlebar-btn">_</span>
-                <span className="retro-titlebar-btn">□</span>
-                <span className="retro-titlebar-btn">✕</span>
-              </div>
-            </div>
-            <div style={{ padding: "8px 12px" }}>
+          <div className="retro-window" style={{ display: "flex", flexDirection: "column", height: "378px", overflow: "auto" }}>
+            <div style={{ padding: "4px 8px 4px", transform: "scale(0.52)", transformOrigin: "top left", width: "192%", height: "192%" }}>
               <EisenhowerMatrix
-                tasks={tasks}
-                onTasksChange={onTasksChange ?? (() => {})}
+                tasks={activeContext === "all" ? tasks : tasks.filter(t => t.context === activeContext)}
+                onTasksChange={(filtered) => onTasksChange ? onTasksChange(tasks.map(t => filtered.find(f => f.id === t.id) ?? t)) : undefined}
                 quadrantMap={quadrantMap}
                 onQuadrantMapChange={handleQuadrantMapChange}
               />
