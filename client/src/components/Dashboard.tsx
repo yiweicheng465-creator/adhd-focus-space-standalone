@@ -533,10 +533,15 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
             <img src={CAT_PINK} alt="" aria-hidden="true" style={{ position: "absolute", top: -8, right: -8, width: 56, opacity: 0.40, pointerEvents: "none", zIndex: 5 }} />
             <FocusTimer onSessionComplete={onSessionComplete} onBlockComplete={onBlockComplete} />
           </div>
-          {/* Speech bubble sticker — original Focus page style, slightly smaller */}
+          {/* Speech bubble sticker + background cat stickers */}
           {!showAI && (
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <div style={{ position: "relative", transform: "rotate(-2deg)" }}>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
+              {/* Background cats — z-index 0, pointer-events none, mix-blend-mode multiply removes white bg */}
+              <img src={CAT_BLUE} alt="" aria-hidden="true" style={{ position: "absolute", bottom: -10, right: -8, width: 80, opacity: 0.30, pointerEvents: "none", zIndex: 0, mixBlendMode: "multiply", transform: "rotate(8deg)" }} />
+              <img src={CAT_OLIVE} alt="" aria-hidden="true" style={{ position: "absolute", bottom: -4, left: -12, width: 64, opacity: 0.25, pointerEvents: "none", zIndex: 0, mixBlendMode: "multiply", transform: "rotate(-6deg) scaleX(-1)" }} />
+              <img src={CAT_YELLOW} alt="" aria-hidden="true" style={{ position: "absolute", top: 6, right: 4, width: 44, opacity: 0.22, pointerEvents: "none", zIndex: 0, mixBlendMode: "multiply", transform: "rotate(12deg)" }} />
+              {/* Speech bubble — above cats */}
+              <div style={{ position: "relative", transform: "rotate(-2deg)", zIndex: 2 }}>
                 {/* Stars */}
                 <div style={{ position: "absolute", top: -11, left: 6, fontSize: 10, color: "oklch(0.62 0.18 355)", pointerEvents: "none" }}>✦</div>
                 <div style={{ position: "absolute", top: -5, left: 24, fontSize: 7, color: "oklch(0.62 0.18 355)", pointerEvents: "none" }}>✦</div>
