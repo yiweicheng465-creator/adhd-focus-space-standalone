@@ -155,30 +155,6 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
       {showLifeCoach && <LifeCoachModal onClose={() => setShowLifeCoach(false)} onClear={() => setInsightKey(k => k + 1)} onDashboardUpdate={() => setInsightKey(k => k + 1)} goals={goals} />}
 
 
-      {/* Life Coach insights — top of page */}
-      {insightKey >= 0 && (() => {
-        try {
-          const data = JSON.parse(localStorage.getItem("adhd-life-coach-insights") ?? "null");
-          if (!data) return null;
-          return (
-            <div style={{ padding: "10px 14px", background: "oklch(0.58 0.12 285 / 0.06)", border: "1px solid oklch(0.58 0.12 285 / 0.20)", borderRadius: 8, display: "flex", gap: 10, alignItems: "flex-start" }}>
-              <span style={{ fontSize: "1rem", flexShrink: 0 }}>🧭</span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.48rem", letterSpacing: "0.08em", color: "oklch(0.55 0.12 285)", textTransform: "uppercase", marginBottom: 3 }}>
-                  Life Coach · {data.coachType === "career" ? "Career" : "Life Planning"}
-                </p>
-                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem", color: "oklch(0.35 0.040 320)", lineHeight: 1.5, margin: 0, wordBreak: "break-word" }}>
-                  {data.summary?.slice(0, 200)}{data.summary?.length > 200 ? "…" : ""}
-                </p>
-                <button onClick={() => setShowLifeCoach(true)} style={{ marginTop: 4, fontSize: "0.55rem", fontFamily: "'Space Mono', monospace", color: "oklch(0.55 0.12 285)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 0 }}>
-                  Continue conversation →
-                </button>
-              </div>
-            </div>
-          );
-        } catch { return null; }
-      })()}
-
       {/* 🧭 Life Dashboard — above typing bar */}
       {insightKey >= 0 && (() => {
         try {
