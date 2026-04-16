@@ -533,6 +533,8 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
             {/* Cat sticker: pink standing cat — top-right of focus timer */}
             <img src={CAT_PINK} alt="" aria-hidden="true" style={{ position: "absolute", top: -8, right: -8, width: 56, opacity: 0.40, pointerEvents: "none", zIndex: 5 }} />
             <FocusTimer onSessionComplete={onSessionComplete} onBlockComplete={onBlockComplete} />
+            {/* +20px spacer to match next_up/AI panel height */}
+            <div style={{ height: 20 }} />
           </div>
         </div>
 
