@@ -560,22 +560,30 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
               <Zap size={12} style={{ color: TC }} />
               <p className="editorial-label">Next Up</p>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              {(["today", "all"] as const).map(f => (
-                <button key={f} onClick={() => setNextUpFilter(f)}
-                  style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.52rem", letterSpacing: "0.06em", textTransform: "uppercase", padding: "2px 7px", borderRadius: 3, border: `1px solid ${nextUpFilter === f ? TC : BORDER}`, background: nextUpFilter === f ? TC + "18" : "transparent", color: nextUpFilter === f ? TC : MUTED, cursor: "pointer" }}>
-                  {f === "today" ? "Today" : "All Tasks"}
-                </button>
-              ))}
-            </div>
+            {showAI ? (
+              <button className="m-btn-link" onClick={() => onNavigate("tasks")}>All tasks</button>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                {(["today", "all"] as const).map(f => (
+                  <button key={f} onClick={() => setNextUpFilter(f)}
+                    style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.52rem", letterSpacing: "0.06em", textTransform: "uppercase", padding: "2px 7px", borderRadius: 3, border: `1px solid ${nextUpFilter === f ? TC : BORDER}`, background: nextUpFilter === f ? TC + "18" : "transparent", color: nextUpFilter === f ? TC : MUTED, cursor: "pointer" }}>
+                    {f === "today" ? "Today" : "All Tasks"}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Retro task list — dashed-border rows with icon box */}
           {(() => {
             const todayYMD = new Date().toISOString().slice(0, 10);
-            const displayTasks = nextUpFilter === "today"
-              ? activeTasks.filter(t => !t.dueDate || t.dueDate === todayYMD)
-              : activeTasks;
+            const filtered = showAI
+              ? activeTasks
+              : nextUpFilter === "today"
+                ? activeTasks.filter(t => !t.dueDate || t.dueDate === todayYMD)
+                : activeTasks;
+            const MAX = showAI ? 7 : filtered.length;
+            const displayTasks = filtered.slice(0, MAX);
             return (
           <div className="retro-task-list" style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
             {displayTasks.length === 0 ? (
@@ -654,6 +662,12 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
                     </div>
                   );
                 })
+            )}
+            {showAI && filtered.length > 7 && (
+              <button onClick={() => onNavigate("tasks")} className="m-btn-link"
+                style={{ fontSize: 9, textAlign: "center", paddingTop: 4, width: "100%", justifyContent: "center" }}>
+                +{filtered.length - 7} more →
+              </button>
             )}
           </div>
           ); })()}
