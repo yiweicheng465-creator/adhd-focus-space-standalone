@@ -274,7 +274,7 @@ function WinCard({
   onDelete: (winId: string) => void;
 }) {
   // iconIdx 99 = special block-complete flame icon
-  const isBlockWin = win.iconIdx === 99;
+  const isBlockWin = win.iconIdx === 99 || win.iconIdx === 97 || win.iconIdx === 98;
   const iconIdx = isBlockWin ? 0 : (typeof win.iconIdx === "number" ? win.iconIdx % WIN_ICONS.length : 0);
   const iconDef = WIN_ICONS[iconIdx];
   const blockColor = "oklch(0.55 0.13 35)"; // deep terracotta for block wins
@@ -320,7 +320,7 @@ function WinCard({
           }}
         >
           {isBlockWin
-            ? <IconBlockComplete size={16} color={isArchiveView ? M.archiveClr : blockColor} />
+            ? <span style={{ fontSize: "1rem", lineHeight: 1 }}>💫</span>
             : <iconDef.Component size={16} color={isArchiveView ? M.archiveClr : iconDef.color} />
           }
         </button>
@@ -376,7 +376,7 @@ function WinCard({
             ? "Today"
             : new Date(win.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
           {" · "}
-          <span style={{ color: isArchiveView ? M.archiveClr : (isBlockWin ? blockColor : iconDef.color), opacity: 0.8 }}>
+          <span style={{ color: isArchiveView ? M.archiveClr : iconDef.color, opacity: 0.8 }}>
             {isBlockWin ? "Block" : iconDef.label}
           </span>
           {isArchiveView && (
@@ -551,37 +551,39 @@ export function DailyWins({ wins, onWinsChange }: DailyWinsProps) {
 
       {/* Add win input row */}
       <div className="flex flex-col gap-2">
+        {/* Inline category pills */}
+        <div className="flex gap-1.5 flex-wrap">
+          {WIN_ICONS.map((icon, idx) => {
+            const isSelected = selectedIcon === idx;
+            return (
+              <button
+                key={icon.key}
+                onClick={() => setSelectedIcon(idx)}
+                title={icon.label}
+                className="flex items-center gap-1 px-2 py-1 transition-all"
+                style={{
+                  borderRadius: 20,
+                  border: `1.5px solid ${isSelected ? icon.color : M.border}`,
+                  background: isSelected ? `${icon.color}15` : "transparent",
+                  cursor: "pointer",
+                  fontSize: "0.58rem",
+                  fontFamily: "'DM Sans', sans-serif",
+                  color: isSelected ? icon.color : M.muted,
+                  fontWeight: isSelected ? 600 : 400,
+                }}
+              >
+                <icon.Component size={10} color={isSelected ? icon.color : M.muted} />
+                {icon.label}
+              </button>
+            );
+          })}
+        </div>
         <div className="flex gap-2">
-          {/* Icon picker trigger */}
-          <div style={{ position: "relative" }}>
-            <button
-              ref={newPickerBtnRef}
-              onClick={() => setShowNewPicker((v) => !v)}
-              className="w-10 h-10 flex items-center justify-center transition-all shrink-0"
-              style={{
-                border: `1.5px solid ${showNewPicker ? SelectedIconDef.color : M.border}`,
-                background: showNewPicker ? `${SelectedIconDef.color}12` : M.card,
-                borderRadius: 6,
-              }}
-              title="Choose category"
-            >
-              <SelectedIconDef.Component size={18} color={SelectedIconDef.color} />
-            </button>
-            {showNewPicker && (
-              <IconPickerPopover
-                current={selectedIcon}
-                onSelect={setSelectedIcon}
-                onClose={() => setShowNewPicker(false)}
-                anchorRef={newPickerBtnRef}
-              />
-            )}
-          </div>
-
           <Input
             value={newWin}
             onChange={(e) => setNewWin(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addWin()}
-            placeholder="What did you accomplish?"
+            placeholder="What did you accomplish? ✦"
             className="flex-1"
             style={{ background: M.card, border: `1px solid ${M.border}`, fontFamily: "'DM Sans', sans-serif" }}
           />

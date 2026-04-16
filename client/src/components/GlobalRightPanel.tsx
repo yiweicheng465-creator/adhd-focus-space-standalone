@@ -55,7 +55,7 @@ export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin }: Props)
         <TimerButton active={panel === "timer"} onClick={() => toggle("timer")} />
         {/* Routine */}
         <button style={BTN_STYLE(panel === "routine")} onClick={() => toggle("routine")} title="Daily Routine">
-          <span style={{ fontSize: "0.85rem", lineHeight: 1 }}>🔄</span>
+          <span style={{ fontSize: "0.85rem", lineHeight: 1 }}>💫</span>
           <span style={{ writingMode: "vertical-rl", fontSize: "0.38rem" }}>ROUTINE</span>
         </button>
       </div>
