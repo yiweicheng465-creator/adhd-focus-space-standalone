@@ -815,12 +815,15 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
               ⏱ {focusSessions} session{focusSessions > 1 ? "s" : ""}
             </div>
           )}
-          {todayWins.map((w) => (
+          {todayWins.map((w) => {
+            const isRoutine = w.id.startsWith("routine-");
+            return (
               <div key={w.id} style={{ display: "flex", alignItems: "center", gap: 5, padding: "3px 9px", border: `1px solid ${BORDER}`, background: CREAM, color: INK, fontSize: 11, borderRadius: 6 }}>
-               <PixelTrophy size={10} color={TC} />
-              <span>{w.text}</span>
-            </div>
-          ))}
+                {isRoutine ? <span style={{ fontSize: 11, lineHeight: 1 }}>💫</span> : <PixelTrophy size={10} color={TC} />}
+                <span>{w.text}</span>
+              </div>
+            );
+          })}
           <button className="m-btn-link" style={{ marginLeft: "auto", fontSize: 10 }} onClick={() => onNavigate("wins")}>Log more</button>
         </div>
       )}

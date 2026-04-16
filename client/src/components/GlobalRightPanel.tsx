@@ -414,7 +414,7 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
   const markDone = (r: Routine) => {
     if (doneToday.has(r.id)) return;
     const iconIdx = typeof r.iconIdx === "number" ? r.iconIdx : 0;
-    const win = { id: `routine-${Date.now()}`, text: `${ROUTINE_CATS[iconIdx]?.emoji ?? "🔄"} ${r.name}`, iconIdx };
+    const win = { id: `routine-${Date.now()}`, text: r.name, iconIdx };
     try {
       const wins = JSON.parse(localStorage.getItem("adhd-wins") ?? "[]");
       wins.unshift({ ...win, createdAt: new Date().toISOString() });
