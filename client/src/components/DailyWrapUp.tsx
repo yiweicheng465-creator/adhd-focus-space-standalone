@@ -380,13 +380,28 @@ export function DailyWrapUp({ tasks, wins, agents, quitCount = 0, onClose }: Dai
     setAiLoading(true);
     setAiSummary(null);
     try {
+      // Read routine data for AI context
+      const routineData = (() => {
+        try {
+          const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+          const todayDay = DAYS[(new Date().getDay() + 6) % 7];
+          const routines = JSON.parse(localStorage.getItem("adhd-routines") ?? "[]") as { id: string; name: string; days: string[] }[];
+          const todayRoutines = routines.filter(r => r.days.includes(todayDay));
+          const doneData = JSON.parse(localStorage.getItem("adhd-routine-done") ?? "{}");
+          const doneIds: string[] = doneData.ids ?? [];
+          const done = todayRoutines.filter(r => doneIds.includes(r.id)).map(r => r.name);
+          const missed = todayRoutines.filter(r => !doneIds.includes(r.id)).map(r => r.name);
+          return { done, missed, total: todayRoutines.length };
+        } catch { return { done: [], missed: [], total: 0 }; }
+      })();
       const summary = await callAI(
-        "You write warm, personal daily summaries for ADHD users. Be concise (2-3 sentences), positive, and specific about their accomplishments. No bullet points.",
+        "You write warm, personal daily summaries for ADHD users. Be concise (2-3 sentences), positive, and specific about their accomplishments. Mention routine completion if relevant. No bullet points.",
         JSON.stringify({
           wins: todayWins.map((w) => w.text),
           tasksCompleted: doneTasks.map((t) => t.text),
           tasksPending: activeTasks.slice(0, 5).map((t) => t.text),
-          focusSessions: undefined,
+          routinesDone: routineData.done,
+          routinesMissed: routineData.missed,
           score,
         })
       );
@@ -525,6 +540,9 @@ export function DailyWrapUp({ tasks, wins, agents, quitCount = 0, onClose }: Dai
             <WinsRing wins={todayWins} />
           </Section>
 
+          {/* Daily Routine */}
+          <RoutineSection />
+
           {/* Focus Tracker */}
           <FocusTrackerSection />
 
@@ -645,6 +663,50 @@ function TaskRow({ text, color }: { text: string; color: string }) {
       <CheckCircle2 className="w-3.5 h-3.5 shrink-0" style={{ color }} />
       <span className="text-sm" style={{ color: "oklch(0.22 0.040 320)", fontFamily: "'DM Sans', sans-serif" }}>{text}</span>
     </div>
+  );
+}
+
+/* ── Daily Routine Section ── */
+function RoutineSection() {
+  const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  const todayDay = DAYS[(new Date().getDay() + 6) % 7];
+  const routineColor = "oklch(0.50 0.12 245)"; // dusty periwinkle
+
+  const routines: { id: string; name: string; days: string[]; iconIdx?: number }[] = (() => {
+    try { return JSON.parse(localStorage.getItem("adhd-routines") ?? "[]"); } catch { return []; }
+  })();
+  const todayRoutines = routines.filter(r => r.days.includes(todayDay));
+
+  const doneIds: string[] = (() => {
+    try {
+      const d = JSON.parse(localStorage.getItem("adhd-routine-done") ?? "{}");
+      const todayKey = new Date().toISOString().slice(0, 10);
+      return d.date === todayKey ? d.ids : [];
+    } catch { return []; }
+  })();
+
+  if (todayRoutines.length === 0) return null;
+
+  const done = todayRoutines.filter(r => doneIds.includes(r.id));
+  const missed = todayRoutines.filter(r => !doneIds.includes(r.id));
+
+  return (
+    <Section icon={<span style={{ fontSize: 14 }}>💫</span>} title={`Daily Routine (${done.length}/${todayRoutines.length})`} color={routineColor}>
+      <div className="space-y-1.5">
+        {done.map(r => (
+          <div key={r.id} className="flex items-center gap-2 py-1.5 px-2.5" style={{ background: "oklch(0.50 0.12 245 / 0.07)", border: "1px solid oklch(0.50 0.12 245 / 0.20)", borderRadius: 6 }}>
+            <span style={{ fontSize: 13 }}>✅</span>
+            <span className="text-sm" style={{ color: M.ink, fontFamily: "'DM Sans', sans-serif" }}>{r.name}</span>
+          </div>
+        ))}
+        {missed.map(r => (
+          <div key={r.id} className="flex items-center gap-2 py-1.5 px-2.5" style={{ background: "oklch(0.92 0.010 245 / 0.5)", border: "1px dashed oklch(0.70 0.06 245)", borderRadius: 6, opacity: 0.65 }}>
+            <span style={{ fontSize: 13 }}>❌</span>
+            <span className="text-sm line-through" style={{ color: M.muted, fontFamily: "'DM Sans', sans-serif" }}>{r.name}</span>
+          </div>
+        ))}
+      </div>
+    </Section>
   );
 }
 
