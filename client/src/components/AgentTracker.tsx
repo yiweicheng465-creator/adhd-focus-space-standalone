@@ -210,12 +210,20 @@ export function AgentTracker({ agents, onAgentsChange, tasks, defaultContext = "
     (t) => !agents.some((a) => a.linkedTaskId === t.id && (a.status === "running" || a.status === "paused"))
   );
 
-  // Unified categories: use shared list if provided, else derive from own agents
-  const knownCategories = allCategories ?? Array.from(new Set(["work", "personal", ...agents.map((a) => a.context)]));
+  // Always include agent-created contexts even if no tasks have them
+  const agentContexts = Array.from(new Set(agents.map((a) => a.context)));
+  const knownCategories = Array.from(new Set([
+    ...((allCategories ?? ["work", "personal"])),
+    ...agentContexts,
+  ]));
 
-  // Use task counts so all tags that have tasks are visible in the filter
-  const counts: Record<string, number> = { all: activeTasks.length };
-  knownCategories.forEach((ctx) => { counts[ctx] = activeTasks.filter((t) => t.context === ctx).length; });
+  // Count agents by context (so agent-created tags appear even with 0 tasks)
+  const counts: Record<string, number> = { all: agents.length };
+  knownCategories.forEach((ctx) => {
+    const agentCount = agents.filter((a) => a.context === ctx).length;
+    const taskCount = activeTasks.filter((t) => t.context === ctx).length;
+    counts[ctx] = agentCount + taskCount; // show if either has entries
+  });
 
   // Consume pendingTaskText from Brain Dump
   useEffect(() => {
