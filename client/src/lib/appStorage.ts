@@ -7,6 +7,7 @@
 
 /** All localStorage keys used by the app */
 export const APP_STORAGE_KEYS = [
+  // ── Core user data ──
   "adhd-tasks",
   "adhd-goals",
   "adhd-wins",
@@ -15,29 +16,47 @@ export const APP_STORAGE_KEYS = [
   "adhd-daily-logs",
   "adhd-care-log",
   "adhd-focus-session-list",
+  "adhd_braindump_entries",
+
+  // ── Routines ──
+  "adhd-routines",
+  "adhd-routine-done",          // today's completion state
+
+  // ── AI / Coach ──
+  "adhd-ai-chat-history",
+  "adhd-life-coach-chat",
+  "adhd-life-coach-insights",
+  "adhd-life-dashboard",
+
+  // ── Ordering & layout preferences ──
   "adhd-quadrant-map",
   "adhd-quadrant-task-order",
   "adhd-calendar-day-order",
   "adhd-goal-task-order",
-  "adhd-life-coach-chat",
-  "adhd-life-coach-insights",
-  "adhd-routines",
-  "adhd-life-dashboard",
-  "adhd-work-mode",
   "adhd-deleted-categories",
-  "adhd-display-name",
+  "adhd-dashboard-show-ai",     // AI panel open/closed preference
+
+  // ── Streaks & scores ──
+  "adhd-block-streak-data",
+
+  // ── Sound & music ──
   "adhd-sfx-enabled",
   "adhd-sfx-vol",
+  "adhd-music-enabled",
   "adhd-music-vol",
-  "adhd_braindump_entries",
+  "adhd-music-track",
+
+  // ── Theme & appearance ──
+  "adhd-hue-rotate",
+  "adhd-base-hue",
+  "adhd-film-grain-intensity",
+  "adhd-film-grain-speed",
+
+  // ── Personalisation ──
+  "adhd-display-name",
+  "adhd-work-mode",
+  "adhd-quick-chips",
   "cyber-pet-deaths",
-  "adhd-ai-chat-history",   // AI chat messages (Dashboard)
-  "adhd-hue-rotate",           // theme hue rotation offset
-  "adhd-base-hue",             // theme hue (color picker)
-  "adhd-film-grain-intensity",  // film grain intensity
-  "adhd-film-grain-speed",      // film grain speed
-  "adhd-quick-chips",           // custom quick-add chips
-  "adhd-block-streak-data",     // block streak tracking data
 ] as const;
 
 /** UI-only keys excluded from backup (theme, sidebar width, skip flags) */
