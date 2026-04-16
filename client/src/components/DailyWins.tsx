@@ -410,11 +410,7 @@ function WinCard({
             </button>
             {/* Permanent delete */}
             <button
-              onClick={() => {
-                if (confirm("Permanently delete this win? This cannot be undone.")) {
-                  onDelete(win.id);
-                }
-              }}
+              onClick={() => onDelete(win.id)}
               title="Delete permanently"
               style={{
                 width: 26,
