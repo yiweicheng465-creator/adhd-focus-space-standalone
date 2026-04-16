@@ -597,7 +597,18 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
               </div>
             ) : (
               [...displayTasks]
-                .sort((a, b) => (PRIORITY_ORDER[a.priority] ?? 2) - (PRIORITY_ORDER[b.priority] ?? 2))
+                .sort((a, b) => {
+                  const td = new Date().toISOString().slice(0, 10);
+                  const aOvr = a.dueDate && a.dueDate < td;
+                  const bOvr = b.dueDate && b.dueDate < td;
+                  const aTdy = a.dueDate === td;
+                  const bTdy = b.dueDate === td;
+                  if (aOvr && !bOvr) return -1;
+                  if (!aOvr && bOvr) return 1;
+                  if (aTdy && !bTdy && !bOvr) return -1;
+                  if (!aTdy && bTdy && !aOvr) return 1;
+                  return (PRIORITY_ORDER[a.priority] ?? 2) - (PRIORITY_ORDER[b.priority] ?? 2);
+                })
                 // no slice — show all, scrollable
                 .map((t) => {
                   const pd = PRIORITY_DOTS[t.priority] ?? PRIORITY_DOTS.normal;
