@@ -536,8 +536,8 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
 
         {/* Col 2: Next Up (AI on) or Priority Matrix (AI off) */}
         {!showAI ? (
-          <div className="retro-window" style={{ display: "flex", flexDirection: "column", height: "378px", overflow: "auto" }}>
-            <div style={{ padding: "4px 8px 4px", transform: "scale(0.52)", transformOrigin: "top left", width: "192%", height: "192%" }}>
+          <div className="retro-window" style={{ height: "378px", overflow: "hidden", position: "relative" }}>
+            <div style={{ position: "absolute", top: 0, left: 0, transform: "scale(0.48)", transformOrigin: "top left", width: "208%", height: "208%" }}>
               <EisenhowerMatrix
                 tasks={activeContext === "all" ? tasks : tasks.filter(t => t.context === activeContext)}
                 onTasksChange={(filtered) => onTasksChange ? onTasksChange(tasks.map(t => filtered.find(f => f.id === t.id) ?? t)) : undefined}
