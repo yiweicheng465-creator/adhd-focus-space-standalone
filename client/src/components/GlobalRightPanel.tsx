@@ -23,12 +23,12 @@ interface Props {
   onLogWin?: (text: string, iconIdx: number) => void;
 }
 
-// Pink → purple → blue gradient per button
+// Dusty pastel gradient — retro lo-fi washed-out feel
 const BTN_COLORS = [
-  { active: "oklch(0.55 0.18 355)", idle: "oklch(0.88 0.08 355)", text: "oklch(0.40 0.16 355)" }, // AI: pink
-  { active: "oklch(0.52 0.16 315)", idle: "oklch(0.87 0.07 315)", text: "oklch(0.38 0.14 315)" }, // Coach: pink-purple
-  { active: "oklch(0.48 0.15 275)", idle: "oklch(0.86 0.07 275)", text: "oklch(0.36 0.13 275)" }, // Timer: purple
-  { active: "oklch(0.46 0.14 245)", idle: "oklch(0.85 0.07 245)", text: "oklch(0.34 0.12 245)" }, // Routine: blue
+  { active: "oklch(0.82 0.06 355)", idle: "oklch(0.93 0.025 355)", text: "oklch(0.50 0.08 355)" }, // AI: dusty rose
+  { active: "oklch(0.80 0.06 315)", idle: "oklch(0.92 0.022 315)", text: "oklch(0.48 0.07 315)" }, // Coach: dusty mauve
+  { active: "oklch(0.78 0.06 275)", idle: "oklch(0.91 0.020 275)", text: "oklch(0.46 0.07 275)" }, // Timer: dusty lavender
+  { active: "oklch(0.76 0.05 245)", idle: "oklch(0.90 0.018 245)", text: "oklch(0.44 0.06 245)" }, // Routine: dusty periwinkle
 ];
 
 const BTN_STYLE = (active: boolean, idx: number = 0): React.CSSProperties => {
