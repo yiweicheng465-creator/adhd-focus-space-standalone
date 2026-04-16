@@ -108,6 +108,7 @@ interface EisenhowerMatrixProps {
   onTasksChange: (tasks: Task[]) => void;
   quadrantMap: Record<string, QuadrantId>;
   onQuadrantMapChange: (map: Record<string, QuadrantId>) => void;
+  hideHeader?: boolean;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -116,6 +117,7 @@ export function EisenhowerMatrix({
   onTasksChange,
   quadrantMap,
   onQuadrantMapChange,
+  hideHeader = false,
 }: EisenhowerMatrixProps) {
   const [dragOverQ, setDragOverQ] = useState<QuadrantId | null>(null);
   const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null);
@@ -212,9 +214,9 @@ export function EisenhowerMatrix({
   }
 
   return (
-    <div style={{ marginTop: 32 }}>
+    <div style={{ marginTop: hideHeader ? 0 : 32 }}>
       {/* ── Section header ── */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+      {!hideHeader && <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
         <div style={{
           width: 3, height: 18,
           background: "oklch(0.50 0.09 35)",
@@ -238,7 +240,7 @@ export function EisenhowerMatrix({
         }}>
           drag tasks between quadrants
         </span>
-      </div>
+      </div>}
 
       {/* ── Axis labels + grid ── */}
       <div style={{ position: "relative", paddingLeft: 36, paddingBottom: 26 }}>

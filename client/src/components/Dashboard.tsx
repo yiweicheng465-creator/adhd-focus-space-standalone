@@ -536,14 +536,25 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
 
         {/* Col 2: Next Up (AI on) or Priority Matrix (AI off) */}
         {!showAI ? (
-          <div className="retro-window" style={{ height: "378px", overflow: "hidden", position: "relative" }}>
-            <div style={{ position: "absolute", top: 0, left: 0, transform: "scale(0.48)", transformOrigin: "top left", width: "208%", height: "208%" }}>
-              <EisenhowerMatrix
-                tasks={activeContext === "all" ? tasks : tasks.filter(t => t.context === activeContext)}
-                onTasksChange={(filtered) => onTasksChange ? onTasksChange(tasks.map(t => filtered.find(f => f.id === t.id) ?? t)) : undefined}
-                quadrantMap={quadrantMap}
-                onQuadrantMapChange={handleQuadrantMapChange}
-              />
+          <div className="retro-window" style={{ height: "378px", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+            <div className="retro-titlebar">
+              <span>priority_matrix.exe</span>
+              <div className="retro-titlebar-buttons">
+                <span className="retro-titlebar-btn">_</span>
+                <span className="retro-titlebar-btn">□</span>
+                <span className="retro-titlebar-btn">✕</span>
+              </div>
+            </div>
+            <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+              <div style={{ position: "absolute", top: 0, left: 0, transform: "scale(0.44)", transformOrigin: "top left", width: "227%", height: "227%" }}>
+                <EisenhowerMatrix
+                  tasks={activeContext === "all" ? tasks : tasks.filter(t => t.context === activeContext)}
+                  onTasksChange={(filtered) => onTasksChange ? onTasksChange(tasks.map(t => filtered.find(f => f.id === t.id) ?? t)) : undefined}
+                  quadrantMap={quadrantMap}
+                  onQuadrantMapChange={handleQuadrantMapChange}
+                  hideHeader
+                />
+              </div>
             </div>
           </div>
         ) : (
