@@ -160,6 +160,7 @@ export function Dashboard({
   displayName,
 }: DashboardProps) {
   const [activeContext, setActiveContext] = useState<ActiveContext>("all");
+  const [nextUpFilter, setNextUpFilter] = useState<"all" | "today">("all");
   const [quickCapture, setQuickCapture] = useState("");
   const [completing, setCompleting] = useState<string | null>(null);
   const dumpInputRef = useRef<HTMLInputElement>(null);
@@ -559,12 +560,25 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
               <Zap size={12} style={{ color: TC }} />
               <p className="editorial-label">Next Up</p>
             </div>
-            <button className="m-btn-link" onClick={() => onNavigate("tasks")}>All tasks</button>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              {(["today", "all"] as const).map(f => (
+                <button key={f} onClick={() => setNextUpFilter(f)}
+                  style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.52rem", letterSpacing: "0.06em", textTransform: "uppercase", padding: "2px 7px", borderRadius: 3, border: `1px solid ${nextUpFilter === f ? TC : BORDER}`, background: nextUpFilter === f ? TC + "18" : "transparent", color: nextUpFilter === f ? TC : MUTED, cursor: "pointer" }}>
+                  {f === "today" ? "Today" : "All Tasks"}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Retro task list — dashed-border rows with icon box */}
+          {(() => {
+            const todayYMD = new Date().toISOString().slice(0, 10);
+            const displayTasks = nextUpFilter === "today"
+              ? activeTasks.filter(t => !t.dueDate || t.dueDate === todayYMD)
+              : activeTasks;
+            return (
           <div className="retro-task-list" style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
-            {activeTasks.length === 0 ? (
+            {displayTasks.length === 0 ? (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 10, textAlign: "center" }}>
                 <svg width="32" height="32" viewBox="0 0 40 40" style={{ opacity: 0.15 }}>
                   <rect x="6" y="6" width="28" height="28" rx="2" fill="none" stroke={INK} strokeWidth="1.5" />
@@ -574,7 +588,7 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
                 <button className="m-btn-primary" onClick={() => onNavigate("tasks")}>Add a task</button>
               </div>
             ) : (
-              [...activeTasks]
+              [...displayTasks]
                 .sort((a, b) => (PRIORITY_ORDER[a.priority] ?? 2) - (PRIORITY_ORDER[b.priority] ?? 2))
                 // no slice — show all, scrollable
                 .map((t) => {
@@ -642,6 +656,7 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
                 })
             )}
           </div>
+          ); })()}
           </div>{/* /inner padding div */}
         </div>)}{/* /retro-window Col 2 */}
 
