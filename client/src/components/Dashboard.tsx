@@ -533,22 +533,33 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
             <img src={CAT_PINK} alt="" aria-hidden="true" style={{ position: "absolute", top: -8, right: -8, width: 56, opacity: 0.40, pointerEvents: "none", zIndex: 5 }} />
             <FocusTimer onSessionComplete={onSessionComplete} onBlockComplete={onBlockComplete} />
           </div>
-          {/* Speech bubble note below timer — fills space in bigger view */}
+          {/* Speech bubble sticker — overlaps timer from below, tail points UP to START */}
           {!showAI && (
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "12px 10px" }}>
-              <div style={{ position: "relative", transform: "rotate(-1.5deg)" }}>
-                {/* Stars */}
-                <div style={{ position: "absolute", top: -14, left: 6, fontSize: 11, color: "oklch(0.62 0.18 355)", pointerEvents: "none" }}>✦</div>
-                <div style={{ position: "absolute", top: -6, left: 26, fontSize: 8, color: "oklch(0.62 0.18 355)", pointerEvents: "none" }}>✦</div>
-                <div style={{ position: "absolute", bottom: -10, left: 2, fontSize: 13, color: "oklch(0.58 0.18 340)", pointerEvents: "none" }}>★</div>
-                {/* Bubble */}
-                <div style={{ background: "oklch(0.985 0.010 355)", border: "1.5px solid oklch(0.72 0.14 340)", borderRadius: 8, padding: "10px 14px", maxWidth: 148, position: "relative", boxShadow: "2px 2px 0 oklch(0.72 0.14 340 / 0.30)" }}>
-                  <p style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, lineHeight: 1.55, color: "oklch(0.38 0.18 340)", letterSpacing: "0.03em", textTransform: "uppercase", margin: 0 }}>
+            <div style={{ flex: 1, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: 0, position: "relative" }}>
+              <div style={{ position: "relative", transform: "rotate(2deg)", marginTop: "-18px", zIndex: 10 }}>
+                {/* Sparkles */}
+                <div style={{ position: "absolute", top: 18, left: -16, fontSize: 13, color: "oklch(0.62 0.18 355)", pointerEvents: "none", transform: "rotate(-15deg)" }}>✦</div>
+                <div style={{ position: "absolute", top: 8, right: -14, fontSize: 9, color: "oklch(0.58 0.18 340)", pointerEvents: "none" }}>✦</div>
+                <div style={{ position: "absolute", bottom: -8, left: -10, fontSize: 14, color: "oklch(0.60 0.18 340)", pointerEvents: "none" }}>★</div>
+                <div style={{ position: "absolute", bottom: -4, right: -8, fontSize: 9, color: "oklch(0.62 0.18 355)", pointerEvents: "none" }}>◆</div>
+                {/* Tail pointing UP — overlaps the timer's START area */}
+                <div style={{ position: "absolute", top: -10, left: "50%", transform: "translateX(-50%)", width: 0, height: 0, borderLeft: "10px solid transparent", borderRight: "10px solid transparent", borderBottom: "11px solid oklch(0.65 0.16 340)" }} />
+                <div style={{ position: "absolute", top: -8, left: "50%", transform: "translateX(-50%)", width: 0, height: 0, borderLeft: "9px solid transparent", borderRight: "9px solid transparent", borderBottom: "10px solid oklch(0.985 0.010 355)" }} />
+                {/* Bubble body — hand-drawn style with thick pink border */}
+                <div style={{
+                  background: "oklch(0.985 0.010 355)",
+                  border: "3px solid oklch(0.65 0.16 340)",
+                  borderRadius: 14,
+                  padding: "14px 18px",
+                  maxWidth: 152,
+                  position: "relative",
+                  boxShadow: "3px 3px 0 oklch(0.65 0.16 340 / 0.25), -1px -1px 0 oklch(0.65 0.16 340 / 0.10)",
+                  outline: "1.5px solid oklch(0.65 0.16 340 / 0.30)",
+                  outlineOffset: "3px",
+                }}>
+                  <p style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, lineHeight: 1.6, color: "oklch(0.42 0.18 340)", letterSpacing: "0.04em", textTransform: "uppercase", margin: 0, fontWeight: 700 }}>
                     let it go,<br/>so you can<br/>grow.
                   </p>
-                  {/* Tail */}
-                  <div style={{ position: "absolute", bottom: -10, right: 18, width: 0, height: 0, borderLeft: "8px solid transparent", borderRight: "0px solid transparent", borderTop: "10px solid oklch(0.72 0.14 340)" }} />
-                  <div style={{ position: "absolute", bottom: -8, right: 19, width: 0, height: 0, borderLeft: "7px solid transparent", borderRight: "0px solid transparent", borderTop: "9px solid oklch(0.985 0.010 355)" }} />
                 </div>
               </div>
             </div>
