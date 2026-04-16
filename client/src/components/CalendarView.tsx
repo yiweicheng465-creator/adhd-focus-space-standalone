@@ -44,9 +44,10 @@ interface Props {
   tasks: Task[];
   onTasksChange: (tasks: Task[]) => void;
   onTaskToggle: (id: string) => void;
+  doneFilter?: "active" | "done" | "all";
 }
 
-export function CalendarView({ tasks, onTasksChange, onTaskToggle }: Props) {
+export function CalendarView({ tasks, onTasksChange, onTaskToggle, doneFilter = "active" }: Props) {
   const today = new Date(); today.setHours(0,0,0,0);
   const todayYMD = toYMD(today);
 
@@ -92,7 +93,7 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle }: Props) {
 
   function getTasksForDay(ymd: string): Task[] {
     const base = tasks
-      .filter(t => !t.done)
+      .filter(t => doneFilter === "active" ? !t.done : doneFilter === "done" ? t.done : true)
       .filter(t => (t.dueDate ?? todayYMD) === ymd);
     const order = dayOrder[ymd];
     if (!order || !order.length) {
