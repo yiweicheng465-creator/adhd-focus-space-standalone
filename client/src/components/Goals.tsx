@@ -67,17 +67,15 @@ interface GoalsProps {
   goals: Goal[];
   onGoalsChange: (goals: Goal[]) => void;
   defaultContext?: ActiveContext;
-  /** Shared category list from Home — includes all contexts across tasks/goals/agents */
   allCategories?: string[];
-  /** Called when user wants to delete a custom tag */
   onDeleteCategory?: (ctx: string) => void;
-  /** All tasks — used to show linked tasks under each goal */
   tasks?: Task[];
-  /** Called when a task is toggled from the goal card */
   onTasksChange?: (tasks: Task[]) => void;
+  /** Called when Life Dashboard data is updated (triggers re-render in parent) */
+  onDashboardUpdate?: () => void;
 }
 
-export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategories, onDeleteCategory, tasks = [], onTasksChange }: GoalsProps) {
+export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategories, onDeleteCategory, tasks = [], onTasksChange, onDashboardUpdate }: GoalsProps) {
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
   const [goalTaskOrder, setGoalTaskOrder] = useState<Record<string, string[]>>(() => {
     try { return JSON.parse(localStorage.getItem("adhd-goal-task-order") ?? "{}"); } catch { return {}; }
@@ -152,51 +150,8 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
       <button data-life-coach-trigger onClick={() => setShowLifeCoach(true)} style={{ display: "none" }} />
       {/* Cat sticker: salmon sitting cat — bottom-right corner */}
       <img src={CAT_SALMON} alt="" aria-hidden="true" style={{ position: "absolute", bottom: 0, right: 0, width: 70, opacity: 0.38, pointerEvents: "none", zIndex: 5 }} />
-      {showLifeCoach && <LifeCoachModal onClose={() => setShowLifeCoach(false)} onClear={() => setInsightKey(k => k + 1)} onDashboardUpdate={() => setInsightKey(k => k + 1)} goals={goals} />}
-
-
-      {/* 🧭 Life Dashboard — above typing bar */}
-      {insightKey >= 0 && (() => {
-        try {
-          const data = JSON.parse(localStorage.getItem("adhd-life-dashboard") ?? "null");
-          if (!data || (!data.life && !data.career)) return null;
-          return (
-            <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid oklch(0.82 0.040 285)", background: "oklch(0.975 0.010 285)" }}>
-              {/* Header */}
-              <div style={{ padding: "8px 14px", background: "oklch(0.58 0.12 285 / 0.10)", borderBottom: "1px solid oklch(0.82 0.040 285)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "0.85rem", fontWeight: 700, fontStyle: "italic", color: "oklch(0.35 0.10 285)" }}>🧭 Life Dashboard</span>
-                <button onClick={() => setShowLifeCoach(true)} style={{ fontSize: "0.48rem", fontFamily: "'Space Mono', monospace", color: "oklch(0.55 0.12 285)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 0, letterSpacing: "0.06em" }}>
-                  Update with Coach →
-                </button>
-              </div>
-              {/* Sections */}
-              <div style={{ padding: "10px 14px", display: "grid", gridTemplateColumns: data.life && data.career ? "1fr 1fr" : "1fr", gap: 12 }}>
-                {data.life && (
-                  <div>
-                    <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.44rem", letterSpacing: "0.10em", color: "oklch(0.55 0.12 285)", textTransform: "uppercase", marginBottom: 5 }}>🌱 Life Direction</p>
-                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem", fontWeight: 600, color: "oklch(0.28 0.040 320)", margin: "0 0 5px", lineHeight: 1.4 }}>{data.life.direction}</p>
-                    {data.life.insights?.map((ins: string, i: number) => (
-                      <p key={i} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.72rem", color: "oklch(0.40 0.040 320)", margin: "2px 0", lineHeight: 1.4 }}>• {ins}</p>
-                    ))}
-                    {data.life.nextStep && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.70rem", color: "oklch(0.55 0.12 285)", marginTop: 5, fontStyle: "italic" }}>→ {data.life.nextStep}</p>}
-                  </div>
+      {showLifeCoach && <LifeCoachModal onClose={() => setShowLifeCoach(false)} onClear={() => setInsightKey(k => k + 1)} onDashboardUpdate={() => { setInsightKey(k => k + 1); onDashboardUpdate?.(); }} goals={goals} />}
                 )}
-                {data.career && (
-                  <div>
-                    <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.44rem", letterSpacing: "0.10em", color: "oklch(0.55 0.12 285)", textTransform: "uppercase", marginBottom: 5 }}>🚀 Career Direction</p>
-                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem", fontWeight: 600, color: "oklch(0.28 0.040 320)", margin: "0 0 5px", lineHeight: 1.4 }}>{data.career.direction}</p>
-                    {data.career.insights?.map((ins: string, i: number) => (
-                      <p key={i} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.72rem", color: "oklch(0.40 0.040 320)", margin: "2px 0", lineHeight: 1.4 }}>• {ins}</p>
-                    ))}
-                    {data.career.nextStep && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.70rem", color: "oklch(0.55 0.12 285)", marginTop: 5, fontStyle: "italic" }}>→ {data.career.nextStep}</p>}
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        } catch { return null; }
-      })()}
-
       {/* Add goal */}
       <div className="flex flex-col gap-2">
         <div className="flex gap-2">

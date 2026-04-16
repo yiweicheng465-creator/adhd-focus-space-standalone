@@ -377,6 +377,7 @@ export default function Home() {
   const [wrapUpOpen, setWrapUpOpen] = useState(false);
   const [pendingDump, setPendingDump] = useState<string | null>(null);
   const [pendingAgentTask, setPendingAgentTask] = useState<string | null>(null);
+  const [dashboardKey, setDashboardKey] = useState(0);
 
   // Daily check-in
   const { show: showCheckIn, dismiss: dismissCheckIn } = useDailyCheckIn();
@@ -834,15 +835,53 @@ export default function Home() {
 
             {activeSection === "goals" && (
               <>
+                {/* 🧭 Life Dashboard — above goals.md widget */}
+                {dashboardKey >= 0 && (() => {
+                  try {
+                    const data = JSON.parse(localStorage.getItem("adhd-life-dashboard") ?? "null");
+                    if (!data || (!data.life && !data.career)) return null;
+                    return (
+                      <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid oklch(0.82 0.040 285)", background: "oklch(0.975 0.010 285)", marginBottom: 12 }}>
+                        <div style={{ padding: "8px 14px", background: "oklch(0.58 0.12 285 / 0.10)", borderBottom: "1px solid oklch(0.82 0.040 285)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                          <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "0.85rem", fontWeight: 700, fontStyle: "italic", color: "oklch(0.35 0.10 285)" }}>🧭 Life Dashboard</span>
+                          <button onClick={() => document.querySelector<HTMLButtonElement>("[data-life-coach-trigger]")?.click()} style={{ fontSize: "0.48rem", fontFamily: "'Space Mono', monospace", color: "oklch(0.55 0.12 285)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 0, letterSpacing: "0.06em" }}>
+                            Update with Coach →
+                          </button>
+                        </div>
+                        <div style={{ padding: "10px 14px", display: "grid", gridTemplateColumns: data.life && data.career ? "1fr 1fr" : "1fr", gap: 12 }}>
+                          {data.life && (
+                            <div>
+                              <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.44rem", letterSpacing: "0.10em", color: "oklch(0.55 0.12 285)", textTransform: "uppercase", marginBottom: 5 }}>🌱 Life Direction</p>
+                              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem", fontWeight: 600, color: "oklch(0.28 0.040 320)", margin: "0 0 5px", lineHeight: 1.4 }}>{data.life.direction}</p>
+                              {data.life.insights?.map((ins: string, i: number) => (
+                                <p key={i} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.72rem", color: "oklch(0.40 0.040 320)", margin: "2px 0", lineHeight: 1.4 }}>• {ins}</p>
+                              ))}
+                              {data.life.nextStep && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.70rem", color: "oklch(0.55 0.12 285)", marginTop: 5, fontStyle: "italic" }}>→ {data.life.nextStep}</p>}
+                            </div>
+                          )}
+                          {data.career && (
+                            <div>
+                              <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.44rem", letterSpacing: "0.10em", color: "oklch(0.55 0.12 285)", textTransform: "uppercase", marginBottom: 5 }}>🚀 Career Direction</p>
+                              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem", fontWeight: 600, color: "oklch(0.28 0.040 320)", margin: "0 0 5px", lineHeight: 1.4 }}>{data.career.direction}</p>
+                              {data.career.insights?.map((ins: string, i: number) => (
+                                <p key={i} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.72rem", color: "oklch(0.40 0.040 320)", margin: "2px 0", lineHeight: 1.4 }}>• {ins}</p>
+                              ))}
+                              {data.career.nextStep && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.70rem", color: "oklch(0.55 0.12 285)", marginTop: 5, fontStyle: "italic" }}>→ {data.career.nextStep}</p>}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  } catch { return null; }
+                })()}
                 <RetroPageWrapper title="goals.md" sticker="leaf">
                 <div className="p-8 min-h-[600px] flex flex-col relative overflow-hidden">
                   <GoalsDecor />
                   <div className="relative z-10">
-                    <Goals goals={goals} onGoalsChange={setGoals} allCategories={allCategories} onDeleteCategory={handleDeleteCategory} tasks={tasks} onTasksChange={handleTasksChange} />
+                    <Goals goals={goals} onGoalsChange={setGoals} allCategories={allCategories} onDeleteCategory={handleDeleteCategory} tasks={tasks} onTasksChange={handleTasksChange} onDashboardUpdate={() => setDashboardKey(k => k + 1)} />
                   </div>
                 </div>
                 </RetroPageWrapper>
-
               </>
             )}
 
