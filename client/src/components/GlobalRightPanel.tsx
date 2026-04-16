@@ -412,8 +412,7 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
         {todayRoutines.length > 0 && (
           <div>
             <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.48rem", letterSpacing: "0.10em", color: "oklch(0.55 0.12 285)", textTransform: "uppercase", marginBottom: 6 }}>Today ({today})</p>
-            {todayRoutines.map(r => (
-              {(() => {
+            {todayRoutines.map(r => {
                 const done = doneToday.has(r.id);
                 return (
                   <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", background: done ? "oklch(0.96 0.012 285)" : "white", borderRadius: 8, border: `1px solid ${done ? "oklch(0.78 0.10 285)" : "oklch(0.86 0.030 300)"}`, marginBottom: 4, transition: "all 0.2s" }}>
@@ -433,8 +432,7 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
                     </button>
                   </div>
                 );
-              })()}
-            ))}
+              })}
           </div>
         )}
         {todayRoutines.length === 0 && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.80rem", color: "oklch(0.60 0.040 330)", fontStyle: "italic" }}>No routines set for {today}.</p>}

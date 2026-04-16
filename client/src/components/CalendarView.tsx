@@ -123,11 +123,15 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle, doneFilter = 
         const newDue = (finalYMD === todayYMD && !task.dueDate) ? undefined : finalYMD;
         onTasksChange(tasks.map(t => t.id === currentDragId ? { ...t, dueDate: newDue } : t));
       }
-      const dayTasks = getTasksForDay(finalYMD).map(t => t.id).filter(id => id !== currentDragId);
-      const targetIdx = dayTasks.indexOf(targetTaskId);
+      // Merge with existing full order so unfiltered tasks keep their position
+      const existingOrder = dayOrder[finalYMD] ?? [];
+      const visibleIds = getTasksForDay(finalYMD).map(t => t.id);
+      const hiddenIds = existingOrder.filter(id => !visibleIds.includes(id) && id !== currentDragId);
+      const reorderedVisible = visibleIds.filter(id => id !== currentDragId);
+      const targetIdx = reorderedVisible.indexOf(targetTaskId);
       const insertIdx = dragOverTaskRef.current?.pos === "before" ? targetIdx : targetIdx + 1;
-      dayTasks.splice(Math.max(0, insertIdx), 0, currentDragId);
-      saveDayOrder({ ...dayOrder, [finalYMD]: dayTasks });
+      reorderedVisible.splice(Math.max(0, insertIdx), 0, currentDragId);
+      saveDayOrder({ ...dayOrder, [finalYMD]: [...reorderedVisible, ...hiddenIds] });
     } else if (!targetTaskId) {
       const newDue = (targetYMD === todayYMD && !task.dueDate) ? undefined : targetYMD;
       onTasksChange(tasks.map(t => t.id === currentDragId ? { ...t, dueDate: newDue } : t));
@@ -286,27 +290,23 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle, doneFilter = 
           </button>
         </div>
         <div style={{ display: "flex", gap: 4, flex: 1, minHeight: 0, position: "relative" }}>
-          {/* Drag-to-advance zones: appear when dragging */}
-          {dragId && (
-            <>
-              <div
-                onDragEnter={() => startAdvance(-1)}
-                onDragLeave={cancelAdvance}
-                onDragOver={e => e.preventDefault()}
-                style={{ position: "absolute", left: -4, top: 0, bottom: 0, width: 36, zIndex: 20, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(to right, oklch(0.58 0.18 340 / 0.18), transparent)", borderRadius: "6px 0 0 6px", cursor: "w-resize" }}
-              >
-                <ChevronLeft size={20} style={{ color: M.coral, opacity: 0.8 }} />
-              </div>
-              <div
-                onDragEnter={() => startAdvance(1)}
-                onDragLeave={cancelAdvance}
-                onDragOver={e => e.preventDefault()}
-                style={{ position: "absolute", right: -4, top: 0, bottom: 0, width: 36, zIndex: 20, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(to left, oklch(0.58 0.18 340 / 0.18), transparent)", borderRadius: "0 6px 6px 0", cursor: "e-resize" }}
-              >
-                <ChevronRight size={20} style={{ color: M.coral, opacity: 0.8 }} />
-              </div>
-            </>
-          )}
+          {/* Drag-to-advance zones: always rendered, only activate on dragEnter */}
+          <div
+            onDragEnter={() => startAdvance(-1)}
+            onDragLeave={cancelAdvance}
+            onDragOver={e => e.preventDefault()}
+            style={{ position: "absolute", left: -4, top: 0, bottom: 0, width: 36, zIndex: 20, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(to right, oklch(0.58 0.18 340 / 0.10), transparent)", borderRadius: "6px 0 0 6px", cursor: "w-resize", pointerEvents: "auto" }}
+          >
+            <ChevronLeft size={20} style={{ color: M.coral, opacity: 0.4 }} />
+          </div>
+          <div
+            onDragEnter={() => startAdvance(1)}
+            onDragLeave={cancelAdvance}
+            onDragOver={e => e.preventDefault()}
+            style={{ position: "absolute", right: -4, top: 0, bottom: 0, width: 36, zIndex: 20, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(to left, oklch(0.58 0.18 340 / 0.10), transparent)", borderRadius: "0 6px 6px 0", cursor: "e-resize", pointerEvents: "auto" }}
+          >
+            <ChevronRight size={20} style={{ color: M.coral, opacity: 0.4 }} />
+          </div>
           {days.map(d => <DayColumn key={toYMD(d)} day={d} />)}
         </div>
       </div>
