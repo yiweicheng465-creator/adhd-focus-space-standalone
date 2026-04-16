@@ -23,15 +23,26 @@ interface Props {
   onLogWin?: (text: string, iconIdx: number) => void;
 }
 
-const BTN_STYLE = (active: boolean): React.CSSProperties => ({
-  display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-  padding: "12px 8px", background: active ? "oklch(0.55 0.14 285)" : "oklch(0.92 0.020 300)",
-  color: active ? "white" : "oklch(0.45 0.12 285)",
-  border: "none", borderRadius: "8px 0 0 8px",
-  cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: "0.40rem",
-  letterSpacing: "0.10em", boxShadow: "-2px 0 10px oklch(0.55 0.14 285 / 0.15)",
-  transition: "all 0.15s", minWidth: 34,
-});
+// Pink → purple → blue gradient per button
+const BTN_COLORS = [
+  { active: "oklch(0.58 0.18 355)", idle: "oklch(0.94 0.020 355)", text: "oklch(0.42 0.14 355)" }, // AI: pink
+  { active: "oklch(0.55 0.16 310)", idle: "oklch(0.93 0.018 310)", text: "oklch(0.40 0.12 310)" }, // Coach: pink-purple
+  { active: "oklch(0.52 0.14 270)", idle: "oklch(0.92 0.016 270)", text: "oklch(0.38 0.12 270)" }, // Timer: purple
+  { active: "oklch(0.50 0.12 240)", idle: "oklch(0.92 0.014 240)", text: "oklch(0.36 0.10 240)" }, // Routine: blue
+];
+
+const BTN_STYLE = (active: boolean, idx: number = 0): React.CSSProperties => {
+  const c = BTN_COLORS[idx] ?? BTN_COLORS[0];
+  return {
+    display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+    padding: "12px 8px", background: active ? c.active : c.idle,
+    color: active ? "white" : c.text,
+    border: "none", borderRadius: "8px 0 0 8px",
+    cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: "0.40rem",
+    letterSpacing: "0.10em", boxShadow: `-2px 0 10px ${c.active}33`,
+    transition: "all 0.15s", minWidth: 34,
+  };
+};
 
 export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin }: Props) {
   const [panel, setPanel] = useState<"ai" | "coach" | "timer" | "routine" | null>(null);
@@ -49,28 +60,36 @@ export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin }: Props)
 
   return (
     <>
+      {/* Click-outside backdrop — closes any open panel */}
+      {panel && (
+        <div
+          onClick={() => setPanel(null)}
+          style={{ position: "fixed", inset: 0, zIndex: 99 }}
+        />
+      )}
+
       {/* Right-edge button stack */}
-      <div style={{ position: "fixed", right: 0, top: "50%", transform: "translateY(-50%)", zIndex: 50, display: "flex", flexDirection: "column", gap: 2 }}>
+      <div style={{ position: "fixed", right: 0, top: "50%", transform: "translateY(-50%)", zIndex: 101, display: "flex", flexDirection: "column", gap: 2 }}>
         {/* AI */}
-        <button style={BTN_STYLE(panel === "ai")} onClick={handleAIClick} title="AI Assistant">
+        <button style={BTN_STYLE(panel === "ai", 0)} onClick={handleAIClick} title="AI Assistant">
           <Bot size={14} />
           <span style={{ writingMode: "vertical-rl", fontSize: "0.38rem" }}>AI</span>
         </button>
         {/* Life Coach */}
-        <button style={BTN_STYLE(panel === "coach")} onClick={() => toggle("coach")} title="Life Coach">
+        <button style={BTN_STYLE(panel === "coach", 1)} onClick={() => toggle("coach")} title="Life Coach">
           <span style={{ fontSize: "0.85rem", lineHeight: 1 }}>🧭</span>
           <span style={{ writingMode: "vertical-rl", fontSize: "0.38rem" }}>COACH</span>
         </button>
         {/* Timer */}
         <TimerButton active={panel === "timer"} onClick={() => toggle("timer")} />
         {/* Routine */}
-        <button style={BTN_STYLE(panel === "routine")} onClick={() => toggle("routine")} title="Daily Routine">
+        <button style={BTN_STYLE(panel === "routine", 3)} onClick={() => toggle("routine")} title="Daily Routine">
           <span style={{ fontSize: "0.85rem", lineHeight: 1 }}>💫</span>
           <span style={{ writingMode: "vertical-rl", fontSize: "0.38rem" }}>ROUTINE</span>
         </button>
       </div>
 
-      {/* Popups */}
+      {/* Popups — zIndex 100, above backdrop (99) but below buttons (101) */}
       {panel === "ai" && <AIChatPopup onClose={() => setPanel(null)} goals={goals} />}
       {panel === "coach" && <CoachPopup onClose={() => setPanel(null)} goals={goals} />}
       {panel === "timer" && <TimerPopup onClose={() => setPanel(null)} />}
@@ -90,7 +109,7 @@ function TimerButton({ active, onClick }: { active: boolean; onClick: () => void
   return (
     <button
       style={{
-        ...BTN_STYLE(active || isActive),
+        ...BTN_STYLE(active || isActive, 2),
         ...(isActive ? {
           background: modeLightBg,
           color: modeColor,
