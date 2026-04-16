@@ -262,8 +262,10 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle, doneFilter = 
 
   // ── Week view ───────────────────────────────────────────────────────────────
   const advanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [hoverZone, setHoverZone] = useState<"left" | "right" | null>(null);
 
   function startAdvance(dir: -1 | 1) {
+    setHoverZone(dir === -1 ? "left" : "right");
     if (advanceTimerRef.current) return;
     advanceTimerRef.current = setTimeout(() => {
       setWeekStart(d => addDays(d, dir * 7));
@@ -271,6 +273,7 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle, doneFilter = 
     }, 600);
   }
   function cancelAdvance() {
+    setHoverZone(null);
     if (advanceTimerRef.current) { clearTimeout(advanceTimerRef.current); advanceTimerRef.current = null; }
   }
 
@@ -290,22 +293,40 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle, doneFilter = 
           </button>
         </div>
         <div style={{ display: "flex", gap: 4, flex: 1, minHeight: 0, position: "relative" }}>
-          {/* Drag-to-advance zones: always rendered, only activate on dragEnter */}
+          {/* Drag-to-advance zones: dashed border + glow when hovering during drag */}
           <div
             onDragEnter={() => startAdvance(-1)}
             onDragLeave={cancelAdvance}
             onDragOver={e => e.preventDefault()}
-            style={{ position: "absolute", left: -4, top: 0, bottom: 0, width: 36, zIndex: 20, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(to right, oklch(0.58 0.18 340 / 0.10), transparent)", borderRadius: "6px 0 0 6px", cursor: "w-resize", pointerEvents: "auto" }}
+            style={{
+              position: "absolute", left: -4, top: 0, bottom: 0, width: 40, zIndex: 20,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              background: hoverZone === "left"
+                ? "linear-gradient(to right, oklch(0.58 0.18 340 / 0.22), transparent)"
+                : "linear-gradient(to right, oklch(0.58 0.18 340 / 0.06), transparent)",
+              borderLeft: hoverZone === "left" ? `2.5px dashed ${M.coral}` : "2px dashed transparent",
+              borderRadius: "6px 0 0 6px",
+              cursor: "w-resize", transition: "all 0.15s",
+            }}
           >
-            <ChevronLeft size={20} style={{ color: M.coral, opacity: 0.4 }} />
+            <ChevronLeft size={20} style={{ color: M.coral, opacity: hoverZone === "left" ? 1 : 0.3, transition: "opacity 0.15s" }} />
           </div>
           <div
             onDragEnter={() => startAdvance(1)}
             onDragLeave={cancelAdvance}
             onDragOver={e => e.preventDefault()}
-            style={{ position: "absolute", right: -4, top: 0, bottom: 0, width: 36, zIndex: 20, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(to left, oklch(0.58 0.18 340 / 0.10), transparent)", borderRadius: "0 6px 6px 0", cursor: "e-resize", pointerEvents: "auto" }}
+            style={{
+              position: "absolute", right: -4, top: 0, bottom: 0, width: 40, zIndex: 20,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              background: hoverZone === "right"
+                ? "linear-gradient(to left, oklch(0.58 0.18 340 / 0.22), transparent)"
+                : "linear-gradient(to left, oklch(0.58 0.18 340 / 0.06), transparent)",
+              borderRight: hoverZone === "right" ? `2.5px dashed ${M.coral}` : "2px dashed transparent",
+              borderRadius: "0 6px 6px 0",
+              cursor: "e-resize", transition: "all 0.15s",
+            }}
           >
-            <ChevronRight size={20} style={{ color: M.coral, opacity: 0.4 }} />
+            <ChevronRight size={20} style={{ color: M.coral, opacity: hoverZone === "right" ? 1 : 0.3, transition: "opacity 0.15s" }} />
           </div>
           {days.map(d => <DayColumn key={toYMD(d)} day={d} />)}
         </div>
