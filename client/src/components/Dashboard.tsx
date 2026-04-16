@@ -636,6 +636,20 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
                         {cleanText}
                       </p>
 
+                      {/* Due date — only in bigger view (AI off) */}
+                      {!showAI && !isCompleting && t.dueDate && (() => {
+                        const td = new Date().toISOString().slice(0, 10);
+                        const isOverdue = t.dueDate < td;
+                        const isToday = t.dueDate === td;
+                        const d = new Date(t.dueDate + "T00:00:00");
+                        const label = isToday ? "Today" : d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                        return (
+                          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.48rem", letterSpacing: "0.04em", color: isOverdue ? "#c0306a" : isToday ? "#7a50a0" : MUTED, flexShrink: 0, padding: "1px 4px", borderRadius: 2, background: isOverdue ? "rgba(192,48,106,0.10)" : isToday ? "rgba(122,80,160,0.10)" : "transparent" }}>
+                            {label}
+                          </span>
+                        );
+                      })()}
+
                       {/* Priority stamp tag */}
                       {!isCompleting && (
                         <span style={{
