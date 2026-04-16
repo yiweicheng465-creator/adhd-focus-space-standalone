@@ -226,7 +226,7 @@ export function ClickableContextBadge({ context, allContexts, onChange }: {
       </button>
       {open && pos && (
         <div ref={dropRef} style={{
-          position: "fixed", top: dropPos.top, left: dropPos.left, zIndex: 99999,
+          position: "fixed", top: pos.top, left: pos.left, zIndex: 99999,
           background: "#fdf4f8", border: "1.5px solid oklch(0.82 0.050 340)",
           borderRadius: 6, boxShadow: "0 4px 16px rgba(140,40,90,0.15)",
           padding: "4px", minWidth: 120, display: "flex", flexDirection: "column", gap: 1,
