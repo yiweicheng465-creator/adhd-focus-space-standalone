@@ -481,7 +481,10 @@ function DayDetailModal({ selectedDay, onClose, getTasksForDay, dayOrder, saveDa
         )}
 
         {/* Task list */}
-        <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
+        {/* Notebook-style layout: single vertical spine line on the left */}
+        <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", position: "relative" }}>
+          {/* Single continuous vertical spine */}
+          <div style={{ position: "absolute", left: 64, top: 0, bottom: 0, width: 1, background: "oklch(0.82 0.050 340 / 0.45)", pointerEvents: "none", zIndex: 0 }} />
           {filtered.length === 0
             ? <p style={{ padding: "16px 14px", fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", color: M.muted, fontStyle: "italic" }}>No tasks for this day.</p>
             : filtered.map((task, i) => (
@@ -506,22 +509,20 @@ function DayDetailModal({ selectedDay, onClose, getTasksForDay, dayOrder, saveDa
                     setDragId(null); setDragOverTask(null);
                   }}
                   style={{
-                    display: "flex", alignItems: "center", gap: 10, padding: "9px 14px",
+                    display: "flex", alignItems: "center", gap: 8, padding: "9px 14px 9px 12px", position: "relative", zIndex: 1,
                     cursor: "grab", background: editingId === task.id ? "oklch(0.97 0.015 340)" : "transparent",
                     borderTop: dragOverTask?.id === task.id && dragOverTask.pos === "before" ? `2px solid oklch(0.58 0.18 340)` : "none",
                   }}
                 >
-                  <button onClick={() => onTaskToggle(task.id)} style={{ flexShrink: 0, width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${PRIORITY_COLOR[task.priority] ?? "oklch(0.58 0.18 340)"}`, background: task.done ? PRIORITY_COLOR[task.priority] : "transparent", cursor: "pointer", padding: 0 }} />
-                  {/* Task name — single line + ellipsis, click to edit */}
-                  {/* Time reference — LEFT side, notebook style */}
-                  <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.44rem", color: M.muted, opacity: 0.55, flexShrink: 0, minWidth: 38, textAlign: "right" }}>
+                  {/* Time + circle on left of spine */}
+                  <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.44rem", color: M.muted, opacity: 0.6, flexShrink: 0, minWidth: 32, textAlign: "right" }}>
                     {timeRef(i)}
                   </span>
-                  {/* Thin vertical notebook line */}
-                  <div style={{ width: 1, height: 16, background: "oklch(0.82 0.050 340 / 0.5)", flexShrink: 0 }} />
+                  <button onClick={() => onTaskToggle(task.id)} style={{ flexShrink: 0, width: 13, height: 13, borderRadius: "50%", border: `1.5px solid ${PRIORITY_COLOR[task.priority] ?? "oklch(0.58 0.18 340)"}`, background: task.done ? PRIORITY_COLOR[task.priority] : "white", cursor: "pointer", padding: 0, position: "relative", zIndex: 1 }} />
+                  {/* Task text — right of spine */}
                   <span
                     onClick={() => editingId === task.id ? setEditingId(null) : openEdit(task)}
-                    style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", color: M.ink, lineHeight: 1.5, cursor: "pointer", textDecoration: task.done ? "line-through" : "none", opacity: task.done ? 0.5 : 1, wordBreak: "break-word" }}
+                    style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", color: M.ink, lineHeight: 1.5, cursor: "pointer", textDecoration: task.done ? "line-through" : "none", opacity: task.done ? 0.5 : 1, wordBreak: "break-word", paddingLeft: 2 }}
                   >
                     {task.text}
                   </span>
