@@ -48,15 +48,36 @@ export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin }: Props)
   const [panel, setPanel] = useState<"ai" | "coach" | "timer" | "routine" | null>(null);
   const toggle = (p: "ai" | "coach" | "timer" | "routine") => setPanel(v => v === p ? null : p);
 
-  const handleAIClick = () => {
-    // On dashboard page, toggle the built-in AI panel instead of spawning a popup
+  // Track dashboard AI state so the button reflects it
+  const [dashboardAIOn, setDashboardAIOn] = useState(() =>
+    localStorage.getItem("adhd-dashboard-show-ai") !== "false"
+  );
+  useEffect(() => {
+    const onToggle = () => {
+      // Read after a tick so Dashboard has updated localStorage first
+      setTimeout(() => {
+        setDashboardAIOn(localStorage.getItem("adhd-dashboard-show-ai") !== "false");
+      }, 0);
+    };
+    window.addEventListener("toggleDashboardAI", onToggle);
+    return () => window.removeEventListener("toggleDashboardAI", onToggle);
+  }, []);
+
+  const onDashboard = () => {
     const hash = window.location.hash.replace("#", "") || "dashboard";
-    if (hash === "dashboard" || hash === "") {
+    return hash === "dashboard" || hash === "";
+  };
+
+  const handleAIClick = () => {
+    if (onDashboard()) {
+      setPanel(null); // close any open side popup
       window.dispatchEvent(new CustomEvent("toggleDashboardAI"));
     } else {
       toggle("ai");
     }
   };
+
+  const aiActiveOnDashboard = onDashboard() && dashboardAIOn;
 
   return (
     <>
@@ -64,16 +85,16 @@ export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin }: Props)
       {panel && (
         <div
           onClick={() => setPanel(null)}
-          style={{ position: "fixed", inset: 0, zIndex: 99 }}
+          style={{ position: "fixed", inset: 0, zIndex: 99, cursor: "default" }}
         />
       )}
 
       {/* Right-edge button stack */}
       <div style={{ position: "fixed", right: 0, top: "50%", transform: "translateY(-50%)", zIndex: 101, display: "flex", flexDirection: "column", gap: 2 }}>
         {/* AI */}
-        <button style={BTN_STYLE(panel === "ai", 0)} onClick={handleAIClick} title="AI Assistant">
+        <button style={BTN_STYLE(panel === "ai" || aiActiveOnDashboard, 0)} onClick={handleAIClick} title="AI Assistant">
           <Bot size={14} />
-          <span style={{ writingMode: "vertical-rl", fontSize: "0.38rem" }}>AI</span>
+          <span style={{ writingMode: "vertical-rl", fontSize: "0.38rem" }}>{aiActiveOnDashboard ? "HIDE AI" : "AI"}</span>
         </button>
         {/* Life Coach */}
         <button style={BTN_STYLE(panel === "coach", 1)} onClick={() => toggle("coach")} title="Life Coach">
