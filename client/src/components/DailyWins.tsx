@@ -131,7 +131,7 @@ function IconBlockComplete({ size = 20, color = "#C0622F" }: IconProps) {
 }
 
 // ── Icon registry ──────────────────────────────────────────────────────────────
-const WIN_ICONS = [
+export const WIN_ICONS = [
   { key: "health",    Component: IconHealth,    label: "Health",    color: "oklch(0.58 0.18 355)" },
   { key: "study",     Component: IconStudy,     label: "Study",     color: "oklch(0.52 0.14 270)" },
   { key: "work",      Component: IconWork,      label: "Work",      color: "oklch(0.50 0.14 290)" },
@@ -162,7 +162,7 @@ const M = {
 };
 
 // ── Floating icon picker popover ───────────────────────────────────────────────
-function IconPickerPopover({
+export function IconPickerPopover({
   current,
   onSelect,
   onClose,
@@ -371,7 +371,7 @@ function WinCard({
             textDecoration: isArchiveView ? "line-through" : "none",
           }}
         >
-          {win.text}
+          {isRoutineWin ? win.text.replace(/^[\p{Emoji}\s]+/u, "").trim() || win.text : win.text}
         </p>
         <p className="text-xs mt-0.5" style={{ color: M.muted, fontFamily: "'DM Sans', sans-serif" }}>
           {isToday && !isArchiveView

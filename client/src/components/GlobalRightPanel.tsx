@@ -11,6 +11,7 @@ import { useTimer } from "@/contexts/TimerContext";
 import { useSoundContext } from "@/contexts/SoundContext";
 import { Streamdown } from "streamdown";
 import type { Goal } from "./Goals";
+import { WIN_ICONS, IconPickerPopover } from "./DailyWins";
 
 const CHAT_KEY = "adhd-ai-chat-history"; // same key as Dashboard
 const MAX = 10;
@@ -363,13 +364,6 @@ Be specific and personal. Use the person's exact words/goals.`,
 /* ── Routine Popup ─────────────────────────────────────────── */
 const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 const ROUTINE_KEY = "adhd-routines";
-// Maps to WIN_ICONS indices in DailyWins (0=Health,1=Study,2=Work,3=Social,4=Creative,5=Mindful,6=Fitness,7=Nutrition)
-const ROUTINE_CATS = [
-  { emoji: "❤️", label: "Health" }, { emoji: "📖", label: "Study" },
-  { emoji: "💼", label: "Work" },   { emoji: "👥", label: "Social" },
-  { emoji: "🎨", label: "Creative"},{ emoji: "🧘", label: "Mindful" },
-  { emoji: "💪", label: "Fitness" },{ emoji: "🍎", label: "Nutrition" },
-];
 
 type Routine = { id: string; name: string; days: string[]; iconIdx: number };
 
@@ -381,6 +375,7 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
   const [newDays, setNewDays] = useState<string[]>(["Mon","Tue","Wed","Thu","Fri"]);
   const [newIconIdx, setNewIconIdx] = useState(0);
   const [pickerOpenId, setPickerOpenId] = useState<string | null>(null);
+  const newIconBtnRef = useRef<HTMLButtonElement>(null);
   const [adding, setAdding] = useState(false);
   const today = DAYS[(new Date().getDay() + 6) % 7]; // Mon=0
   const todayKey = new Date().toISOString().slice(0, 10);
@@ -413,7 +408,7 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
 
   const markDone = (r: Routine) => {
     if (doneToday.has(r.id)) return;
-    const iconIdx = typeof r.iconIdx === "number" ? r.iconIdx : 0;
+    const iconIdx = typeof r.iconIdx === "number" ? r.iconIdx % WIN_ICONS.length : 0;
     const win = { id: `routine-${Date.now()}`, text: r.name, iconIdx };
     try {
       const wins = JSON.parse(localStorage.getItem("adhd-wins") ?? "[]");
@@ -434,15 +429,15 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
             <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.48rem", letterSpacing: "0.10em", color: "oklch(0.55 0.12 285)", textTransform: "uppercase", marginBottom: 6 }}>Today ({today})</p>
             {todayRoutines.map(r => {
                 const done = doneToday.has(r.id);
-                const cat = ROUTINE_CATS[r.iconIdx ?? 0] ?? ROUTINE_CATS[0];
+                const iconDef = WIN_ICONS[(r.iconIdx ?? 0) % WIN_ICONS.length];
                 const isPickerOpen = pickerOpenId === r.id;
                 return (
                   <div key={r.id} style={{ position: "relative", marginBottom: 4 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", background: done ? "oklch(0.96 0.012 285)" : "white", borderRadius: 8, border: `1px solid ${done ? "oklch(0.78 0.10 285)" : "oklch(0.86 0.030 300)"}`, transition: "all 0.2s" }}>
-                    {/* Category emoji — click to change */}
-                    <button onClick={() => !done && setPickerOpenId(isPickerOpen ? null : r.id)} title={cat.label}
-                      style={{ fontSize: "0.85rem", lineHeight: 1, background: "none", border: "none", cursor: done ? "default" : "pointer", padding: 0, flexShrink: 0 }}>
-                      {cat.emoji}
+                    {/* Category SVG icon — click to change */}
+                    <button onClick={() => !done && setPickerOpenId(isPickerOpen ? null : r.id)} title={iconDef.label}
+                      style={{ width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", background: isPickerOpen ? `${iconDef.color}15` : "none", border: isPickerOpen ? `1px solid ${iconDef.color}` : "1px solid transparent", borderRadius: 5, cursor: done ? "default" : "pointer", padding: 0, flexShrink: 0 }}>
+                      <iconDef.Component size={14} color={done ? "oklch(0.65 0.05 285)" : iconDef.color} />
                     </button>
                     <span style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", color: done ? "oklch(0.55 0.10 285)" : "oklch(0.28 0.040 320)", textDecoration: done ? "line-through" : "none", opacity: done ? 0.7 : 1 }}>{r.name}</span>
                     <button
@@ -460,14 +455,11 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
                     </button>
                   </div>
                   {isPickerOpen && (
-                    <div style={{ position: "absolute", top: "100%", left: 0, zIndex: 200, background: "white", border: "1px solid oklch(0.86 0.030 300)", borderRadius: 8, padding: 6, display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", marginTop: 2 }}>
-                      {ROUTINE_CATS.map((cat, idx) => (
-                        <button key={idx} onClick={() => changeIcon(r.id, idx)} title={cat.label}
-                          style={{ fontSize: "1rem", padding: "4px", borderRadius: 6, border: `1.5px solid ${idx === r.iconIdx ? "oklch(0.55 0.14 285)" : "transparent"}`, background: idx === r.iconIdx ? "oklch(0.55 0.14 285 / 0.10)" : "transparent", cursor: "pointer" }}>
-                          {cat.emoji}
-                        </button>
-                      ))}
-                    </div>
+                    <IconPickerPopover
+                      current={r.iconIdx ?? 0}
+                      onSelect={(idx) => changeIcon(r.id, idx)}
+                      onClose={() => setPickerOpenId(null)}
+                    />
                   )}
                   </div>
                 );
@@ -485,14 +477,20 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
             <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8, padding: "8px", background: "oklch(0.97 0.010 300)", borderRadius: 8 }}>
               <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Routine name…" autoFocus
                 style={{ padding: "5px 8px", borderRadius: 4, border: "1px solid oklch(0.82 0.050 340)", fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", outline: "none" }} />
-              {/* Category picker for new routine */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 2 }}>
-                {ROUTINE_CATS.map((cat, idx) => (
-                  <button key={idx} onClick={() => setNewIconIdx(idx)} title={cat.label}
-                    style={{ fontSize: "0.85rem", padding: "3px", borderRadius: 5, border: `1.5px solid ${idx === newIconIdx ? "oklch(0.55 0.14 285)" : "transparent"}`, background: idx === newIconIdx ? "oklch(0.55 0.14 285 / 0.12)" : "transparent", cursor: "pointer" }}>
-                    {cat.emoji}
+              {/* Category picker — single SVG icon button + popover (same as DailyWins) */}
+              <div style={{ display: "flex", alignItems: "center", gap: 6, position: "relative" }}>
+                {(() => { const ic = WIN_ICONS[newIconIdx]; return (
+                  <button ref={newIconBtnRef} onClick={() => setPickerOpenId(pickerOpenId === "new" ? null : "new")} title={ic.label}
+                    style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6, border: `1.5px solid ${pickerOpenId === "new" ? ic.color : "oklch(0.82 0.050 340)"}`, background: pickerOpenId === "new" ? `${ic.color}15` : "transparent", cursor: "pointer" }}>
+                    <ic.Component size={16} color={ic.color} />
                   </button>
-                ))}
+                ); })()}
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.72rem", color: "oklch(0.55 0.040 330)" }}>
+                  {WIN_ICONS[newIconIdx].label}
+                </span>
+                {pickerOpenId === "new" && (
+                  <IconPickerPopover current={newIconIdx} onSelect={(idx) => { setNewIconIdx(idx); setPickerOpenId(null); }} onClose={() => setPickerOpenId(null)} anchorRef={newIconBtnRef} />
+                )}
               </div>
               <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                 {DAYS.map((d) => {
@@ -512,10 +510,10 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
             </div>
           )}
           {routines.map(r => {
-            const cat = ROUTINE_CATS[r.iconIdx ?? 0] ?? ROUTINE_CATS[0];
+            const ic = WIN_ICONS[(r.iconIdx ?? 0) % WIN_ICONS.length];
             return (
               <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0" }}>
-                <span style={{ fontSize: "0.80rem", flexShrink: 0 }}>{cat.emoji}</span>
+                <ic.Component size={13} color={ic.color} />
                 <span style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem", color: "oklch(0.35 0.040 320)" }}>{r.name}</span>
                 <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.42rem", color: "oklch(0.60 0.040 330)" }}>{r.days.join(",")}</span>
                 <button onClick={() => deleteRoutine(r.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "oklch(0.65 0.050 330)", fontSize: "0.70rem" }}>×</button>
