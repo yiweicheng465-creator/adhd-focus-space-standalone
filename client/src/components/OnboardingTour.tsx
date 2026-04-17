@@ -49,7 +49,9 @@ export interface TourStep {
   /** Emoji icon for visual flair */
   icon: string;
   /** Preferred tooltip placement relative to spotlight */
-  placement?: "top" | "bottom" | "left" | "right";
+  placement?: "top" | "bottom" | "left" | "right" | "center";
+  /** If true, do not call onNavigate — spotlight the element in-place (for sidebar-only steps that would trigger a route change) */
+  noNavigate?: boolean;
 }
 
 interface OnboardingTourProps {
@@ -205,7 +207,7 @@ export const TOUR_STEPS: TourStep[] = [
     icon: "🤖",
     placement: "right",
   },
-  // ── 14. Quick Add FAB ─────────────────────────────────────────────────────
+  // ── 14. Quick Add FAB ────────────────────────────────────────────────────────────
   {
     section: "dashboard",
     targetId: "tour-quick-add",
@@ -214,9 +216,9 @@ export const TOUR_STEPS: TourStep[] = [
     description:
       "The + button in the bottom-right corner (or press the + key) opens a quick-capture modal. Add a task, goal, win, or brain dump entry without navigating away. Perfect for capturing thoughts the moment they appear.",
     icon: "➕",
-    placement: "left",
+    placement: "top",  // button is bottom-right — tooltip goes above it
   },
-  // ── 15. Daily Check-In card ───────────────────────────────────────────────
+  // ── 15. Daily Check-In card ─────────────────────────────────────────────────────
   {
     section: "dashboard",
     targetId: "tour-dashboard",
@@ -227,20 +229,20 @@ export const TOUR_STEPS: TourStep[] = [
     icon: "☀️",
     placement: "right",
   },
-  // ── 16. Wrap Up ───────────────────────────────────────────────────────────
+  // ── 16. Wrap Up ─────────────────────────────────────────────────────────────
   {
     section: "dashboard",
-    targetId: "tour-wrapup",
+    targetId: "tour-wrapup",          // spotlight the trigger button in the header
     label: "WRAP UP",
     title: "🌙 Daily Wrap Up",
     description:
       "At the end of your day, click Wrap Up in the top bar. It shows your completed tasks, wins, and focus score. The AI writes a personalised reflection on your day. This data feeds your Monthly Progress calendar.",
     icon: "🌙",
-    placement: "bottom",
+    placement: "bottom",              // tooltip appears below the header button
   },
   // ── 17. Monthly Progress ──────────────────────────────────────────────────
   {
-    section: "dashboard",
+    section: "dashboard",   // stay on dashboard — monthly is a separate route
     targetId: "tour-monthly",
     label: "MONTHLY",
     title: "📅 Monthly Progress",
@@ -248,7 +250,8 @@ export const TOUR_STEPS: TourStep[] = [
       "The calendar icon in the sidebar opens your Monthly Progress page. Every day shows a score, mood, wins count, and focus time. Tap any day to see its full summary and AI reflection. Track your patterns over time.",
     icon: "📅",
     placement: "right",
-  },
+    noNavigate: true,   // spotlight the sidebar button without changing route
+  } as TourStep & { noNavigate?: boolean },
   // ── 18. Settings — Effects ────────────────────────────────────────────────
   {
     section: "dashboard",
@@ -284,7 +287,7 @@ export const TOUR_STEPS: TourStep[] = [
   },
   // ── 21. Guide ─────────────────────────────────────────────────────────────
   {
-    section: "dashboard",
+    section: "dashboard",   // stay on dashboard — guide is a separate route
     targetId: "tour-guide",
     label: "GUIDE",
     title: "📖 App Guide & Shortcuts",
@@ -292,7 +295,8 @@ export const TOUR_STEPS: TourStep[] = [
       "The ? button at the bottom of the sidebar opens the full App Guide. It lists every keyboard shortcut (/ for AI chat, D for brain dump, + for quick add, Space for timer) and explains every feature in detail. Always there when you need a reminder.",
     icon: "📖",
     placement: "right",
-  },
+    noNavigate: true,   // spotlight the sidebar button without changing route
+  } as TourStep & { noNavigate?: boolean },
   // ── 22. Storage & Backup ──────────────────────────────────────────────────
   {
     section: "storage",
@@ -438,7 +442,7 @@ interface TooltipCardProps {
 }
 
 const CARD_W = 300;
-const CARD_H_APPROX = 200;
+const CARD_H_APPROX = 240; // slightly taller estimate to prevent bottom overflow
 const GAP = 20;
 
 function computeCardPosition(
@@ -447,31 +451,39 @@ function computeCardPosition(
 ): React.CSSProperties {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
+  const safeBottom = vh - 16; // 16px bottom margin
 
   let left: number | undefined;
-  let right: number | undefined;
   let top: number | undefined;
-  let bottom: number | undefined;
 
   const cx = rect.left + rect.width / 2;
   const cy = rect.top + rect.height / 2;
 
-  if (placement === "right") {
+  if (placement === "center") {
+    // Used for modal/popup targets — centre the card on screen
+    left = Math.max(12, (vw - CARD_W) / 2);
+    top = Math.max(12, (vh - CARD_H_APPROX) / 2);
+  } else if (placement === "right") {
     left = Math.min(rect.right + GAP, vw - CARD_W - 12);
-    top = Math.max(12, Math.min(cy - CARD_H_APPROX / 2, vh - CARD_H_APPROX - 12));
+    top = Math.max(12, Math.min(cy - CARD_H_APPROX / 2, safeBottom - CARD_H_APPROX));
   } else if (placement === "left") {
     left = Math.max(12, rect.left - CARD_W - GAP);
-    top = Math.max(12, Math.min(cy - CARD_H_APPROX / 2, vh - CARD_H_APPROX - 12));
+    top = Math.max(12, Math.min(cy - CARD_H_APPROX / 2, safeBottom - CARD_H_APPROX));
   } else if (placement === "bottom") {
     left = Math.max(12, Math.min(cx - CARD_W / 2, vw - CARD_W - 12));
-    top = Math.min(rect.bottom + GAP, vh - CARD_H_APPROX - 12);
+    top = Math.min(rect.bottom + GAP, safeBottom - CARD_H_APPROX);
   } else {
     // top
     left = Math.max(12, Math.min(cx - CARD_W / 2, vw - CARD_W - 12));
     top = Math.max(12, rect.top - CARD_H_APPROX - GAP);
   }
 
-  // Fallback: if card would go off-screen, centre it
+  // Final safety clamp: never let card go below viewport
+  if (top !== undefined && top + CARD_H_APPROX > safeBottom) {
+    top = Math.max(12, safeBottom - CARD_H_APPROX);
+  }
+
+  // Horizontal safety clamp
   if (left !== undefined && (left < 0 || left + CARD_W > vw)) {
     left = Math.max(12, (vw - CARD_W) / 2);
   }
@@ -830,11 +842,8 @@ function WelcomeSplash({ displayName, onStart, onSkip }: WelcomeSplashProps) {
             structured place to manage tasks, track goals, and stay in flow.
             <br />
             <br />
-            Let me show you around in{" "}
-            <strong style={{ color: P.terracotta }}>
-              {TOUR_STEPS.length} quick steps
-            </strong>
-            .
+            I'll get you through it —{" "}
+            <strong style={{ color: P.terracotta }}>one thing at a time</strong>.
           </p>
 
           {/* Feature preview pills */}
@@ -1043,7 +1052,8 @@ export function OnboardingTour({ onClose, onNavigate }: OnboardingTourProps) {
   useEffect(() => {
     if (phase !== "touring") return;
     const targetSection = currentStep.section;
-    if (prevSectionRef.current !== targetSection) {
+    const skip = (currentStep as TourStep & { noNavigate?: boolean }).noNavigate;
+    if (!skip && prevSectionRef.current !== targetSection) {
       onNavigate(targetSection);
       prevSectionRef.current = targetSection;
       setSectionReady(false);
@@ -1051,6 +1061,7 @@ export function OnboardingTour({ onClose, onNavigate }: OnboardingTourProps) {
       const t = setTimeout(() => setSectionReady(true), 350);
       return () => clearTimeout(t);
     } else {
+      // Either same section or noNavigate — element is already in DOM
       setSectionReady(true);
     }
   }, [phase, stepIndex, currentStep, onNavigate]);
