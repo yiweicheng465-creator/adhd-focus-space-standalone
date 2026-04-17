@@ -216,17 +216,26 @@ export function Dashboard({
     setChatHistory((prev) => [...prev, userMsg]);
     setChatLoading(true);
     try {
-      const taskSummary = tasks.map((t) => `[id:${t.id}] [${t.priority}] "${t.text}" (${t.done ? "done" : "pending"})`).join("\n");
-      const goalSummary = goals.length ? `\nGoals: ${goals.map(g => `"${g.text}"`).join(", ")}` : "";
+      const n = new Date();
+      const localDate = `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+      const taskSummary = tasks.map((t) => {
+        const linkedGoal = t.goalId ? goals.find(g => g.id === t.goalId) : null;
+        return `[id:${t.id}] [${t.priority}] "${t.text}" (${t.done ? "done" : "pending"})${linkedGoal ? ` [linked to goal: "${linkedGoal.text}"]` : ""}`;
+      }).join("\n");
+      const goalSummary = goals.filter(g => !g.archived).map(g => `[id:${g.id}] "${g.text}" (${g.progress}%)`).join("\n");
       const systemPrompt = `You are a warm, encouraging ADHD productivity coach. Keep replies short (1-2 sentences).
-You CAN take actions on the user's tasks. After your reply, if an action is needed output it on a new line as JSON:
-ACTION:{"type":"complete_task","taskId":"id"} — to mark a task done
-ACTION:{"type":"create_task","text":"task text","priority":"focus|normal|urgent","context":"work|personal","dueDate":"YYYY-MM-DD or today or tomorrow or null","goalName":"partial name of goal to link, or null"} — to add a task. Use goalName if user mentions linking to a goal.
+You CAN take actions. After your reply, if an action is needed output it on a new line as JSON:
+ACTION:{"type":"complete_task","taskId":"id"} — mark a task done
+ACTION:{"type":"create_task","text":"task text","priority":"focus|normal|urgent","context":"work|personal","dueDate":"YYYY-MM-DD or today or tomorrow or null","goalId":"exact goal id to link, or null"} — add a task. Use goalId from the goals list if user wants to link to a goal.
+ACTION:{"type":"create_goal","text":"goal text","context":"work|personal"} — add a goal (use when user says "add goal" or "set goal")
 ACTION:{"type":"none"} — if no action needed
-Today is ${new Date().toISOString().slice(0,10)} (${new Date().toLocaleDateString("en-US",{weekday:"long"})}).
+Today is ${localDate} (${n.toLocaleDateString("en-US",{weekday:"long"})}).
 
 Current tasks:
 ${taskSummary || "none"}
+
+Current goals:
+${goalSummary || "none"}
 Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`;
 
       // Add empty assistant message to start streaming into
@@ -252,7 +261,7 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
 
       if (actionMatch) {
         try {
-          const action = JSON.parse(actionMatch[1]) as { type: string; taskId?: string; text?: string; priority?: string };
+          const action = JSON.parse(actionMatch[1]) as { type: string; taskId?: string; text?: string; priority?: string; context?: string; dueDate?: string; goalId?: string; goalName?: string };
           if (action.type === "complete_task" && action.taskId) {
             const task = tasks.find((t) => t.id === action.taskId);
             if (task && !task.done) {
@@ -260,16 +269,18 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
               displayReply += `\n✓ Marked "${task.text}" as done!`;
             }
           } else if (action.type === "create_task" && action.text) {
-            // Resolve "today" / "tomorrow" as actual dates
+            // Resolve "today" / "tomorrow" as actual dates (local)
+            const nn = new Date();
             let dueDate = action.dueDate as string | undefined;
-            if (dueDate === "today") dueDate = new Date().toISOString().slice(0,10);
-            if (dueDate === "tomorrow") { const d = new Date(); d.setDate(d.getDate()+1); dueDate = d.toISOString().slice(0,10); }
-            // Find goal by name match
-            let goalId: string | undefined;
-            if (action.goalName) {
+            if (dueDate === "today") dueDate = `${nn.getFullYear()}-${String(nn.getMonth()+1).padStart(2,'0')}-${String(nn.getDate()).padStart(2,'0')}`;
+            if (dueDate === "tomorrow") { const d = new Date(); d.setDate(d.getDate()+1); dueDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+            // Use direct goalId from AI, or fall back to name match
+            let goalId = action.goalId && goals.find(g => g.id === action.goalId) ? action.goalId : undefined;
+            if (!goalId && action.goalName) {
               const goalMatch = goals.find(g => g.text.toLowerCase().includes((action.goalName as string).toLowerCase()));
               if (goalMatch) goalId = goalMatch.id;
             }
+            const linkedGoal = goalId ? goals.find(g => g.id === goalId) : null;
             onTaskCreate?.({
               id: Math.random().toString(36).slice(2),
               text: action.text,
@@ -280,7 +291,16 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
               ...(dueDate ? { dueDate } : {}),
               ...(goalId ? { goalId } : {}),
             });
-            displayReply += `\n✓ Created task: "${action.text}"${dueDate ? ` (due ${dueDate})` : ""}${goalId ? " → linked to goal" : ""}`;
+            displayReply += `\n✓ Created task: "${action.text}"${dueDate ? ` (due ${dueDate})` : ""}${linkedGoal ? ` → linked to goal "${linkedGoal.text}"` : ""}`;
+          } else if (action.type === "create_goal" && action.text) {
+            onGoalCreate?.({
+              id: Math.random().toString(36).slice(2),
+              text: action.text,
+              progress: 0,
+              context: (action.context as Goal["context"]) ?? "personal",
+              createdAt: new Date(),
+            });
+            displayReply += `\n✓ Created goal: "${action.text}"`;
           }
         } catch { /* ignore parse errors */ }
       }
