@@ -226,7 +226,7 @@ export function Dashboard({
       const systemPrompt = `You are a warm, encouraging ADHD productivity coach. Keep replies short (1-2 sentences).
 You CAN take actions. After your reply, if an action is needed output it on a new line as JSON:
 ACTION:{"type":"complete_task","taskId":"id"} — mark a task done
-ACTION:{"type":"create_task","text":"task text","priority":"focus|normal|urgent","context":"work|personal","dueDate":"YYYY-MM-DD or today or tomorrow or null","goalId":"exact goal id to link, or null"} — add a task. Use goalId from the goals list if user wants to link to a goal.
+ACTION:{"type":"create_task","text":"task text (no hashtags)","priority":"focus|normal|urgent","context":"work|personal|<any #tag the user specified>","dueDate":"YYYY-MM-DD or today or tomorrow or null","goalId":"exact goal id to link, or null"} — add a task. If user includes #tag, strip it from text and use it as context. Use goalId from the goals list if user wants to link to a goal.
 ACTION:{"type":"create_goal","text":"goal text","context":"work|personal"} — add a goal (use when user says "add goal" or "set goal")
 ACTION:{"type":"none"} — if no action needed
 Today is ${localDate} (${n.toLocaleDateString("en-US",{weekday:"long"})}).
@@ -269,6 +269,12 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
               displayReply += `\n✓ Marked "${task.text}" as done!`;
             }
           } else if (action.type === "create_task" && action.text) {
+            // Strip any #hashtag from text and use as context if context not set
+            const hashMatch = action.text.match(/#([\w-]+)/);
+            if (hashMatch && (!action.context || action.context === "work" || action.context === "personal")) {
+              action.context = hashMatch[1].toLowerCase();
+            }
+            action.text = action.text.replace(/\s*#[\w-]+/g, "").trim();
             // Resolve "today" / "tomorrow" as actual dates (local)
             const nn = new Date();
             let dueDate = action.dueDate as string | undefined;
