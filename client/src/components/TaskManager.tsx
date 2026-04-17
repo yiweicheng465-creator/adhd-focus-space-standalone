@@ -163,13 +163,24 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
       setTimeout(() => {
         onTasksChange(tasks.map((t) => t.id === id ? { ...t, done: true } : t));
         setCompletingId(null);
-              }, 400);
+        toast("Task completed", {
+          duration: 5000,
+          action: { label: "Undo", onClick: () => onTasksChange(tasks.map((t) => t.id === id ? { ...t, done: false } : t)) },
+        });
+      }, 400);
     } else {
       onTasksChange(tasks.map((t) => t.id === id ? { ...t, done: false } : t));
     }
   };
 
-  const deleteTask = (id: string) => onTasksChange(tasks.filter((t) => t.id !== id));
+  const deleteTask = (id: string) => {
+    const deleted = tasks.find(t => t.id === id);
+    onTasksChange(tasks.filter((t) => t.id !== id));
+    if (deleted) toast("Task deleted", {
+      duration: 5000,
+      action: { label: "Undo", onClick: () => onTasksChange([...tasks]) },
+    });
+  };
 
   // Build counts for all known contexts
   const counts: Record<string, number> = { all: tasks.filter((t) => !t.done).length };

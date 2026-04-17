@@ -131,10 +131,21 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
     }));
   };
 
-  const deleteGoal = (id: string) => onGoalsChange(goals.filter((g) => g.id !== id));
-  const archiveGoal = (id: string) => onGoalsChange(goals.map(g =>
-    g.id === id ? { ...g, archived: true, archivedAt: new Date().toISOString() } : g
-  ));
+  const deleteGoal = (id: string) => {
+    const deleted = goals.find(g => g.id === id);
+    onGoalsChange(goals.filter((g) => g.id !== id));
+    if (deleted) toast("Goal deleted", {
+      duration: 5000,
+      action: { label: "Undo", onClick: () => onGoalsChange([...goals]) },
+    });
+  };
+  const archiveGoal = (id: string) => {
+    onGoalsChange(goals.map(g => g.id === id ? { ...g, archived: true, archivedAt: new Date().toISOString() } : g));
+    toast("Goal archived", {
+      duration: 5000,
+      action: { label: "Undo", onClick: () => onGoalsChange(goals.map(g => g.id === id ? { ...g, archived: false, archivedAt: undefined } : g)) },
+    });
+  };
 
   const avgProgress = visibleGoals.length > 0
     ? Math.round(visibleGoals.reduce((sum, g) => sum + g.progress, 0) / visibleGoals.length) : 0;

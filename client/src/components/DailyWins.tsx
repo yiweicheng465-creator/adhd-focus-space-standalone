@@ -490,7 +490,10 @@ export function DailyWins({ wins, onWinsChange }: DailyWinsProps) {
 
   const archiveWin = (winId: string) => {
     onWinsChange(wins.map((w) => w.id === winId ? { ...w, archived: true } : w));
-    toast("Win archived.", { duration: 2000 });
+    toast("Win archived", {
+      duration: 5000,
+      action: { label: "Undo", onClick: () => onWinsChange(wins.map(w => w.id === winId ? { ...w, archived: false } : w)) },
+    });
   };
 
   const unarchiveWin = (winId: string) => {
@@ -499,8 +502,12 @@ export function DailyWins({ wins, onWinsChange }: DailyWinsProps) {
   };
 
   const deleteWin = (winId: string) => {
+    const deleted = wins.find(w => w.id === winId);
     onWinsChange(wins.filter((w) => w.id !== winId));
-    toast("Win permanently deleted.", { duration: 2000 });
+    if (deleted) toast("Win deleted", {
+      duration: 5000,
+      action: { label: "Undo", onClick: () => onWinsChange([...wins]) },
+    });
   };
 
   const todayStr = new Date().toDateString();
