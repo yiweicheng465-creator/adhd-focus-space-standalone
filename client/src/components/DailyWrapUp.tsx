@@ -427,6 +427,7 @@ export function DailyWrapUp({ tasks, wins, agents, quitCount = 0, onClose }: Dai
     >
       <div
         className="w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col"
+        data-tour-id="tour-wrapup-panel"
         style={{
           background: M.card,
           border: `1.5px solid ${M.border}`,
