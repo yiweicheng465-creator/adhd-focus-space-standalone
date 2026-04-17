@@ -465,7 +465,12 @@ export function BrainDump({ onConvertToTask, onCreateAgent, onAddGoal, onDump, i
                     <textarea
                       autoFocus
                       value={editText}
-                      onChange={(e) => setEditText(e.target.value)}
+                      onChange={(e) => {
+                        setEditText(e.target.value);
+                        // Auto-resize: reset then expand to content
+                        e.target.style.height = "auto";
+                        e.target.style.height = e.target.scrollHeight + "px";
+                      }}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                           updateMutation.mutate({ id: entry.id, text: editText });
@@ -477,8 +482,8 @@ export function BrainDump({ onConvertToTask, onCreateAgent, onAddGoal, onDump, i
                         if (editText.trim()) updateMutation.mutate({ id: entry.id, text: editText });
                         setEditingId(null);
                       }}
-                      rows={3}
-                      style={{ width: "100%", boxSizing: "border-box", fontFamily: "'DM Sans', sans-serif", fontSize: "0.875rem", color: M.ink, lineHeight: 1.6, padding: "4px 6px", border: `1px solid ${M.coralBdr}`, borderRadius: 4, outline: "none", resize: "vertical", background: "oklch(0.995 0.008 355)" }}
+                      ref={(el) => { if (el) { el.style.height = "auto"; el.style.height = el.scrollHeight + "px"; } }}
+                      style={{ width: "100%", boxSizing: "border-box", fontFamily: "'DM Sans', sans-serif", fontSize: "0.875rem", color: M.ink, lineHeight: 1.6, padding: "4px 6px", border: `1px solid ${M.coralBdr}`, borderRadius: 4, outline: "none", resize: "none", overflow: "hidden", background: "oklch(0.995 0.008 355)" }}
                     />
                   ) : (
                     <p
