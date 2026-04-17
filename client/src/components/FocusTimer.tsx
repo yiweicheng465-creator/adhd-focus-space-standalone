@@ -1097,7 +1097,7 @@ export function FocusTimer({ onSessionComplete, onBlockComplete, onQuit, fillHei
           </div>
 
           {/* Large timer display (Lab style) */}
-          <div style={{ textAlign: "center", padding: "6px 0 4px" }}>
+          <div style={{ textAlign: "center", padding: "16px 0 14px" }}>
             <span style={{
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: 38, fontWeight: 700,
@@ -1108,7 +1108,7 @@ export function FocusTimer({ onSessionComplete, onBlockComplete, onQuit, fillHei
           </div>
 
           {/* Preset duration buttons — always rendered to keep fixed height; disabled while running */}
-          <div style={{ display: "flex", justifyContent: "center", gap: 6, padding: "0 12px 8px", minHeight: 28 }}>
+          <div style={{ display: "flex", justifyContent: "center", gap: 6, padding: "0 12px 18px", minHeight: 28 }}>
             {PRESETS[mode].map((p) => (
               <button
                 key={p}

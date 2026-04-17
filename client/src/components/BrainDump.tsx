@@ -90,6 +90,8 @@ export function BrainDump({ onConvertToTask, onCreateAgent, onAddGoal, onDump, i
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [initialTextHandled, setInitialTextHandled] = useState(false);
   const [aiSorting, setAiSorting] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
   const [aiResults, setAiResults] = useState<Array<{
     id: string;
     original: string;
@@ -447,24 +449,47 @@ export function BrainDump({ onConvertToTask, onCreateAgent, onAddGoal, onDump, i
               className={cn("group flex flex-col gap-2 p-3 transition-all")}
               style={{
                 background: entry.converted ? "oklch(0.93 0.030 355 / 0.5)" : M.card,
-                border: `1px solid ${M.border}`,
+                border: `1px solid ${editingId === entry.id ? M.coralBdr : M.border}`,
                 opacity: entry.converted ? 0.55 : 1,
               }}
               onMouseEnter={(e) => {
-                if (!entry.converted) (e.currentTarget as HTMLDivElement).style.borderColor = M.coralBdr;
+                if (!entry.converted && editingId !== entry.id) (e.currentTarget as HTMLDivElement).style.borderColor = M.coralBdr;
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLDivElement).style.borderColor = M.border;
+                if (editingId !== entry.id) (e.currentTarget as HTMLDivElement).style.borderColor = M.border;
               }}
             >
               <div className="flex items-start gap-3">
                 <div className="flex-1 min-w-0">
-                  <p
-                    className={cn("text-sm leading-relaxed", entry.converted && "line-through")}
-                    style={{ color: entry.converted ? M.muted : M.ink, fontFamily: "'DM Sans', sans-serif" }}
-                  >
-                    {entry.text.replace(/(?:^|\s)#[a-zA-Z0-9\u4e00-\u9fa5_-]+/g, "").trim()}
-                  </p>
+                  {editingId === entry.id ? (
+                    <textarea
+                      autoFocus
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                          updateMutation.mutate({ id: entry.id, text: editText });
+                          setEditingId(null);
+                        }
+                        if (e.key === "Escape") setEditingId(null);
+                      }}
+                      onBlur={() => {
+                        if (editText.trim()) updateMutation.mutate({ id: entry.id, text: editText });
+                        setEditingId(null);
+                      }}
+                      rows={3}
+                      style={{ width: "100%", boxSizing: "border-box", fontFamily: "'DM Sans', sans-serif", fontSize: "0.875rem", color: M.ink, lineHeight: 1.6, padding: "4px 6px", border: `1px solid ${M.coralBdr}`, borderRadius: 4, outline: "none", resize: "vertical", background: "oklch(0.995 0.008 355)" }}
+                    />
+                  ) : (
+                    <p
+                      className={cn("text-sm leading-relaxed", entry.converted && "line-through")}
+                      style={{ color: entry.converted ? M.muted : M.ink, fontFamily: "'DM Sans', sans-serif", cursor: entry.converted ? "default" : "text", whiteSpace: "pre-wrap" }}
+                      onClick={() => { if (!entry.converted) { setEditingId(entry.id); setEditText(entry.text); } }}
+                      title={entry.converted ? "" : "Click to edit"}
+                    >
+                      {entry.text.replace(/(?:^|\s)#[a-zA-Z0-9\u4e00-\u9fa5_-]+/g, "").trim()}
+                    </p>
+                  )}
                   <p className="text-xs mt-1" style={{ color: M.muted, fontFamily: "'DM Sans', sans-serif" }}>
                     {new Date(entry.createdAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
                     {" · "}
