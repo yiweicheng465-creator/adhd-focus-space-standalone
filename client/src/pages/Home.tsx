@@ -627,6 +627,7 @@ export default function Home() {
 
             {/* Wrap-up */}
             <button
+              data-tour-id="tour-wrapup"
               onClick={() => setWrapUpOpen(true)}
               className="flex items-center gap-2 transition-all px-5 py-3"
               style={{

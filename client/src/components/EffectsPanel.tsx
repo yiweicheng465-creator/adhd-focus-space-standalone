@@ -196,6 +196,7 @@ export function EffectsPanel() {
     <div ref={panelRef} style={{ position: "relative", width: "100%" }}>
       {/* ── Sidebar button ── */}
       <button
+        data-tour-id="tour-settings"
         onClick={() => setOpen((v) => !v)}
         title="Settings"
         style={{

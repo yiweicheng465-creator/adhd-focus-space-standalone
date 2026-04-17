@@ -209,6 +209,7 @@ Today is ${today} (${todayName}). Available goals: ${goalList || "none"}.`,
     <>
       {/* Floating trigger */}
       <div
+        data-tour-id="tour-quick-add"
         className="fixed bottom-6 right-6 z-50 flex flex-col items-center gap-1.5"
         style={{ opacity: open ? 0 : 1, pointerEvents: open ? "none" : "auto", transition: "opacity 0.15s" }}
       >

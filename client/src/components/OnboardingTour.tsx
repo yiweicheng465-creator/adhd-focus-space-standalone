@@ -62,93 +62,245 @@ interface OnboardingTourProps {
 // ─── Tour steps definition ────────────────────────────────────────────────────
 
 export const TOUR_STEPS: TourStep[] = [
+  // ── 1. Dashboard overview ──────────────────────────────────────────────────
   {
     section: "dashboard",
     targetId: "tour-dashboard",
     label: "DASHBOARD",
-    title: "Your Home Base",
+    title: "Your ADHD Command Centre",
     description:
-      "Everything starts here. See your Focus Timer, your top tasks for today, and the AI Command Center — all in one glance.",
+      "Everything starts here. The Dashboard is your single home base — see your Focus Timer, your most urgent tasks, and your AI assistant all in one glance. No tab-switching, no context loss.",
     icon: "🏠",
     placement: "right",
   },
+  // ── 2. Focus Timer (inline) ────────────────────────────────────────────────
   {
     section: "dashboard",
     targetId: "tour-focus-timer",
     label: "FOCUS TIMER",
     title: "Pomodoro Focus Timer",
     description:
-      "Start a timed focus block. The timer tracks your sessions, builds a streak, and logs each block to your Monthly Calendar automatically.",
+      "Start a timed focus block right on the Dashboard. The timer runs a Pomodoro cycle, tracks your sessions, and logs each completed block to your Monthly Calendar automatically.",
     icon: "⏱️",
     placement: "right",
   },
+  // ── 3. AI Chat (inline dashboard) ─────────────────────────────────────────
   {
     section: "dashboard",
     targetId: "tour-ai-chat",
     label: "AI CHAT",
     title: "AI Command Center",
     description:
-      'Type anything in plain English — "add task review slides", "create goal learn Spanish", "log win finished report". Your AI assistant handles the rest.',
+      'Type anything in plain English — "add task review slides", "create goal learn Spanish", "log win finished report". Your AI assistant knows your goals and tasks and handles the rest.',
     icon: "🤖",
     placement: "left",
   },
+  // ── 4. AI Assistant button (right panel) ──────────────────────────────────
+  {
+    section: "dashboard",
+    targetId: "tour-ai-btn",
+    label: "AI BUTTON",
+    title: "AI Assistant — Always Available",
+    description:
+      "The 🤖 button on the right edge is available on every page. On the Dashboard it shows/hides the inline AI panel. On any other page it opens a floating chat so you never lose your place.",
+    icon: "🤖",
+    placement: "left",
+  },
+  // ── 5. Life Coach button ───────────────────────────────────────────────────
+  {
+    section: "dashboard",
+    targetId: "tour-coach-btn",
+    label: "LIFE COACH",
+    title: "🧭 Life Coach",
+    description:
+      "The compass button opens your personal AI Life Coach. Have a real conversation about your life direction or career path. When you finish, the coach saves a structured summary as your Life Dashboard — visible at the top of the Goals page.",
+    icon: "🧭",
+    placement: "left",
+  },
+  // ── 6. Timer button (right panel) ─────────────────────────────────────────
+  {
+    section: "dashboard",
+    targetId: "tour-timer-btn",
+    label: "QUICK TIMER",
+    title: "⏱ Quick Timer — Any Page",
+    description:
+      "The timer button on the right edge lets you start or pause a Pomodoro from any page without leaving what you're doing. The live countdown is shown right on the button.",
+    icon: "⏱",
+    placement: "left",
+  },
+  // ── 7. Daily Routine button ────────────────────────────────────────────────
+  {
+    section: "dashboard",
+    targetId: "tour-routine-btn",
+    label: "DAILY ROUTINE",
+    title: "💫 Daily Routine",
+    description:
+      "The 💫 button opens your Daily Routine panel — a checklist of habits you want to build. Complete a habit and it auto-logs as a Win. A consistent daily anchor is especially powerful for ADHD brains.",
+    icon: "💫",
+    placement: "left",
+  },
+  // ── 8. Tasks ───────────────────────────────────────────────────────────────
   {
     section: "tasks",
     targetId: "tour-tasks",
     label: "TASKS",
     title: "My Tasks",
     description:
-      "Capture every task here. Use priority levels (Urgent → Someday) and #hashtags for context. URLs in task text are automatically clickable.",
+      "Capture every task here. Use #hashtags to tag by context — #work, #health, #learning. Tasks have four priority levels: Urgent, Focus, Normal, and Someday. URLs in task text are automatically clickable.",
     icon: "✅",
     placement: "right",
   },
+  // ── 9. Goals ──────────────────────────────────────────────────────────────
   {
     section: "goals",
     targetId: "tour-goals",
     label: "GOALS",
     title: "Goals Tracker",
     description:
-      "Set longer-horizon goals and track progress with a visual bar. Link tasks to goals and let the AI help you break big goals into steps.",
+      "Set up to 5 goals per category and track progress with a visual bar. Use #hashtags in the input to assign categories on the fly. Goals at 100% move to the bottom automatically.",
     icon: "🎯",
     placement: "right",
   },
+  // ── 10. Life Dashboard (inside Goals) ─────────────────────────────────────
+  {
+    section: "goals",
+    targetId: "tour-goals",
+    label: "LIFE DASHBOARD",
+    title: "🌱 Life Dashboard",
+    description:
+      "After chatting with your Life Coach, a Life Dashboard card appears here at the top of Goals. It shows your life direction, career direction, key insights, and your next step — updated every time you talk to the coach.",
+    icon: "🌱",
+    placement: "right",
+  },
+  // ── 11. Brain Dump ────────────────────────────────────────────────────────
   {
     section: "dump",
     targetId: "tour-dump",
     label: "BRAIN DUMP",
     title: "Brain Dump",
     description:
-      "Capture any thought instantly — no formatting needed. The AI can sort entries into Tasks or Agents for you with a single click.",
+      "When your brain is overflowing, dump everything here — no structure needed. Use #tags to loosely organise. The AI can sort your entries into tasks, goals, ideas, or worries and convert them with one tap.",
     icon: "🧠",
     placement: "right",
   },
+  // ── 12. Daily Wins ────────────────────────────────────────────────────────
   {
     section: "wins",
     targetId: "tour-wins",
-    label: "WINS",
+    label: "DAILY WINS",
     title: "Daily Wins",
     description:
-      "Celebrate every win, big or small. Wins feed into your Daily Wrap-Up and Monthly Calendar so you can look back and feel good about your progress.",
+      "Log every win — big or small. Completing a focus block, drinking water, sending that email. Pick an icon that matches the category. Wins feed your Monthly Progress score and remind you that you ARE making progress.",
     icon: "🏆",
     placement: "right",
   },
+  // ── 13. AI Agents ─────────────────────────────────────────────────────────
   {
     section: "agents",
     targetId: "tour-agents",
     label: "AI AGENTS",
     title: "AI Agents",
     description:
-      "Track ongoing AI-assisted tasks as agents. Set them Running, Paused, or Done — and see all active work at a glance.",
+      "Delegate recurring or complex tasks to AI Agents. Each agent has a brief, a status (Pending → Active → Done), and can be linked to a task. When an agent is marked Done, it auto-logs a Win.",
     icon: "🤖",
     placement: "right",
   },
+  // ── 14. Quick Add FAB ─────────────────────────────────────────────────────
+  {
+    section: "dashboard",
+    targetId: "tour-quick-add",
+    label: "QUICK ADD",
+    title: "Quick Add — Press + Anywhere",
+    description:
+      "The + button in the bottom-right corner (or press the + key) opens a quick-capture modal. Add a task, goal, win, or brain dump entry without navigating away. Perfect for capturing thoughts the moment they appear.",
+    icon: "➕",
+    placement: "left",
+  },
+  // ── 15. Daily Check-In card ───────────────────────────────────────────────
+  {
+    section: "dashboard",
+    targetId: "tour-dashboard",
+    label: "CHECK-IN CARD",
+    title: "☀️ Daily Check-In Card",
+    description:
+      "Every morning a Check-In card appears automatically. As someone with ADHD, you shouldn't have to navigate five pages to start your day. Set your mood, review top tasks, and set one intention — all in one card, then dismiss it.",
+    icon: "☀️",
+    placement: "right",
+  },
+  // ── 16. Wrap Up ───────────────────────────────────────────────────────────
+  {
+    section: "dashboard",
+    targetId: "tour-wrapup",
+    label: "WRAP UP",
+    title: "🌙 Daily Wrap Up",
+    description:
+      "At the end of your day, click Wrap Up in the top bar. It shows your completed tasks, wins, and focus score. The AI writes a personalised reflection on your day. This data feeds your Monthly Progress calendar.",
+    icon: "🌙",
+    placement: "bottom",
+  },
+  // ── 17. Monthly Progress ──────────────────────────────────────────────────
+  {
+    section: "dashboard",
+    targetId: "tour-monthly",
+    label: "MONTHLY",
+    title: "📅 Monthly Progress",
+    description:
+      "The calendar icon in the sidebar opens your Monthly Progress page. Every day shows a score, mood, wins count, and focus time. Tap any day to see its full summary and AI reflection. Track your patterns over time.",
+    icon: "📅",
+    placement: "right",
+  },
+  // ── 18. Settings — Effects ────────────────────────────────────────────────
+  {
+    section: "dashboard",
+    targetId: "tour-settings",
+    label: "SETTINGS",
+    title: "⚙️ Settings — Atmosphere",
+    description:
+      "The gear icon opens Settings. In the Effects tab you can dial in Film Grain intensity for that lo-fi feel, and shift the Theme Hue to change the entire app's colour palette to match your mood.",
+    icon: "🎨",
+    placement: "right",
+  },
+  // ── 19. Settings — Work Mode ──────────────────────────────────────────────
+  {
+    section: "dashboard",
+    targetId: "tour-settings",
+    label: "WORK MODE",
+    title: "🖤 Work Mode — No Distractions",
+    description:
+      "Work Mode (in Settings → Effects) strips the UI down to pure function — no decorative elements, muted colours, maximum focus. Toggle it on when you need to get serious. It persists across sessions.",
+    icon: "🖤",
+    placement: "right",
+  },
+  // ── 20. Settings — API Key ────────────────────────────────────────────────
+  {
+    section: "dashboard",
+    targetId: "tour-settings",
+    label: "API KEY",
+    title: "🔑 AI Key — 6 Free Uses Included",
+    description:
+      "All AI features work out of the box — you get 6 free AI calls included. When you run out, open Settings → API Key tab and paste your own OpenAI key. Your key is encrypted and stored securely on the server.",
+    icon: "🔑",
+    placement: "right",
+  },
+  // ── 21. Guide ─────────────────────────────────────────────────────────────
+  {
+    section: "dashboard",
+    targetId: "tour-guide",
+    label: "GUIDE",
+    title: "📖 App Guide & Shortcuts",
+    description:
+      "The ? button at the bottom of the sidebar opens the full App Guide. It lists every keyboard shortcut (/ for AI chat, D for brain dump, + for quick add, Space for timer) and explains every feature in detail. Always there when you need a reminder.",
+    icon: "📖",
+    placement: "right",
+  },
+  // ── 22. Storage & Backup ──────────────────────────────────────────────────
   {
     section: "storage",
     targetId: "tour-storage",
     label: "STORAGE",
-    title: "Storage & Backup",
+    title: "💾 Storage & Backup",
     description:
-      "All your data lives in your browser. Export a full JSON backup any time, and import it on any device to keep your space in sync.",
+      "All your data lives in your browser. Export a full JSON backup any time, and import it on any device to keep your space in sync. No account required for local data — it's always yours.",
     icon: "💾",
     placement: "right",
   },
