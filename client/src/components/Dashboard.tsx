@@ -55,6 +55,7 @@ import { PixelTrophy } from "@/components/PixelIcons";
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
 import { callAI, callAIStream } from "@/lib/ai";
+import { buildRoutineContext } from "@/lib/routineContext";
 
 const SUNSET_BLOB = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410012773/WNs8kMVMKanwFbtYhk72en/adhd-sunset-blob_5606b6c8.png";
 const PERSON_IMG  = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410012773/WNs8kMVMKanwFbtYhk72en/pink-lofi-illustration_e5665e16.png";
@@ -68,6 +69,8 @@ const MAX_CHAT_HISTORY = 10;
 
 const CHAT_SUGGESTIONS = [
   "What should I focus on first today?",
+  "How are my routines going? Give me a detailed breakdown",
+  "Which routines am I struggling with and which are going well?",
   "Add task: review my emails — urgent",
   "What tasks do I have left?",
   "Mark my most urgent task as done",
@@ -224,7 +227,8 @@ export function Dashboard({
         return `[id:${t.id}] [${t.priority}] "${t.text}" (${t.done ? "done" : "pending"})${linkedGoal ? ` [linked to goal: "${linkedGoal.text}"]` : ""}`;
       }).join("\n");
       const goalSummary = goals.filter(g => !g.archived).map(g => `[id:${g.id}] "${g.text}" (${g.progress}%)`).join("\n");
-      const systemPrompt = `You are a warm, encouraging ADHD productivity coach. Keep replies short (1-2 sentences).
+      const routineContext = buildRoutineContext();
+      const systemPrompt = `You are a warm, encouraging ADHD productivity coach. Keep replies short (1-2 sentences) unless the user asks for a detailed breakdown — then be thorough and specific with the real data.
 You CAN take actions. After your reply, if an action is needed output it on a new line as JSON:
 ACTION:{"type":"complete_task","taskId":"id"} — mark a task done
 ACTION:{"type":"create_task","text":"task text (no hashtags)","priority":"focus|normal|urgent","context":"work|personal|<any #tag the user specified>","dueDate":"YYYY-MM-DD or today or tomorrow or null","goalId":"exact goal id to link, or null"} — add a task. If user includes #tag, strip it from text and use it as context. Use goalId from the goals list if user wants to link to a goal.
@@ -238,7 +242,9 @@ ${taskSummary || "none"}
 
 Current goals:
 ${goalSummary || "none"}
-Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`;
+Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}
+
+${routineContext}`;
 
       // Add empty assistant message to start streaming into
       setChatHistory((prev) => [...prev, { role: "assistant", content: "" }]);
