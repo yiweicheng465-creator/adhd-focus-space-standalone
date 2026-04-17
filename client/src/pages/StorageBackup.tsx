@@ -349,7 +349,7 @@ export default function StorageBackup() {
   };
 
   return (
-    <div className="flex flex-col gap-6 max-w-xl mx-auto py-6 px-4">
+    <div data-tour-id="tour-storage" className="flex flex-col gap-6 max-w-xl mx-auto py-6 px-4">
 
       {/* Page title */}
       <div>

@@ -418,6 +418,27 @@ function GuideLink() {
   );
 }
 
+/* Tour replay button — fires startOnboardingTour event */
+function TourButton() {
+  const color = "oklch(0.68 0.025 330)";
+  return (
+    <button
+      onClick={() => window.dispatchEvent(new CustomEvent("startOnboardingTour"))}
+      title="Take the feature tour"
+      className="relative w-full flex flex-col items-center justify-center py-1.5 transition-all duration-150"
+      style={{ background: "transparent", opacity: 0.5 }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.85"; }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.5"; }}
+    >
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+        <circle cx="8" cy="8" r="6.5" stroke={color} strokeWidth="1.2"/>
+        <polygon points="6.5,5 11.5,8 6.5,11" fill={color} />
+      </svg>
+      <span style={{ fontSize: 6, marginTop: 1.5, letterSpacing: "0.10em", fontFamily: "'Space Mono', monospace", color }}>TOUR</span>
+    </button>
+  );
+}
+
 if (typeof document !== "undefined" && !document.getElementById("sidebar-timer-pulse")) {
   const s = document.createElement("style");
   s.id = "sidebar-timer-pulse";
@@ -508,6 +529,8 @@ export function Sidebar({ activeSection, onSectionChange, onClearData }: Sidebar
 
       {/* Guide — secondary/help group, smaller and lighter */}
       <GuideLink />
+      {/* Tour replay button */}
+      <TourButton />
     </aside>
   );
 }

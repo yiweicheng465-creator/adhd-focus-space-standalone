@@ -514,7 +514,7 @@ export function DailyWins({ wins, onWinsChange }: DailyWinsProps) {
 
   const CAT_YELLOW = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410012773/WNs8kMVMKanwFbtYhk72en/cat5_yellow_small_1870bc42.png";
   return (
-    <div className="flex flex-col gap-4 h-full" style={{ position: "relative" }}>
+    <div data-tour-id="tour-wins" className="flex flex-col gap-4 h-full" style={{ position: "relative" }}>
       {/* Cat sticker: yellow small cat — top-right corner */}
       <img src={CAT_YELLOW} alt="" aria-hidden="true" style={{ position: "absolute", top: 0, right: 0, width: 58, opacity: 0.42, pointerEvents: "none", zIndex: 5 }} />
       {/* Header stats */}
