@@ -24,6 +24,8 @@ export interface DailyLog {
   focusSessions?: number; // individual 25-min sessions completed
   blocksCompleted?: number; // full 4-session blocks completed
   journalNote?: string;    // daily journal/notes from wrap-up
+  routinesDone?: number;   // how many routines completed that day
+  routinesTotal?: number;  // how many routines were scheduled that day
 }
 
 const MOOD_COLORS = ["#C8B8D8","#D4B8E0","#E8A8C8","#F0B8D8","#F8C8E8"];
@@ -81,7 +83,7 @@ function calcStreak(logs: Record<string, DailyLog>): number {
 /* ── Day hover card content ── */
 function DayCellHoverContent({ log, day, month, year }: { log?: DailyLog; day: number; month: number; year: number }) {
   const dateStr = new Date(year, month, day).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
-  const hasAny = log && (log.wrapUpDone || log.dumpCount > 0 || log.winsCount > 0 || log.tasksCompleted > 0 || (log.focusSessions ?? 0) > 0);
+  const hasAny = log && (log.wrapUpDone || log.dumpCount > 0 || log.winsCount > 0 || log.tasksCompleted > 0 || (log.focusSessions ?? 0) > 0 || (log.routinesDone ?? 0) > 0);
   return (
     <div style={{ fontFamily: "'DM Sans', sans-serif", minWidth: 180 }}>
       <div style={{ fontSize: 12, fontWeight: 600, color: M.ink, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${M.border}` }}>
@@ -132,6 +134,15 @@ function DayCellHoverContent({ log, day, month, year }: { log?: DailyLog; day: n
               <span style={{ fontSize: 11, color: M.ink }}>{log!.blocksCompleted} deep focus {log!.blocksCompleted === 1 ? "block" : "blocks"} 🔥</span>
             </div>
           )}
+          {(log?.routinesDone ?? 0) > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+              <span style={{ fontSize: 13, lineHeight: 1, flexShrink: 0 }}>💫</span>
+              <span style={{ fontSize: 11, color: M.ink }}>
+                Routines: {log!.routinesDone}/{log!.routinesTotal ?? log!.routinesDone} done
+                {log!.routinesDone === log!.routinesTotal && log!.routinesTotal! > 0 ? " ✓" : ""}
+              </span>
+            </div>
+          )}
           {(log?.mood ?? 4) && (
             <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
               <div style={{ width: 13, height: 13, borderRadius: "50%", background: MOOD_COLORS[(log?.mood ?? 4) - 1], flexShrink: 0 }} />
@@ -167,7 +178,8 @@ function DayCell({
   isSelected: boolean;
   onClick: () => void;
 }) {
-  const hasActivity = log && (log.wrapUpDone || log.dumpCount > 0 || log.winsCount > 0);
+  const hasRoutineDone = (log?.routinesDone ?? 0) > 0;
+  const hasActivity = log && (log.wrapUpDone || log.dumpCount > 0 || log.winsCount > 0 || hasRoutineDone);
   const moodColor = log?.mood ? MOOD_COLORS[(log?.mood ?? 4) - 1] : null;
 
   const cellButton = (
@@ -215,6 +227,7 @@ function DayCell({
           {log?.wrapUpDone && <div style={{ width: 5, height: 5, borderRadius: "50%", background: M.sage }} />}
           {(log?.dumpCount ?? 0) > 0 && <div style={{ width: 5, height: 5, borderRadius: "50%", background: M.coral }} />}
           {(log?.winsCount ?? 0) > 0 && <div style={{ width: 5, height: 5, borderRadius: "50%", background: M.gold }} />}
+          {hasRoutineDone && <div title={`${log?.routinesDone}/${log?.routinesTotal} routines`} style={{ width: 5, height: 5, borderRadius: "50%", background: "oklch(0.55 0.14 245)" }} />}
         </div>
       )}
       {moodColor && (
@@ -231,7 +244,7 @@ function DayCell({
   );
 
   // Only show hover card for days with activity
-  if (!log || !(log.wrapUpDone || log.dumpCount > 0 || log.winsCount > 0 || log.tasksCompleted > 0 || (log.focusSessions ?? 0) > 0)) {
+  if (!log || !(log.wrapUpDone || log.dumpCount > 0 || log.winsCount > 0 || log.tasksCompleted > 0 || (log.focusSessions ?? 0) > 0 || hasRoutineDone)) {
     return cellButton;
   }
 
@@ -296,7 +309,7 @@ function EditableDiary({ dateKey, initialNote }: { dateKey: string; initialNote?
 }
 
 function DayDetail({ log, dateStr, dateKey: dk, onClose, isPast }: { log?: DailyLog; dateStr: string; dateKey: string; onClose: () => void; isPast?: boolean }) {
-  const hasAny = log && (log.wrapUpDone || log.dumpCount > 0 || log.winsCount > 0 || log.tasksCompleted > 0 || (log.focusSessions ?? 0) > 0);
+  const hasAny = log && (log.wrapUpDone || log.dumpCount > 0 || log.winsCount > 0 || log.tasksCompleted > 0 || (log.focusSessions ?? 0) > 0 || (log.routinesDone ?? 0) > 0);
 
   // Read detailed wins for this day from localStorage
   const dayWins = (() => {
@@ -505,7 +518,8 @@ export function MonthlyProgress({ wins, tasks, blockHistory = {}, blockStreak = 
     loadLogs();
     // Listen for changes from other parts of the app (same tab via custom event)
     const handler = (e: Event) => {
-      if ((e as CustomEvent).detail === "adhd-daily-logs") loadLogs();
+      const detail = (e as CustomEvent).detail;
+      if (detail === "adhd-daily-logs" || detail === "adhd-routine-done") loadLogs();
     };
     window.addEventListener("adhd-storage-update", handler);
     return () => window.removeEventListener("adhd-storage-update", handler);
@@ -517,13 +531,30 @@ export function MonthlyProgress({ wins, tasks, blockHistory = {}, blockStreak = 
     const todayWins = wins.filter(w => new Date(w.createdAt).toDateString() === todayKey);
     const todayDone = tasks.filter(t => t.done && new Date(t.createdAt).toDateString() === todayKey);
 
+    // Read routine completion for today
+    const DAYS_MON = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+    const todayDayMon = DAYS_MON[(new Date().getDay() + 6) % 7];
+    const todayISOKey = new Date().toISOString().slice(0, 10);
+    const allRoutines: { id: string; days: string[] }[] = (() => {
+      try { return JSON.parse(localStorage.getItem("adhd-routines") ?? "[]"); } catch { return []; }
+    })();
+    const todayRoutines = allRoutines.filter(r => r.days.includes(todayDayMon));
+    const routineDoneData = (() => {
+      try { return JSON.parse(localStorage.getItem("adhd-routine-done") ?? "{}"); } catch { return {}; }
+    })();
+    const routineDoneIds: string[] = routineDoneData.date === todayISOKey ? (routineDoneData.ids ?? []) : [];
+    const routinesDone = routineDoneIds.length;
+    const routinesTotal = todayRoutines.length;
+
     setLogs(prev => {
       const existing = prev[todayKey] ?? { dateKey: todayKey, wrapUpDone: false, dumpCount: 0, winsCount: 0, tasksCompleted: 0, mood: null, score: 0 };
       const updated: DailyLog = {
         ...existing,
         winsCount: todayWins.length,
         tasksCompleted: todayDone.length,
-        score: Math.min(100, todayWins.length * 10 + todayDone.length * 15 + (existing.wrapUpDone ? 20 : 0) + existing.dumpCount * 5 + (existing.focusSessions ?? 0) * 5 + (existing.blocksCompleted ?? 0) * 10),
+        routinesDone,
+        routinesTotal,
+        score: Math.min(100, todayWins.length * 10 + todayDone.length * 15 + (existing.wrapUpDone ? 20 : 0) + existing.dumpCount * 5 + (existing.focusSessions ?? 0) * 5 + (existing.blocksCompleted ?? 0) * 10 + routinesDone * 5),
       };
       if (JSON.stringify(existing) === JSON.stringify(updated)) return prev;
       const next = { ...prev, [todayKey]: updated };

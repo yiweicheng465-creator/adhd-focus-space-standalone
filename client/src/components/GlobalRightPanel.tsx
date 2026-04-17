@@ -413,6 +413,8 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
   const saveDoneToday = (ids: Set<string>) => {
     setDoneToday(ids);
     localStorage.setItem("adhd-routine-done", JSON.stringify({ date: todayKey, ids: [...ids] }));
+    // Notify header stats to refresh routine count
+    window.dispatchEvent(new CustomEvent("adhd-storage-update", { detail: "adhd-routine-done" }));
   };
 
   const saveRoutines = (r: Routine[]) => { setRoutines(r); localStorage.setItem(ROUTINE_KEY, JSON.stringify(r)); };

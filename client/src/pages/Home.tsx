@@ -382,6 +382,16 @@ export default function Home() {
   const [pendingDump, setPendingDump] = useState<string | null>(null);
   const [pendingAgentTask, setPendingAgentTask] = useState<string | null>(null);
   const [dashboardKey, setDashboardKey] = useState(0);
+  // Routine refresh counter — increments when adhd-routine-done changes so header re-reads localStorage
+  const [routineRefresh, setRoutineRefresh] = useState(0);
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail === "adhd-routine-done") setRoutineRefresh(n => n + 1);
+    };
+    window.addEventListener("adhd-storage-update", handler);
+    return () => window.removeEventListener("adhd-storage-update", handler);
+  }, []);
 
   // Daily check-in
   const { show: showCheckIn, dismiss: dismissCheckIn } = useDailyCheckIn();
@@ -596,11 +606,35 @@ export default function Home() {
           {/* Right: stats + mood + wrap-up */}
           <div className="flex items-center shrink-0" style={{ gap: 0 }}>
             {/* Quick-stats — visible on all sections */}
-            <div className="hidden sm:flex items-center" style={{ borderRight: "1.5px solid #E8B8D0" }}>                {[
-                  { label: "tasks", value: tasks.filter((t) => !t.done).length, section: "tasks" as Section },
-                  { label: "wins",  value: wins.filter((w) => new Date(w.createdAt).toDateString() === new Date().toDateString()).length, section: "wins" as Section },
-                  { label: "agents live", value: agents.filter((a) => a.status === "running").length, section: "agents" as Section },
-                ].map(({ label, value, section }, i, arr) => (
+            <div className="hidden sm:flex items-center" style={{ borderRight: "1.5px solid #E8B8D0" }}>                {(() => {
+                  // routineRefresh is referenced here so React re-renders when it changes
+                  void routineRefresh;
+                  // Routine completion: read from localStorage (same keys as GlobalRightPanel)
+                  const todayKey2 = new Date().toISOString().slice(0, 10);
+                  const todayDay = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][(new Date().getDay())];
+                  // Mon-indexed day for routine filter
+                  const DAYS2 = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+                  const todayDayMon = DAYS2[(new Date().getDay() + 6) % 7];
+                  const allRoutines: { id: string; name: string; days: string[] }[] = (() => {
+                    try { return JSON.parse(localStorage.getItem("adhd-routines") ?? "[]"); } catch { return []; }
+                  })();
+                  const todayRoutines = allRoutines.filter(r => r.days.includes(todayDayMon));
+                  const routineDoneData = (() => {
+                    try { return JSON.parse(localStorage.getItem("adhd-routine-done") ?? "{}"); } catch { return {}; }
+                  })();
+                  const routineDoneIds: string[] = routineDoneData.date === todayKey2 ? (routineDoneData.ids ?? []) : [];
+                  const routineDone = routineDoneIds.length;
+                  const routineTotal = todayRoutines.length;
+                  const routineLabel = routineTotal > 0 ? `${routineDone}/${routineTotal} routine` : null;
+
+                  const stats: { label: string; value: string | number; section: Section }[] = [
+                    { label: "today's tasks", value: tasks.filter((t) => !t.done && new Date(t.createdAt).toDateString() === today).length, section: "tasks" as Section },
+                    { label: "wins",  value: wins.filter((w) => new Date(w.createdAt).toDateString() === today).length, section: "wins" as Section },
+                    { label: "agents live", value: agents.filter((a) => a.status === "running").length, section: "agents" as Section },
+                    ...(routineLabel ? [{ label: routineLabel, value: routineDone === routineTotal && routineTotal > 0 ? "✓" : `${routineDone}/${routineTotal}`, section: "dashboard" as Section }] : []),
+                  ];
+                  return stats;
+                })().map(({ label, value, section }, i, arr) => (
                   <React.Fragment key={label}>
                     <button
                       onClick={() => setActiveSection(section)}
