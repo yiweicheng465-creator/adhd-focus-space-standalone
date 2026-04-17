@@ -675,6 +675,13 @@ export default function Home() {
                 onGoalCreate={(goal) => setGoals((prev) => [goal, ...prev])}
                 onAgentCreate={(agent) => setAgents((prev) => [agent, ...prev])}
                 onWinCreate={(win) => setWins((prev) => [win, ...prev])}
+                onDumpCreate={(text) => {
+                  try {
+                    const entries = JSON.parse(localStorage.getItem("adhd_braindump_entries") ?? "[]");
+                    entries.unshift({ id: `dump-${Date.now()}`, text, tags: [], createdAt: new Date().toISOString(), converted: false });
+                    localStorage.setItem("adhd_braindump_entries", JSON.stringify(entries));
+                  } catch {}
+                }}
               />
               </div>
             )}

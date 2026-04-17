@@ -100,6 +100,7 @@ interface DashboardProps {
   onGoalCreate?: (goal: Goal) => void;
   onAgentCreate?: (agent: Agent) => void;
   onWinCreate?: (win: Win) => void;
+  onDumpCreate?: (text: string) => void;
   blockStreak?: number;
   blockHistory?: Record<string, number>;
   focusSessions?: number;
@@ -157,7 +158,7 @@ type ChatMessage = { role: "user" | "assistant"; content: string };
 export function Dashboard({
   tasks, wins, goals, agents, mood, blockStreak = 0, focusSessions = 0,
   onNavigate, onSessionComplete, onBlockComplete, allCategories, onQuickDump,
-  onTaskToggle, onTaskCreate, onGoalCreate, onAgentCreate, onWinCreate, onTasksChange,
+  onTaskToggle, onTaskCreate, onGoalCreate, onAgentCreate, onWinCreate, onTasksChange, onDumpCreate,
   displayName,
 }: DashboardProps) {
   const [activeContext, setActiveContext] = useState<ActiveContext>("all");
@@ -228,6 +229,7 @@ You CAN take actions. After your reply, if an action is needed output it on a ne
 ACTION:{"type":"complete_task","taskId":"id"} — mark a task done
 ACTION:{"type":"create_task","text":"task text (no hashtags)","priority":"focus|normal|urgent","context":"work|personal|<any #tag the user specified>","dueDate":"YYYY-MM-DD or today or tomorrow or null","goalId":"exact goal id to link, or null"} — add a task. If user includes #tag, strip it from text and use it as context. Use goalId from the goals list if user wants to link to a goal.
 ACTION:{"type":"create_goal","text":"goal text","context":"work|personal"} — add a goal (use when user says "add goal" or "set goal")
+ACTION:{"type":"create_dump","text":"idea text"} — dump an idea to Brain Dump (use when user says "dump", "brain dump", "capture idea", "note this")
 ACTION:{"type":"none"} — if no action needed
 Today is ${localDate} (${n.toLocaleDateString("en-US",{weekday:"long"})}).
 
@@ -298,6 +300,9 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
               ...(goalId ? { goalId } : {}),
             });
             displayReply += `\n✓ Created task: "${action.text}"${dueDate ? ` (due ${dueDate})` : ""}${linkedGoal ? ` → linked to goal "${linkedGoal.text}"` : ""}`;
+          } else if (action.type === "create_dump" && action.text) {
+            onDumpCreate?.(action.text);
+            displayReply += `\n✓ Dumped to Brain Dump: "${action.text}"`;
           } else if (action.type === "create_goal" && action.text) {
             onGoalCreate?.({
               id: Math.random().toString(36).slice(2),

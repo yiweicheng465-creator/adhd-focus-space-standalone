@@ -207,6 +207,15 @@ function AIChatPopup({ onClose, goals }: { onClose: () => void; goals: Goal[] })
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [history]);
 
+  const addToDump = (text: string) => {
+    try {
+      const entries = JSON.parse(localStorage.getItem("adhd_braindump_entries") ?? "[]");
+      entries.unshift({ id: `dump-${Date.now()}`, text, tags: [], createdAt: new Date().toISOString(), converted: false });
+      localStorage.setItem("adhd_braindump_entries", JSON.stringify(entries));
+      import("sonner").then(({ toast }) => toast.success(`✓ Dumped to Brain Dump`));
+    } catch {}
+  };
+
   const send = async () => {
     if (!input.trim() || loading) return;
     const msg = input.trim();
@@ -216,11 +225,24 @@ function AIChatPopup({ onClose, goals }: { onClose: () => void; goals: Goal[] })
     setHistory(prev => [...prev, { role: "assistant" as const, content: "" }]);
     setLoading(true);
     try {
+      let reply = "";
       await callAIStream(
-        `You are a warm ADHD coach. Goals: ${goals.map(g => g.text).join(", ") || "none"}. Keep replies short (1-2 sentences).`,
+        `You are a warm ADHD coach. Goals: ${goals.map(g => g.text).join(", ") || "none"}. Keep replies short (1-2 sentences).
+After your reply, if user wants to dump/capture an idea output on a new line: ACTION:{"type":"create_dump","text":"idea"}`,
         msg,
-        (delta) => setHistory(prev => { const u = [...prev]; u[u.length-1] = { ...u[u.length-1], content: u[u.length-1].content + delta }; return u; }),
-        () => setLoading(false)
+        (delta) => { reply += delta; setHistory(prev => { const u = [...prev]; u[u.length-1] = { ...u[u.length-1], content: reply }; return u; }); },
+        () => {
+          setLoading(false);
+          const actionMatch = reply.match(/ACTION:(\{.*\})/);
+          if (actionMatch) {
+            try {
+              const action = JSON.parse(actionMatch[1]);
+              if (action.type === "create_dump" && action.text) addToDump(action.text);
+            } catch {}
+            // Strip action from displayed message
+            setHistory(prev => { const u = [...prev]; u[u.length-1] = { ...u[u.length-1], content: reply.replace(/\nACTION:\{.*\}/g, "").trim() }; return u; });
+          }
+        }
       );
     } catch { setLoading(false); }
   };
