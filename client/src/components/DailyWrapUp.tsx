@@ -96,9 +96,14 @@ function WinsRing({ wins }: { wins: Win[] }) {
   const arcR = 80;   // arc stroke center radius
 
   // Group wins by category index
+  // iconIdx 99 (block complete) and 97 (focus session) are normalised to 5 (Mindful)
+  const normIdx = (raw: number | undefined) => {
+    if (raw === 99 || raw === 97) return 5; // Mindful
+    return typeof raw === "number" ? raw % WIN_CAT_COLORS.length : 0;
+  };
   const groups: { idx: number; wins: Win[] }[] = [];
   wins.forEach((w) => {
-    const idx = typeof w.iconIdx === "number" ? w.iconIdx % WIN_CAT_COLORS.length : 0;
+    const idx = normIdx(w.iconIdx);
     const existing = groups.find((g) => g.idx === idx);
     if (existing) existing.wins.push(w);
     else groups.push({ idx, wins: [w] });
