@@ -31,3 +31,14 @@ BEGIN
     ALTER TABLE users ADD COLUMN google_refresh_token TEXT;
   END IF;
 END$$;
+
+-- Add onboarding tour completed flag (run once)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name='users' AND column_name='tour_completed'
+  ) THEN
+    ALTER TABLE users ADD COLUMN tour_completed BOOLEAN DEFAULT FALSE;
+  END IF;
+END$$;

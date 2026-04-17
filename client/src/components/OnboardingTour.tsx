@@ -1079,7 +1079,13 @@ export function OnboardingTour({ onClose, onNavigate }: OnboardingTourProps) {
   }, [stepIndex]);
 
   const handleFinish = useCallback(() => {
-    localStorage.setItem("adhd-tour-completed", "1");
+    // Persist tour-completed flag server-side (per user account)
+    // Falls back gracefully if user is not authenticated
+    fetch("/api/tour-completed", { method: "POST", credentials: "include" }).catch(() => {
+      // Fallback: keep localStorage as a local cache so the tour doesn't
+      // re-appear in the same session if the API call fails
+      localStorage.setItem("adhd-tour-completed", "1");
+    });
     setPhase("complete");
   }, []);
 
@@ -1153,22 +1159,43 @@ export function OnboardingTour({ onClose, onNavigate }: OnboardingTourProps) {
   );
 }
 
-// ─── Hook for controlling tour visibility ─────────────────────────────────────
+// ─── Hook for controlling tour visibility ─────────────────────────────────────────────────────
 
 export function useOnboardingTour() {
   const [show, setShow] = useState(false);
 
-  // Auto-trigger for first-time users (after name prompt settles)
+  // Auto-trigger for first-time users — checks server-side flag first,
+  // falls back to localStorage if the user is not authenticated.
   useEffect(() => {
-    const completed = localStorage.getItem("adhd-tour-completed");
     const skippedName = localStorage.getItem("adhd-name-skipped");
     const hasName = localStorage.getItem("adhd-display-name");
-    if (completed) return;
-
-    // Delay: let name prompt / check-in show first
     const delay = hasName || skippedName ? 1800 : 3200;
-    const t = setTimeout(() => setShow(true), delay);
-    return () => clearTimeout(t);
+
+    let cancelled = false;
+
+    async function checkAndShow() {
+      // 1. Try server-side flag (works across devices / browsers)
+      try {
+        const resp = await fetch("/api/tour-completed", { credentials: "include" });
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data.tourCompleted) return; // already completed on this account
+          // Server says not completed — schedule the tour
+          setTimeout(() => { if (!cancelled) setShow(true); }, delay);
+          return;
+        }
+      } catch {
+        // Network error or not authenticated — fall through to localStorage
+      }
+
+      // 2. Fallback: localStorage (unauthenticated / offline users)
+      const localCompleted = localStorage.getItem("adhd-tour-completed");
+      if (localCompleted) return;
+      setTimeout(() => { if (!cancelled) setShow(true); }, delay);
+    }
+
+    checkAndShow();
+    return () => { cancelled = true; };
   }, []);
 
   // Listen for manual replay trigger from sidebar
