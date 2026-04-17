@@ -363,6 +363,7 @@ function MonthlyLink() {
   const color = active ? "oklch(0.48 0.18 340)" : "oklch(0.52 0.060 330)";
   return (
     <button
+      data-tour-id="tour-monthly"
       onClick={() => navigate("/monthly")}
       title="Monthly Progress"
       className="relative w-full flex flex-col items-center justify-center py-2.5 transition-all duration-150"
@@ -399,6 +400,7 @@ function GuideLink() {
   const color = active ? "oklch(0.48 0.18 340)" : "oklch(0.68 0.025 330)";
   return (
     <button
+      data-tour-id="tour-guide"
       onClick={() => navigate("/guide")}
       title="App Guide"
       className="relative w-full flex flex-col items-center justify-center py-1.5 transition-all duration-150"
