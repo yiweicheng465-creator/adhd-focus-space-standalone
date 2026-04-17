@@ -314,6 +314,41 @@ export default async function handler(req: any, res: any) {
     return;
   }
 
+  // ── /api/tour-completed — GET status / POST mark done ──────────────────────
+  if (url === "/api/tour-completed") {
+    const user = await getUser(req);
+    if (!user) { json(res, 401, { error: "Not authenticated" }); return; }
+    const db = getDb();
+    if (req.method === "GET") {
+      try {
+        const { rows } = await db.query(
+          "SELECT tour_completed FROM users WHERE id = $1",
+          [user.sub]
+        );
+        await db.end();
+        json(res, 200, { tourCompleted: rows[0]?.tour_completed ?? false });
+      } catch (err: any) {
+        await db.end();
+        json(res, 500, { error: err?.message });
+      }
+      return;
+    }
+    if (req.method === "POST") {
+      try {
+        await db.query(
+          "UPDATE users SET tour_completed = TRUE WHERE id = $1",
+          [user.sub]
+        );
+        await db.end();
+        json(res, 200, { ok: true });
+      } catch (err: any) {
+        await db.end();
+        json(res, 500, { error: err?.message });
+      }
+      return;
+    }
+  }
+
   // ── GET /api/config — expose public config to frontend ─────────────────────
   if (url === "/api/config") {
     json(res, 200, {
