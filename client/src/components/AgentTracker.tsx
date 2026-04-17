@@ -310,7 +310,7 @@ export function AgentTracker({ agents, onAgentsChange, tasks, defaultContext = "
   };
 
   return (
-    <div className="flex flex-col" style={{ gap: 24 }}>
+    <div data-tour-id="tour-agents" className="flex flex-col" style={{ gap: 24 }}>
 
       {/* Context switcher — dynamic categories */}
       <ContextSwitcher active={activeContext} onChange={setActiveContext} counts={counts} contexts={knownCategories} label="FILTER BY TAG" />

@@ -246,7 +246,7 @@ export function BrainDump({ onConvertToTask, onCreateAgent, onAddGoal, onDump, i
   const liveTagsInInput = extractTags(currentThought);
 
   return (
-    <div className="flex flex-col gap-4 h-full">
+    <div data-tour-id="tour-dump" className="flex flex-col gap-4 h-full">
 
       {/* Header */}
       <div className="flex items-center gap-3 mb-1">

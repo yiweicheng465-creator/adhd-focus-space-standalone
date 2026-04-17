@@ -43,6 +43,7 @@ import { Bot, Brain, Clock, LayoutDashboard, Moon, Sparkles, Star } from "lucide
 import { PixelDump } from "@/components/PixelIcons";
 import { NamePrompt } from "@/components/NamePrompt";
 import StorageBackup from "@/pages/StorageBackup";
+import { OnboardingTour, useOnboardingTour } from "@/components/OnboardingTour";
 
 
 /* ── Compact mood pill SVG faces (same as MoodCheckIn) ── */
@@ -263,6 +264,9 @@ export default function Home() {
   // ── Name / personalisation (localStorage + auth user) ──
   const [displayName, setDisplayName] = React.useState<string>(() => localStorage.getItem("adhd-display-name") ?? "");
   const [showNamePrompt, setShowNamePrompt] = React.useState(false);
+
+  // ── Onboarding tour ──
+  const { show: showTour, close: closeTour } = useOnboardingTour();
 
   // Sync display name from auth user
   React.useEffect(() => {
@@ -963,6 +967,13 @@ export default function Home() {
         <NamePrompt
           onSave={handleNameSave}
           onSkip={handleNameSkip}
+        />
+      )}
+      {/* ── Onboarding Tour ── */}
+      {showTour && (
+        <OnboardingTour
+          onClose={closeTour}
+          onNavigate={(s) => setActiveSection(s as Section)}
         />
       )}
     </div>

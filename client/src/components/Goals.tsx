@@ -152,7 +152,7 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
 
   const CAT_SALMON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410012773/WNs8kMVMKanwFbtYhk72en/cat4_salmon_sitting_2fe20a45.png";
   return (
-    <div className="flex flex-col gap-4 h-full" style={{ position: "relative" }}>
+    <div data-tour-id="tour-goals" className="flex flex-col gap-4 h-full" style={{ position: "relative" }}>
       {/* Hidden trigger for external Life Coach button */}
       <button data-life-coach-trigger onClick={() => setShowLifeCoach(true)} style={{ display: "none" }} />
       {/* Cat sticker: salmon sitting cat — bottom-right corner */}

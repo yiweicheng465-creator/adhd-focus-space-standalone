@@ -382,8 +382,7 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
   }, []);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-
+    <div data-tour-id="tour-dashboard" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {/* ── HERO: Retro Lo-Fi Desktop Window ── */}
       <div className="retro-window relative overflow-hidden" style={{ minHeight: 148 }}>
         {/* Soft pink overlay */}
@@ -559,7 +558,7 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
       <div style={{ display: "grid", gridTemplateColumns: showAI ? "1fr 1fr 1fr" : "1fr 2fr", gap: 10, alignItems: "stretch" }}>
 
         {/* Col 1: Focus Timer — FocusTimer has its own CYBER_PET.EXE chrome, no outer title bar */}
-        <div style={{ display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
+        <div data-tour-id="tour-focus-timer" style={{ display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
           <div style={{ position: "relative", display: "flex", flexDirection: "column" }}>
             {/* Cat sticker: pink standing cat — top-right of focus timer */}
             <img src={CAT_PINK} alt="" aria-hidden="true" style={{ position: "absolute", top: -8, right: -8, width: 56, opacity: 0.40, pointerEvents: "none", zIndex: 5 }} />
@@ -732,7 +731,7 @@ Mood: ${mood ? ["Drained","Low","Okay","Good","Glowing"][mood - 1] : "unknown"}`
         </div>)}{/* /retro-window Col 2 */}
 
         {/* Col 3: AI Command Center (toggleable) */}
-        {showAI && <div className="retro-window" style={{ display: "flex", flexDirection: "column", overflow: "hidden", alignSelf: "start", height: "410px" }}>
+        {showAI && <div data-tour-id="tour-ai-chat" className="retro-window" style={{ display: "flex", flexDirection: "column", overflow: "hidden", alignSelf: "start", height: "410px" }}>
           <div className="retro-titlebar">
             <span>ai_assistant.app</span>
             <div style={{ display: "flex", alignItems: "center", gap: 5, marginLeft: "auto", marginRight: 4 }}>
