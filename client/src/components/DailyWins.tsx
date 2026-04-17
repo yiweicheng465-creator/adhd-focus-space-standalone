@@ -490,10 +490,6 @@ export function DailyWins({ wins, onWinsChange }: DailyWinsProps) {
 
   const archiveWin = (winId: string) => {
     onWinsChange(wins.map((w) => w.id === winId ? { ...w, archived: true } : w));
-    toast("Win archived", {
-      duration: 5000,
-      action: { label: "Undo", onClick: () => onWinsChange(wins.map(w => w.id === winId ? { ...w, archived: false } : w)) },
-    });
   };
 
   const unarchiveWin = (winId: string) => {

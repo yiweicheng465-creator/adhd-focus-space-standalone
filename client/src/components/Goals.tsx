@@ -141,10 +141,6 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
   };
   const archiveGoal = (id: string) => {
     onGoalsChange(goals.map(g => g.id === id ? { ...g, archived: true, archivedAt: new Date().toISOString() } : g));
-    toast("Goal archived", {
-      duration: 5000,
-      action: { label: "Undo", onClick: () => onGoalsChange(goals.map(g => g.id === id ? { ...g, archived: false, archivedAt: undefined } : g)) },
-    });
   };
 
   const avgProgress = visibleGoals.length > 0
