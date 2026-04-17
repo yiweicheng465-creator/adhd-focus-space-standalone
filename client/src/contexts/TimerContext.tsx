@@ -124,18 +124,89 @@ export function useTimer(): TimerContextValue {
   return ctx;
 }
 
+// ── Persistence helpers ───────────────────────────────────────────────────────
+const TIMER_STORAGE_KEY = "adhd-timer-state";
+
+interface PersistedTimerState {
+  mode: TimerMode;
+  phase: TimerPhase;
+  remaining: number;
+  running: boolean;
+  sessions: number;
+  pomodoroStep: number;
+  durations: Record<TimerMode, number>;
+  /** Wall-clock ms when the timer was last started (null if paused) */
+  startedAt: number | null;
+  /** Remaining seconds at the moment startedAt was recorded */
+  remainingAtStart: number;
+}
+
+function loadTimerState(): PersistedTimerState | null {
+  try {
+    const raw = localStorage.getItem(TIMER_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as PersistedTimerState;
+  } catch {
+    return null;
+  }
+}
+
+function clearTimerState() {
+  localStorage.removeItem(TIMER_STORAGE_KEY);
+}
+
 // ── Provider ──────────────────────────────────────────────────────────────────
 export function TimerProvider({ children }: { children: React.ReactNode }) {
-  const [durations, setDurations] = useState<Record<TimerMode, number>>({
-    ...DEFAULT_DURATIONS,
-  });
-  const [mode, setMode] = useState<TimerMode>("focus");
-  const [remaining, setRemaining] = useState(DEFAULT_DURATIONS.focus * 60);
-  const [running, setRunning] = useState(false);
-  const [phase, setPhase] = useState<TimerPhase>("idle");
-  const [sessions, setSessions] = useState(0);
+  // ── Rehydrate from localStorage on first render ──────────────────────────
+  const saved = loadTimerState();
+
+  // If the timer was running when the page was closed, calculate how much
+  // time has elapsed since startedAt and compute the corrected remaining.
+  let rehydratedRemaining = DEFAULT_DURATIONS.focus * 60;
+  let rehydratedPhase: TimerPhase = "idle";
+  let rehydratedRunning = false;
+
+  if (saved) {
+    if (saved.running && saved.startedAt !== null) {
+      // Timer was running — fast-forward by elapsed wall-clock time
+      const elapsedSinceClose = Math.floor((Date.now() - saved.startedAt) / 1000);
+      const corrected = Math.max(0, saved.remainingAtStart - elapsedSinceClose);
+      if (corrected <= 0) {
+        // Session would have completed while the tab was closed — treat as complete
+        rehydratedRemaining = 0;
+        rehydratedPhase = "complete";
+        rehydratedRunning = false;
+      } else {
+        rehydratedRemaining = corrected;
+        rehydratedPhase = "running";
+        rehydratedRunning = true;
+      }
+    } else if (saved.phase === "paused") {
+      rehydratedRemaining = saved.remaining;
+      rehydratedPhase = "paused";
+      rehydratedRunning = false;
+    } else if (
+      saved.phase === "idle" ||
+      saved.phase === "block_complete" ||
+      saved.phase === "quit"
+    ) {
+      // Terminal states — restore but don't resume
+      rehydratedRemaining = saved.remaining;
+      rehydratedPhase = saved.phase;
+      rehydratedRunning = false;
+    }
+  }
+
+  const [durations, setDurations] = useState<Record<TimerMode, number>>(
+    saved?.durations ?? { ...DEFAULT_DURATIONS }
+  );
+  const [mode, setMode] = useState<TimerMode>(saved?.mode ?? "focus");
+  const [remaining, setRemaining] = useState(rehydratedRemaining);
+  const [running, setRunning] = useState(rehydratedRunning);
+  const [phase, setPhase] = useState<TimerPhase>(rehydratedPhase);
+  const [sessions, setSessions] = useState(saved?.sessions ?? 0);
   const [quitCount, setQuitCount] = useState(0);
-  const [pomodoroStep, setPomodoroStep] = useState(0); // 0–7
+  const [pomodoroStep, setPomodoroStep] = useState(saved?.pomodoroStep ?? 0);
   const [transitionCountdown, setTransitionCountdown] = useState(5);
   const [nextMode, setNextMode] = useState<TimerMode | null>(null);
 
@@ -157,11 +228,14 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const transitionRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const completedRef = useRef(false);
-  const startedAtRef = useRef<number | null>(null);
-  const remainingAtStartRef = useRef<number>(DEFAULT_DURATIONS.focus * 60);
+  // Initialise from saved state so the countdown interval is correct on rehydration
+  const startedAtRef = useRef<number | null>(
+    saved?.running && saved?.startedAt ? Date.now() - (saved.remainingAtStart - rehydratedRemaining) * 1000 : null
+  );
+  const remainingAtStartRef = useRef<number>(rehydratedRemaining);
   // Always mirrors the latest `remaining` state so the countdown useEffect
   // can read the true current value without a stale closure.
-  const remainingRef = useRef<number>(DEFAULT_DURATIONS.focus * 60);
+  const remainingRef = useRef<number>(rehydratedRemaining);
   const onSessionCompleteRef = useRef<(() => void) | null>(null);
   const onBlockCompleteRef = useRef<(() => void) | null>(null);
   const onQuitRef = useRef<(() => void) | null>(null);
@@ -180,7 +254,29 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   const nextStripIdx = stripStates.findIndex((s) => s === "attached");
   const accentColor = MODE_COLORS[mode];
 
-  // ── Browser tab title countdown ───────────────────────────────────────────
+  // ── Persist timer state to localStorage ───────────────────────────────────────────────────────
+  useEffect(() => {
+    // Clear on terminal states so a fresh session always starts clean
+    if (phase === "idle" || phase === "quit" || phase === "block_complete") {
+      clearTimerState();
+      return;
+    }
+    // Save a snapshot so we can resume after a page refresh
+    const snapshot: PersistedTimerState = {
+      mode,
+      phase,
+      remaining,
+      running,
+      sessions,
+      pomodoroStep,
+      durations,
+      startedAt: running ? startedAtRef.current : null,
+      remainingAtStart: remainingAtStartRef.current,
+    };
+    localStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify(snapshot));
+  }, [mode, phase, remaining, running, sessions, pomodoroStep, durations]);
+
+  // ── Browser tab title countdown ─────────────────────────────────────────────────────────────
   useEffect(() => {
     const appTitle = "ADHD Focus Space";
     if (phase === "running" || phase === "paused") {
