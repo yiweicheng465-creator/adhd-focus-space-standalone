@@ -7,6 +7,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Bot, Loader2 } from "lucide-react";
 import { callAIStream, callAI } from "@/lib/ai";
+import { buildRoutineContext } from "@/lib/routineContext";
 import { useTimer } from "@/contexts/TimerContext";
 import { useSoundContext } from "@/contexts/SoundContext";
 import { Streamdown } from "streamdown";
@@ -226,10 +227,13 @@ function AIChatPopup({ onClose, goals }: { onClose: () => void; goals: Goal[] })
     setHistory(prev => [...prev, { role: "assistant" as const, content: "" }]);
     setLoading(true);
     try {
+      const routineCtx = buildRoutineContext();
       let reply = "";
       await callAIStream(
-        `You are a warm ADHD coach. Goals: ${goals.map(g => g.text).join(", ") || "none"}. Keep replies short (1-2 sentences).
-After your reply, if user wants to dump/capture an idea output on a new line: ACTION:{"type":"create_dump","text":"idea"}`,
+        `You are a warm ADHD coach. Goals: ${goals.map(g => g.text).join(", ") || "none"}. Keep replies short (1-2 sentences) unless the user asks for a detailed routine breakdown — then be thorough and specific with the real data.
+After your reply, if user wants to dump/capture an idea output on a new line: ACTION:{"type":"create_dump","text":"idea"}
+
+${routineCtx}`,
         msg,
         (delta) => { reply += delta; setHistory(prev => { const u = [...prev]; u[u.length-1] = { ...u[u.length-1], content: reply }; return u; }); },
         () => {
@@ -413,6 +417,8 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
   const saveDoneToday = (ids: Set<string>) => {
     setDoneToday(ids);
     localStorage.setItem("adhd-routine-done", JSON.stringify({ date: todayKey, ids: [...ids] }));
+    // Notify header stats to refresh routine count
+    window.dispatchEvent(new CustomEvent("adhd-storage-update", { detail: "adhd-routine-done" }));
   };
 
   const saveRoutines = (r: Routine[]) => { setRoutines(r); localStorage.setItem(ROUTINE_KEY, JSON.stringify(r)); };

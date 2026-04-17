@@ -317,7 +317,9 @@ function WinCard({
             if (!isEditing && !isArchiveView) (e.currentTarget as HTMLButtonElement).style.background = "transparent";
           }}
         >
-          {(isBlockWin || isRoutineWin)
+          {isBlockWin
+            ? <span style={{ fontSize: "1rem", lineHeight: 1 }}>⏱</span>
+            : isRoutineWin
             ? <span style={{ fontSize: "1rem", lineHeight: 1 }}>💫</span>
             : <iconDef.Component size={16} color={isArchiveView ? M.archiveClr : iconDef.color} />
           }
@@ -333,32 +335,6 @@ function WinCard({
       </div>
 
       <div className="flex-1 min-w-0">
-        {/* FOCUS TIMER pill — shown for session/block wins only, not routine wins */}
-        {(isBlockWin || win.id.startsWith("session-")) && !isRoutineWin && !isArchiveView && (
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 3,
-              marginBottom: 3,
-              padding: "2px 6px",
-              borderRadius: 4,
-              background: "oklch(0.88 0.06 35)",
-              border: "1px solid oklch(0.75 0.10 35 / 0.4)",
-              color: "oklch(0.40 0.13 35)",
-              fontSize: 10,
-              fontFamily: "'DM Mono', monospace",
-              fontWeight: 600,
-              letterSpacing: "0.05em",
-            }}
-          >
-            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ flexShrink: 0 }}>
-              <circle cx="12" cy="12" r="9" />
-              <polyline points="12,7 12,12 15,15" />
-            </svg>
-            FOCUS TIMER
-          </div>
-        )}
         <p
           className="text-sm font-medium leading-snug"
           style={{
@@ -375,7 +351,7 @@ function WinCard({
             : new Date(win.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
           {" · "}
           <span style={{ color: isArchiveView ? M.archiveClr : iconDef.color, opacity: 0.8 }}>
-            {isBlockWin ? "Block" : iconDef.label}
+            {isBlockWin ? "Mindful" : iconDef.label}
           </span>
           {isArchiveView && (
             <span style={{ color: M.archiveClr, opacity: 0.7 }}> · archived</span>
