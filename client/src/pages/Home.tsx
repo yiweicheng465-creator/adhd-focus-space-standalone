@@ -921,7 +921,7 @@ export default function Home() {
           setWins((prev: any) => [{ id: `w-${Date.now()}`, text, iconIdx: iconIdx ?? 4, createdAt: new Date() }, ...prev]);
         }}
         onAddDump={(text) => {
-          window.dispatchEvent(new CustomEvent("quickDump", { detail: text }));
+          setPendingDump(text);
           setActiveSection("dump");
         }}
       />
