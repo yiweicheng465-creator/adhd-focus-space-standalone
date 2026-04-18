@@ -491,7 +491,8 @@ export function DailyWrapUp({ tasks, wins, agents, quitCount = 0, onClose }: Dai
         </div>
 
         {/* Body */}
-        <div className="relative z-10 flex-1 overflow-y-auto p-5 space-y-5">
+          <div className="relative z-10 flex-1 overflow-y-auto p-5 space-y-5">
+
           {/* Tasks */}
           <Section icon={<CheckCircle2 className="w-4 h-4" />} title={`Tasks completed (${doneTasks.length})`} color={M.sage}>
             {doneTasks.length === 0 ? (

@@ -43,6 +43,8 @@ import { Bot, Brain, Clock, LayoutDashboard, Moon, Sparkles, Star } from "lucide
 import { PixelDump } from "@/components/PixelIcons";
 import { NamePrompt } from "@/components/NamePrompt";
 import StorageBackup from "@/pages/StorageBackup";
+import Monthly from "@/pages/Monthly";
+import Guide from "@/pages/Guide";
 import { OnboardingTour, useOnboardingTour } from "@/components/OnboardingTour";
 
 
@@ -220,7 +222,7 @@ function GoalFlagIcon({ className, style }: { className?: string; style?: React.
   );
 }
 
-type Section = "dashboard" | "focus" | "tasks" | "wins" | "dump" | "goals" | "agents" | "storage";
+type Section = "dashboard" | "focus" | "tasks" | "wins" | "dump" | "goals" | "agents" | "storage" | "monthly" | "guide";
 
 const SECTION_META: Record<Section, { title: string; icon: React.ElementType }> = {
   dashboard:  { title: "Dashboard",    icon: LayoutDashboard },
@@ -231,6 +233,8 @@ const SECTION_META: Record<Section, { title: string; icon: React.ElementType }> 
   goals:      { title: "Goals", icon: GoalFlagIcon      },
   agents:     { title: "AI Agents",    icon: Bot             },
   storage:    { title: "Storage & Backup", icon: Star            },
+  monthly:    { title: "Monthly Progress", icon: Star            },
+  guide:      { title: "App Guide",    icon: Star            },
 };
 
 const INITIAL_TASKS: Task[] = [
@@ -250,7 +254,7 @@ export default function Home() {
   // URL-hash based section state — persists across refresh
   const [activeSection, setActiveSectionState] = useState<Section>(() => {
     const hash = window.location.hash.slice(1) as Section;
-    const VALID = ["dashboard","focus","tasks","wins","dump","goals","agents","storage"] as const;
+    const VALID = ["dashboard","focus","tasks","wins","dump","goals","agents","storage","monthly","guide"] as const;
     return (VALID as readonly string[]).includes(hash) ? hash as Section : "dashboard";
   });
   const setActiveSection = (s: Section) => {
@@ -460,6 +464,14 @@ export default function Home() {
     setFocusSessions((s) => s + 1);
     // Add focus session win to total count (special iconIdx 97)
     setWins((prev: any) => [{ id: `fs-${Date.now()}`, text: `${durations.focus}min focus session`, iconIdx: 97, createdAt: new Date() }, ...prev]);
+    // Accumulate focusMins in daily-logs for Monthly stats
+    try {
+      const dk = new Date().toDateString();
+      const logs = JSON.parse(localStorage.getItem("adhd-daily-logs") ?? "{}");
+      const prev = logs[dk] ?? { dateKey: dk };
+      logs[dk] = { ...prev, focusMins: ((prev.focusMins ?? 0) as number) + durations.focus };
+      localStorage.setItem("adhd-daily-logs", JSON.stringify(logs));
+    } catch {}
   };
 
   const handleBlockComplete = () => {
@@ -952,6 +964,14 @@ export default function Home() {
                 <StorageBackup />
               </RetroPageWrapper>
             )}
+
+            {activeSection === "monthly" && (
+              <Monthly embedded onNavigate={(s) => setActiveSection(s as Section)} />
+            )}
+
+            {activeSection === "guide" && (
+              <Guide embedded onNavigate={(s) => setActiveSection(s as Section)} />
+            )}
           </div>
         </div>
       </main>
@@ -1009,6 +1029,8 @@ export default function Home() {
         <OnboardingTour
           onClose={closeTour}
           onNavigate={(s) => setActiveSection(s as Section)}
+          onOpenWrapUp={() => setWrapUpOpen(true)}
+          onCloseWrapUp={() => setWrapUpOpen(false)}
         />
       )}
     </div>

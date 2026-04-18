@@ -357,14 +357,14 @@ function LiveTime() {
 }
 
 /* Calendar icon link to /monthly */
-function MonthlyLink() {
+function MonthlyLink({ onNavigate }: { onNavigate?: (s: string) => void }) {
   const [location, navigate] = useLocation();
-  const active = location === "/monthly";
+  const active = location === "/monthly" || (location === "/" && typeof window !== "undefined" && window.location.hash === "#monthly");
   const color = active ? "oklch(0.48 0.18 340)" : "oklch(0.52 0.060 330)";
   return (
     <button
       data-tour-id="tour-monthly"
-      onClick={() => navigate("/monthly")}
+      onClick={() => onNavigate ? onNavigate("monthly") : navigate("/monthly")}
       title="Monthly Progress"
       className="relative w-full flex flex-col items-center justify-center py-2.5 transition-all duration-150"
       style={{ background: active ? "oklch(0.58 0.18 340 / 0.10)" : "transparent" }}
@@ -394,14 +394,14 @@ function MonthlyLink() {
 
 
 /* Guide link — secondary/help item, visually demoted below the divider */
-function GuideLink() {
+function GuideLink({ onNavigate }: { onNavigate?: (s: string) => void }) {
   const [location, navigate] = useLocation();
-  const active = location === "/guide";
+  const active = location === "/guide" || (location === "/" && typeof window !== "undefined" && window.location.hash === "#guide");
   const color = active ? "oklch(0.48 0.18 340)" : "oklch(0.68 0.025 330)";
   return (
     <button
       data-tour-id="tour-guide"
-      onClick={() => navigate("/guide")}
+      onClick={() => onNavigate ? onNavigate("guide") : navigate("/guide")}
       title="App Guide"
       className="relative w-full flex flex-col items-center justify-center py-1.5 transition-all duration-150"
       style={{
@@ -518,7 +518,7 @@ export function Sidebar({ activeSection, onSectionChange, onClearData }: Sidebar
 
       {/* Bottom links */}
       <div className="flex flex-col w-full gap-0">
-        <MonthlyLink />
+        <MonthlyLink onNavigate={onSectionChange} />
       </div>
 
       {/* Effects panel (grain + work mode) */}
@@ -530,7 +530,7 @@ export function Sidebar({ activeSection, onSectionChange, onClearData }: Sidebar
       <div style={{ width: "60%", height: "1px", background: "oklch(0.80 0.060 340 / 0.5)", margin: "12px 0 4px" }} />
 
       {/* Guide — secondary/help group, smaller and lighter */}
-      <GuideLink />
+      <GuideLink onNavigate={onSectionChange} />
       {/* Tour replay button */}
       <TourButton />
     </aside>
