@@ -428,6 +428,7 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
         ...existing,
         routinesDone,
         routinesTotal,
+        routinesDoneIds: [...ids],
         score: Math.min(100, (existing.score ?? 0) - ((existing.routinesDone ?? 0) * 5) + routinesDone * 5),
       };
       localStorage.setItem("adhd-daily-logs", JSON.stringify(logs));
