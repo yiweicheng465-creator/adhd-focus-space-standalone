@@ -113,7 +113,8 @@ export const TOUR_STEPS: TourStep[] = [
       "The 🤖 button on the right edge is available on every page. On the Dashboard it shows/hides the inline AI panel. On any other page it opens a floating chat so you never lose your place.",
     icon: "🤖",
     placement: "left",
-  },
+    openAction: "panel:ai",
+  } as TourStep & { openAction?: string },
   // ── 5. Life Coach button ───────────────────────────────────────────────────
   {
     section: "dashboard",
@@ -124,7 +125,8 @@ export const TOUR_STEPS: TourStep[] = [
       "The compass button opens your personal AI Life Coach. Have a real conversation about your life direction or career path. When you finish, the coach saves a structured summary as your Life Dashboard — visible at the top of the Goals page.",
     icon: "🧭",
     placement: "left",
-  },
+    openAction: "panel:coach",
+  } as TourStep & { openAction?: string },
   // ── 6. Timer button (right panel) ─────────────────────────────────────────
   {
     section: "dashboard",
@@ -135,7 +137,8 @@ export const TOUR_STEPS: TourStep[] = [
       "The timer button on the right edge lets you start or pause a Pomodoro from any page without leaving what you're doing. The live countdown is shown right on the button.",
     icon: "⏱",
     placement: "left",
-  },
+    openAction: "panel:timer",
+  } as TourStep & { openAction?: string },
   // ── 7. Daily Routine button ────────────────────────────────────────────────
   {
     section: "dashboard",
@@ -146,7 +149,8 @@ export const TOUR_STEPS: TourStep[] = [
       "The 💫 button opens your Daily Routine panel — a checklist of habits you want to build. Complete a habit and it auto-logs as a Win. A consistent daily anchor is especially powerful for ADHD brains.",
     icon: "💫",
     placement: "left",
-  },
+    openAction: "panel:routine",
+  } as TourStep & { openAction?: string },
   // ── 8. Tasks ───────────────────────────────────────────────────────────────
   {
     section: "tasks",
@@ -1104,6 +1108,8 @@ export function OnboardingTour({ onClose, onNavigate, onOpenWrapUp, onCloseWrapU
     // Fire wrap-up open/close callbacks
     if (openAction === "wrapup") {
       onOpenWrapUp?.();
+      // Close any open right panel when entering wrap-up
+      window.dispatchEvent(new CustomEvent("tour-close-panel"));
       setSectionReady(false);
       // Give the modal time to mount
       const t = setTimeout(() => setSectionReady(true), 500);
@@ -1111,6 +1117,18 @@ export function OnboardingTour({ onClose, onNavigate, onOpenWrapUp, onCloseWrapU
     } else {
       // If we're leaving the wrapup step, close the modal
       onCloseWrapUp?.();
+    }
+
+    // Fire right-panel open/close for panel:* openActions
+    if (openAction?.startsWith("panel:")) {
+      const panelName = openAction.slice(6); // e.g. "coach", "timer", "routine", "ai"
+      window.dispatchEvent(new CustomEvent("tour-open-panel", { detail: panelName }));
+      setSectionReady(false);
+      const t = setTimeout(() => setSectionReady(true), 400);
+      return () => clearTimeout(t);
+    } else {
+      // Leaving a panel step — close the panel
+      window.dispatchEvent(new CustomEvent("tour-close-panel"));
     }
 
     if (!skip && prevSectionRef.current !== targetSection) {

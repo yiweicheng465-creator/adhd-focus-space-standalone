@@ -65,6 +65,21 @@ export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin }: Props)
     return () => window.removeEventListener("toggleDashboardAI", onToggle);
   }, []);
 
+  // Tour: auto-open/close panels when the onboarding tour highlights them
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const p = (e as CustomEvent<string>).detail as "ai" | "coach" | "timer" | "routine";
+      if (p === "ai" || p === "coach" || p === "timer" || p === "routine") setPanel(p);
+    };
+    const onClose = () => setPanel(null);
+    window.addEventListener("tour-open-panel", onOpen);
+    window.addEventListener("tour-close-panel", onClose);
+    return () => {
+      window.removeEventListener("tour-open-panel", onOpen);
+      window.removeEventListener("tour-close-panel", onClose);
+    };
+  }, []);
+
   const onDashboard = () => {
     const hash = window.location.hash.replace("#", "") || "dashboard";
     return hash === "dashboard" || hash === "";
