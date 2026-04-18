@@ -46,6 +46,8 @@ export interface TourStep {
   title: string;
   /** Longer description shown in the tooltip */
   description: string;
+  /** Optional bullet list items rendered below the description (for structured steps) */
+  descriptionItems?: string[];
   /** Emoji icon for visual flair */
   icon: string;
   /** Preferred tooltip placement relative to spotlight */
@@ -239,8 +241,17 @@ export const TOUR_STEPS: TourStep[] = [
     targetId: "tour-wrapup-panel",
     label: "WRAP UP",
     title: "🌙 Daily Wrap Up",
-    description:
-      "This is your end-of-day ritual. Scroll through to see:\n\n✅ Tasks completed today\n🤖 AI Agents you delegated\n🏆 Wins ring — every win grouped by category\n💫 Daily routines — which habits you ticked off\n⏱ Focus tracker — total focus time today\n📓 Diary — a private note to yourself\n✨ AI Day Summary — tap to get a personalised reflection\n\nEverything here feeds your Monthly Progress calendar.",
+    description: "Your end-of-day ritual. Scroll through to see:",
+    descriptionItems: [
+      "✅ Tasks completed today",
+      "🤖 AI Agents you delegated",
+      "🏆 Wins ring — every win grouped by category",
+      "💫 Daily routines — which habits you ticked off",
+      "⏱ Focus tracker — total focus time today",
+      "📓 Diary — a private note to yourself",
+      "✨ AI Day Summary — tap for a personalised reflection",
+      "📅 Everything here feeds your Monthly Progress calendar",
+    ],
     icon: "🌙",
     placement: "center",
     openAction: "wrapup",
@@ -252,7 +263,7 @@ export const TOUR_STEPS: TourStep[] = [
     label: "MONTHLY",
     title: "📅 Monthly Progress",
     description:
-      "This is your Monthly Progress page. Each day on the calendar shows coloured dots: green = wrap-up done, coral = brain dump, gold = wins, periwinkle = routines. Tap any day to see its full summary. Your streak, active days, and win count are shown at the top. Scroll down for an AI monthly reflection.",
+      "This is your Monthly Progress page. Each day on the calendar shows coloured dots. Tap any day to see its full summary. Your streak, active days, and win count are shown at the top. Scroll down for an AI monthly reflection.",
     icon: "📅",
     placement: "center",
   },
@@ -594,17 +605,29 @@ function TooltipCard({
         >
           {step.title}
         </h3>
-        <p
-          style={{
-            fontFamily: FONT_SANS,
-            fontSize: "0.78rem",
-            color: P.muted,
-            margin: 0,
-            lineHeight: 1.55,
-          }}
-        >
-          {step.description}
-        </p>
+        {step.description && (
+          <p
+            style={{
+              fontFamily: FONT_SANS,
+              fontSize: "0.78rem",
+              color: P.muted,
+              margin: step.descriptionItems ? "0 0 8px" : 0,
+              lineHeight: 1.55,
+            }}
+          >
+            {step.description}
+          </p>
+        )}
+        {step.descriptionItems && (
+          <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 5 }}>
+            {step.descriptionItems.map((item, i) => (
+              <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 7, fontFamily: FONT_SANS, fontSize: "0.76rem", color: P.muted, lineHeight: 1.45 }}>
+                <span style={{ flexShrink: 0, marginTop: 1 }}>•</span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {/* Progress dots */}
@@ -909,14 +932,6 @@ function WelcomeSplash({ displayName, onStart, onSkip }: WelcomeSplashProps) {
               Skip for now
             </button>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{
-                fontFamily: FONT_MONO,
-                fontSize: "0.44rem",
-                color: P.muted,
-                letterSpacing: "0.06em",
-                opacity: 0.65,
-                whiteSpace: "nowrap",
-              }}>press →</span>
               <button
                 onClick={onStart}
                 style={{
@@ -939,6 +954,14 @@ function WelcomeSplash({ displayName, onStart, onSkip }: WelcomeSplashProps) {
                 <Sparkles size={12} />
                 Start Tour
               </button>
+              <span style={{
+                fontFamily: FONT_MONO,
+                fontSize: "0.44rem",
+                color: P.muted,
+                letterSpacing: "0.06em",
+                opacity: 0.65,
+                whiteSpace: "nowrap",
+              }}>press →</span>
             </div>
           </div>
         </div>
