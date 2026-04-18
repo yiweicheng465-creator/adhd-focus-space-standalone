@@ -26,6 +26,7 @@ export interface DailyLog {
   journalNote?: string;    // daily journal/notes from wrap-up
   routinesDone?: number;   // how many routines completed that day
   routinesTotal?: number;  // how many routines were scheduled that day
+  routinesDoneIds?: string[];  // IDs of completed routines (for missed-name lookup)
 }
 
 const MOOD_COLORS = ["#C8B8D8","#D4B8E0","#E8A8C8","#F0B8D8","#F8C8E8"];
@@ -343,7 +344,21 @@ function DayDetail({ log, dateStr, dateKey: dk, onClose, isPast }: { log?: Daily
   })();
   // Fallback: use count from log if no detailed entries
   const focusCount = dayFocusSessions.length > 0 ? dayFocusSessions.length : (log?.focusSessions ?? 0);
-
+  // Compute missed routine names for this day
+  const missedRoutineNames = (() => {
+    try {
+      const routinesTotal = log?.routinesTotal ?? 0;
+      const routinesDone = log?.routinesDone ?? 0;
+      if (routinesTotal === 0 || routinesDone === routinesTotal) return [] as string[];
+      const allRoutines: { id: string; name: string; days: string[] }[] = JSON.parse(localStorage.getItem("adhd-routines") ?? "[]");
+      const doneIds: string[] = log?.routinesDoneIds ?? [];
+      // Figure out which day-of-week this dateKey corresponds to
+      const DAYS_MON = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+      const dayOfWeek = DAYS_MON[(new Date(dk).getDay() + 6) % 7];
+      const scheduledThatDay = allRoutines.filter(r => r.days.includes(dayOfWeek));
+      return scheduledThatDay.filter(r => !doneIds.includes(r.id)).map(r => r.name);
+    } catch { return [] as string[]; }
+  })();
   // Group wins by category
   const winsByCategory = dayWins.reduce<Record<number, typeof dayWins>>((acc, w) => {
     const idx = w.iconIdx ?? 4;
@@ -418,6 +433,31 @@ function DayDetail({ log, dateStr, dateKey: dk, onClose, isPast }: { log?: Daily
               </div>
             )}
 
+            {/* Routine count + missed list */}
+            {(log?.routinesTotal ?? 0) > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 13, lineHeight: 1, flexShrink: 0 }}>💫</span>
+                  <span style={{ fontSize: 12, color: M.ink }}>
+                    Routine: <strong style={{ color: (log!.routinesDone ?? 0) === log!.routinesTotal ? "oklch(0.52 0.12 145)" : M.coral }}>
+                      {log!.routinesDone ?? 0}/{log!.routinesTotal} done
+                      {(log!.routinesDone ?? 0) === log!.routinesTotal ? " ✓" : ""}
+                    </strong>
+                  </span>
+                </div>
+                {missedRoutineNames.length > 0 && (
+                  <div style={{ marginLeft: 20, display: "flex", flexDirection: "column", gap: 3 }}>
+                    <span style={{ fontSize: 10, color: M.muted, textTransform: "uppercase", letterSpacing: "0.07em", fontWeight: 600 }}>Missed</span>
+                    {missedRoutineNames.map(name => (
+                      <div key={name} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontSize: 11, color: M.coral }}>✗</span>
+                        <span style={{ fontSize: 12, color: M.muted }}>{name}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             {/* Wrap-up */}
             {log?.wrapUpDone && (
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
