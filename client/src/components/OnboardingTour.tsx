@@ -59,6 +59,10 @@ interface OnboardingTourProps {
   onClose: () => void;
   /** Called when a section navigation is requested */
   onNavigate: (section: string) => void;
+  /** Called when the Wrap-Up step is entered so the parent can open the modal */
+  onOpenWrapUp?: () => void;
+  /** Called when the Wrap-Up step is exited so the parent can close the modal */
+  onCloseWrapUp?: () => void;
 }
 
 // ─── Tour steps definition ────────────────────────────────────────────────────
@@ -229,30 +233,29 @@ export const TOUR_STEPS: TourStep[] = [
     icon: "☀️",
     placement: "right",
   },
-  // ── 16. Wrap Up ─────────────────────────────────────────────────────────────
+  // ── 16. Wrap Up ──────────────────────────────────────────────────────────────────────────────────
   {
     section: "dashboard",
-    targetId: "tour-wrapup",          // spotlight the trigger button in the header
+    targetId: "tour-wrapup-panel",
     label: "WRAP UP",
     title: "🌙 Daily Wrap Up",
     description:
-      "At the end of your day, click Wrap Up in the top bar. It shows your completed tasks, wins, and focus score. The AI writes a personalised reflection on your day. This data feeds your Monthly Progress calendar.",
+      "This is your end-of-day ritual. Scroll through to see:\n\n✅ Tasks completed today\n🤖 AI Agents you delegated\n🏆 Wins ring — every win grouped by category\n💫 Daily routines — which habits you ticked off\n⏱ Focus tracker — total focus time today\n📓 Diary — a private note to yourself\n✨ AI Day Summary — tap to get a personalised reflection\n\nEverything here feeds your Monthly Progress calendar.",
     icon: "🌙",
-    placement: "bottom",              // tooltip appears below the header button
-  },
-  // ── 17. Monthly Progress ──────────────────────────────────────────────────
+    placement: "center",
+    openAction: "wrapup",
+  } as TourStep & { openAction?: string },
+  // ── 17. Monthly Progress ─────────────────────────────────────────────────────────────────────────────────
   {
-    section: "dashboard",   // stay on dashboard — monthly is a separate route
-    targetId: "tour-monthly",
+    section: "monthly",
+    targetId: "tour-monthly-page",
     label: "MONTHLY",
     title: "📅 Monthly Progress",
     description:
-      "The calendar icon in the sidebar opens your Monthly Progress page. Every day shows a score, mood, wins count, and focus time. Tap any day to see its full summary and AI reflection. Track your patterns over time.",
+      "This is your Monthly Progress page. Each day on the calendar shows coloured dots: green = wrap-up done, coral = brain dump, gold = wins, periwinkle = routines. Tap any day to see its full summary. Your streak, active days, and win count are shown at the top. Scroll down for an AI monthly reflection.",
     icon: "📅",
-    placement: "right",
-    noNavigate: true,   // spotlight the sidebar button without changing route
-  } as TourStep & { noNavigate?: boolean },
-  // ── 18. Settings — Effects ────────────────────────────────────────────────
+    placement: "center",
+  },
   {
     section: "dashboard",
     targetId: "tour-settings",
@@ -1060,7 +1063,7 @@ function CompletionSplash({ onClose }: CompletionSplashProps) {
 
 type TourPhase = "welcome" | "touring" | "complete" | "idle";
 
-export function OnboardingTour({ onClose, onNavigate }: OnboardingTourProps) {
+export function OnboardingTour({ onClose, onNavigate, onOpenWrapUp, onCloseWrapUp }: OnboardingTourProps) {
   const [phase, setPhase] = useState<TourPhase>("welcome");
   const [stepIndex, setStepIndex] = useState(0);
   const [sectionReady, setSectionReady] = useState(false);
@@ -1073,6 +1076,20 @@ export function OnboardingTour({ onClose, onNavigate }: OnboardingTourProps) {
     if (phase !== "touring") return;
     const targetSection = currentStep.section;
     const skip = (currentStep as TourStep & { noNavigate?: boolean }).noNavigate;
+    const openAction = (currentStep as TourStep & { openAction?: string }).openAction;
+
+    // Fire wrap-up open/close callbacks
+    if (openAction === "wrapup") {
+      onOpenWrapUp?.();
+      setSectionReady(false);
+      // Give the modal time to mount
+      const t = setTimeout(() => setSectionReady(true), 500);
+      return () => clearTimeout(t);
+    } else {
+      // If we're leaving the wrapup step, close the modal
+      onCloseWrapUp?.();
+    }
+
     if (!skip && prevSectionRef.current !== targetSection) {
       onNavigate(targetSection);
       prevSectionRef.current = targetSection;
@@ -1084,7 +1101,7 @@ export function OnboardingTour({ onClose, onNavigate }: OnboardingTourProps) {
       // Either same section or noNavigate — element is already in DOM
       setSectionReady(true);
     }
-  }, [phase, stepIndex, currentStep, onNavigate]);
+  }, [phase, stepIndex, currentStep, onNavigate, onOpenWrapUp, onCloseWrapUp]);
 
   const rect = useTargetRect(
     phase === "touring" ? currentStep.targetId : "__none__",

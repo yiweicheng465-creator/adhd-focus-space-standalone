@@ -307,28 +307,45 @@ function FeedbackModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-export default function Guide() {
+interface GuideProps {
+  /** When true, renders only the content (no sidebar) — used inside Home.tsx */
+  embedded?: boolean;
+  /** Called when user wants to navigate to another section (embedded mode only) */
+  onNavigate?: (section: string) => void;
+}
+
+export default function Guide({ embedded = false, onNavigate }: GuideProps) {
   const [, navigate] = useLocation();
   const [showFeedback, setShowFeedback] = useState(false);
 
   const handleSectionChange = (section: string) => {
-    // Navigate to home first, then dispatch the section event after a tick
-    // so Home.tsx's navigateTo listener is mounted and ready
-    navigate("/");
-    setTimeout(() => {
-      window.dispatchEvent(new CustomEvent("navigateTo", { detail: section }));
-    }, 80);
+    if (embedded && onNavigate) {
+      onNavigate(section);
+    } else {
+      // Navigate to home first, then dispatch the section event after a tick
+      navigate("/");
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent("navigateTo", { detail: section }));
+      }, 80);
+    }
   };
 
-  return (
-    <div
-      className="flex min-h-screen"
-      style={{ background: M.bg, fontFamily: "'DM Sans', sans-serif" }}
-    >
-      {showFeedback && <FeedbackModal onClose={() => setShowFeedback(false)} />}
-      <Sidebar activeSection="" onSectionChange={handleSectionChange} />
+  const handleBack = () => {
+    if (embedded && onNavigate) {
+      onNavigate("dashboard");
+    } else {
+      navigate("/");
+    }
+  };
 
-      <main className="flex-1 ml-14 overflow-y-auto">
+  // ── Embedded mode: just the content, no sidebar wrapper ──────────────────
+  if (embedded) {
+    return (
+      <div
+        className="flex-1 overflow-y-auto"
+        style={{ background: M.bg, fontFamily: "'DM Sans', sans-serif" }}
+      >
+        {showFeedback && <FeedbackModal onClose={() => setShowFeedback(false)} />}
         <div className="max-w-2xl mx-auto px-6 py-10 flex flex-col gap-6">
 
           {/* Header */}
@@ -874,7 +891,7 @@ export default function Guide() {
           {/* Footer */}
           <div className="mt-6 mb-10 flex items-center justify-between gap-4">
             <button
-              onClick={() => navigate("/")}
+              onClick={handleBack}
               style={{
                 fontFamily: "'Space Mono', monospace",
                 fontSize: "0.62rem",
@@ -909,6 +926,17 @@ export default function Guide() {
             </button>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  // ── Standalone mode: full page with sidebar ────────────────────────────────
+  // Re-render as embedded inside a full-page shell so content is always shared
+  return (
+    <div className="flex min-h-screen" style={{ background: M.bg }}>
+      <Sidebar activeSection="guide" onSectionChange={handleSectionChange} />
+      <main className="flex-1 ml-14 overflow-y-auto">
+        <Guide embedded onNavigate={handleSectionChange} />
       </main>
     </div>
   );
