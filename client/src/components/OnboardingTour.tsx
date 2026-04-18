@@ -687,6 +687,15 @@ function TooltipCard({
         </div>
 
         {/* Next / Finish */}
+        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+          <span style={{
+            fontFamily: FONT_MONO,
+            fontSize: "0.42rem",
+            color: P.muted,
+            letterSpacing: "0.06em",
+            opacity: 0.65,
+            whiteSpace: "nowrap",
+          }}>press →</span>
         <button
           onClick={isLast ? onSkip : onNext}
           style={{
@@ -718,6 +727,7 @@ function TooltipCard({
             </>
           )}
         </button>
+        </div>
       </div>
     </motion.div>
   );
@@ -877,7 +887,7 @@ function WelcomeSplash({ displayName, onStart, onSkip }: WelcomeSplashProps) {
           </div>
 
           {/* CTA buttons */}
-          <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+          <div style={{ display: "flex", gap: 10, justifyContent: "center", alignItems: "center" }}>
             <button
               onClick={onSkip}
               style={{
@@ -895,28 +905,38 @@ function WelcomeSplash({ displayName, onStart, onSkip }: WelcomeSplashProps) {
             >
               Skip for now
             </button>
-            <button
-              onClick={onStart}
-              style={{
-                background: P.terracotta,
-                border: "none",
-                borderRadius: 2,
-                padding: "7px 20px",
-                cursor: "pointer",
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{
                 fontFamily: FONT_MONO,
-                fontSize: "0.52rem",
-                letterSpacing: "0.12em",
-                color: "white",
-                textTransform: "uppercase",
-                fontWeight: 700,
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-              }}
-            >
-              <Sparkles size={12} />
-              Start Tour
-            </button>
+                fontSize: "0.44rem",
+                color: P.muted,
+                letterSpacing: "0.06em",
+                opacity: 0.65,
+                whiteSpace: "nowrap",
+              }}>press →</span>
+              <button
+                onClick={onStart}
+                style={{
+                  background: P.terracotta,
+                  border: "none",
+                  borderRadius: 2,
+                  padding: "7px 20px",
+                  cursor: "pointer",
+                  fontFamily: FONT_MONO,
+                  fontSize: "0.52rem",
+                  letterSpacing: "0.12em",
+                  color: "white",
+                  textTransform: "uppercase",
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                <Sparkles size={12} />
+                Start Tour
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1070,6 +1090,36 @@ export function OnboardingTour({ onClose, onNavigate }: OnboardingTourProps) {
     phase === "touring" ? currentStep.targetId : "__none__",
     [stepIndex, sectionReady]
   );
+
+  // ── Arrow-right keyboard shortcut to advance steps ───────────────────────────────
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "ArrowRight") return;
+      // Don't fire if user is typing in an input/textarea
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement).isContentEditable) return;
+      e.preventDefault();
+      if (phase === "welcome") {
+        setPhase("touring");
+        setStepIndex(0);
+        prevSectionRef.current = "";
+      } else if (phase === "touring") {
+        if (stepIndex < TOUR_STEPS.length - 1) {
+          setStepIndex((i) => i + 1);
+        } else {
+          // Last step — finish
+          fetch("/api/tour-completed", { method: "POST", credentials: "include" }).catch(() => {
+            localStorage.setItem("adhd-tour-completed", "1");
+          });
+          setPhase("complete");
+        }
+      } else if (phase === "complete") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [phase, stepIndex, onClose]);
 
   const handleStart = useCallback(() => {
     setPhase("touring");
