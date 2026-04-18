@@ -417,8 +417,24 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
   const saveDoneToday = (ids: Set<string>) => {
     setDoneToday(ids);
     localStorage.setItem("adhd-routine-done", JSON.stringify({ date: todayKey, ids: [...ids] }));
+    // Also persist routine counts to adhd-daily-logs so Monthly page shows accurate data
+    try {
+      const dailyLogsKey = new Date().toDateString(); // e.g. "Mon Apr 07 2026"
+      const logs = JSON.parse(localStorage.getItem("adhd-daily-logs") ?? "{}");
+      const existing = logs[dailyLogsKey] ?? { dateKey: dailyLogsKey, wrapUpDone: false, dumpCount: 0, winsCount: 0, tasksCompleted: 0, mood: null, score: 0 };
+      const routinesDone = ids.size;
+      const routinesTotal = todayRoutines.length;
+      logs[dailyLogsKey] = {
+        ...existing,
+        routinesDone,
+        routinesTotal,
+        score: Math.min(100, (existing.score ?? 0) - ((existing.routinesDone ?? 0) * 5) + routinesDone * 5),
+      };
+      localStorage.setItem("adhd-daily-logs", JSON.stringify(logs));
+    } catch {}
     // Notify header stats to refresh routine count
     window.dispatchEvent(new CustomEvent("adhd-storage-update", { detail: "adhd-routine-done" }));
+    window.dispatchEvent(new CustomEvent("adhd-storage-update", { detail: "adhd-daily-logs" }));
   };
 
   const saveRoutines = (r: Routine[]) => { setRoutines(r); localStorage.setItem(ROUTINE_KEY, JSON.stringify(r)); };

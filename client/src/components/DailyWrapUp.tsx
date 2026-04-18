@@ -709,7 +709,7 @@ function RoutineSection() {
         {missed.map(r => (
           <div key={r.id} className="flex items-center gap-2 py-1.5 px-2.5" style={{ background: "oklch(0.92 0.010 245 / 0.5)", border: "1px dashed oklch(0.70 0.06 245)", borderRadius: 6, opacity: 0.65 }}>
             <span style={{ fontSize: 13 }}>❌</span>
-            <span className="text-sm line-through" style={{ color: M.muted, fontFamily: "'DM Sans', sans-serif" }}>{r.name}</span>
+            <span className="text-sm" style={{ color: M.muted, fontFamily: "'DM Sans', sans-serif" }}>{r.name}</span>
           </div>
         ))}
       </div>
