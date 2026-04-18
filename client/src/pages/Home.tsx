@@ -968,7 +968,7 @@ export default function Home() {
         }}
         onAddDump={(text) => {
           setPendingDump(text);
-          setActiveSection("dump");
+          // Stay on current page — GlobalQuickAdd already shows a toast
         }}
       />
       <ConfettiCelebration trigger={confettiTrigger} onComplete={() => setConfettiTrigger(false)} />
