@@ -932,14 +932,6 @@ function WelcomeSplash({ displayName, onStart, onSkip }: WelcomeSplashProps) {
               Skip for now
             </button>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{
-                fontFamily: FONT_MONO,
-                fontSize: "0.44rem",
-                color: P.muted,
-                letterSpacing: "0.06em",
-                opacity: 0.65,
-                whiteSpace: "nowrap",
-              }}>press →</span>
               <button
                 onClick={onStart}
                 style={{
@@ -962,6 +954,14 @@ function WelcomeSplash({ displayName, onStart, onSkip }: WelcomeSplashProps) {
                 <Sparkles size={12} />
                 Start Tour
               </button>
+              <span style={{
+                fontFamily: FONT_MONO,
+                fontSize: "0.44rem",
+                color: P.muted,
+                letterSpacing: "0.06em",
+                opacity: 0.65,
+                whiteSpace: "nowrap",
+              }}>press →</span>
             </div>
           </div>
         </div>
