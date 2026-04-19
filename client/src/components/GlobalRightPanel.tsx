@@ -309,75 +309,63 @@ ${routineCtx}`,
 
 /* ── Life Coach popup ────────────────────────────────────────── */
 function CoachPopup({ onClose, goals }: { onClose: () => void; goals: Goal[] }) {
-  const STORAGE_KEY = "adhd-life-coach-chat";
-  const [mode, setMode] = useState<"pick" | "chat">(() => {
-    try { const s = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}"); return s.messages?.length ? "chat" : "pick"; } catch { return "pick"; }
-  });
-  const [coachType, setCoachType] = useState<"life" | "career">(() => {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}").coachType ?? "life"; } catch { return "life"; }
-  });
-  const [messages, setMessages] = useState<{ role: "user" | "coach"; text: string }[]>(() => {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}").messages ?? []; } catch { return []; }
-  });
+  // Use same storage keys as Goals.tsx so conversations are shared
+  const STORAGE_LIFE   = "adhd-life-coach-chat-life";
+  const STORAGE_CAREER = "adhd-life-coach-chat-career";
+  const loadMsgs = (key: string) => { try { return JSON.parse(localStorage.getItem(key) ?? "[]"); } catch { return []; } };
+  const [coachType, setCoachType] = useState<"life" | "career">("life");
+  const [lifeMessages,   setLifeMessages]   = useState<{ role: "user" | "coach"; text: string }[]>(() => loadMsgs(STORAGE_LIFE));
+  const [careerMessages, setCareerMessages] = useState<{ role: "user" | "coach"; text: string }[]>(() => loadMsgs(STORAGE_CAREER));
+  const messages    = coachType === "life" ? lifeMessages   : careerMessages;
+  const setMessages = coachType === "life" ? setLifeMessages : setCareerMessages;
+  const storageKey  = coachType === "life" ? STORAGE_LIFE   : STORAGE_CAREER;
+  const mode = messages.length > 0 ? "chat" : "pick";
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
-    if (messages.length > 0) localStorage.setItem(STORAGE_KEY, JSON.stringify({ coachType, messages }));
+    if (messages.length > 0) localStorage.setItem(storageKey, JSON.stringify(messages));
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, coachType]);
-
+  }, [messages, storageKey]);
   const STARTERS = {
     life: "Let's explore what matters most to you. What area of your life feels most out of alignment with where you want to be — relationships, health, purpose, or something else?",
-    career: "Let's map out your career direction. What does success look like to you in 3 years — are you looking to go deeper in your current field, pivot to something new, or build something of your own?",
+    career: "What does success look like in 3 years — go deeper, pivot, or build something of your own?"
   };
-  const goalSummary = goals.map(g => g.text).join(", ") || "none";
   const SYSTEMS = {
-
-    life: `You are my long-term life coach.
-
-Your role: Help me clarify priorities, design a meaningful life, and maintain steady progress.
-
-User Profile:
-- Current goals: ${goalSummary}
-- Lifestyle priorities: health, relationships, growth, happiness
-
-Coaching Process:
-Step 1 — Clarify Values: Help me identify my top 5 values, what matters most long-term, and what I want my life to look like.
-Step 2 — Build Vision: Guide me to define a 10-year life vision, 3-year direction, and 1-year focus.
-Step 3 — Action Design: Break goals into quarterly priorities, weekly actions, and small daily habits.
-Step 4 — Reflection Loop: At the end of each session, ask what worked, what didn't, and suggest adjustments.
-
-Communication Rules:
-- Ask ONE question at a time
-- Be thoughtful but practical
-- Keep responses concise (2–4 sentences + question)
+    life: `You are my long-term life coach. My current goals: ${goals.map(g => g.text).join(", ") || "none"}.
+Your coaching process:
+Step 1 — Values Clarification: Help me identify my core values and what truly matters to me.
+Step 2 — Vision Building: Guide me to create a compelling 1/3/10-year life vision.
+Step 3 — Action Design: Break the vision into concrete, measurable 90-day goals.
+Step 4 — Reflection Loop: Review progress, celebrate wins, and adjust course.
+Rules:
+- Ask one powerful question at a time
 - Challenge unrealistic assumptions gently but directly
-- Give concrete, measurable action steps — not just reflective questions`,
-    career: `You are my strategic career coach.
-
-Your role: Help me grow professionally, close skill gaps, and plan long-term career moves.
-
-User Profile:
-- Current goals: ${goalSummary}
-
-Coaching Process:
+- Highlight blind spots I might be avoiding
+- Give concrete, measurable action steps — not just reflective questions
+- Keep responses concise (2–4 sentences + question)`,
+    career: `You are my strategic career coach. My current goals: ${goals.map(g => g.text).join(", ") || "none"}.
+Your coaching process:
 Step 1 — Career Direction: Help me clarify my desired role or trajectory, strengths to leverage, and weaknesses to improve.
-Step 2 — Skill Gap Analysis: Identify skills I already have, skills I lack, and the highest-impact skills to learn next.
+Step 2 — Skill Gap Analysis: Identify the 3 most critical skills I need to develop.
 Step 3 — Career Roadmap: Generate a 3-year career direction, 1-year milestones, and a 90-day execution plan.
-Step 4 — Weekly Execution: Help me review progress, track learning, and adjust priorities.
-
-Communication Rules:
-- Ask ONE question at a time
-- Be direct and practical
-- Provide measurable action steps
-- Highlight blind spots and challenge assumptions
+Step 4 — Weekly Execution: Hold me accountable to weekly actions and celebrate progress.
+Rules:
+- Ask one powerful question at a time
+- Be direct about market realities and skill gaps
+- Give concrete, measurable action steps
 - Keep responses concise (2–4 sentences + question)`,
   };
-
-  const startChat = (type: "life" | "career") => { setCoachType(type); setMode("chat"); setMessages([{ role: "coach", text: STARTERS[type] }]); };
-  const clear = () => { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem("adhd-life-coach-insights"); setMessages([]); setMode("pick"); };
+  const startChat = (type: "life" | "career") => {
+    setCoachType(type);
+    const starter = [{ role: "coach" as const, text: STARTERS[type] }];
+    if (type === "life") setLifeMessages(starter); else setCareerMessages(starter);
+  };
+  const clear = () => {
+    localStorage.removeItem(storageKey);
+    localStorage.removeItem("adhd-life-coach-insights");
+    if (coachType === "life") setLifeMessages([]); else setCareerMessages([]);
+  };
 
   const generateSummary = async (allMsgs: typeof messages, type: "life" | "career") => {
     if (allMsgs.length < 4) return; // need enough convo to summarize
@@ -420,22 +408,47 @@ Be specific and personal. Use the person's exact words/goals.`,
     } catch { setStreaming(false); }
   };
 
+  const switchCoach = (type: "life" | "career") => {
+    setCoachType(type);
+    const existing = loadMsgs(type === "life" ? STORAGE_LIFE : STORAGE_CAREER);
+    if (existing.length === 0) {
+      const starter = [{ role: "coach" as const, text: STARTERS[type] }];
+      if (type === "life") setLifeMessages(starter); else setCareerMessages(starter);
+    }
+  };
   return (
     <PopupShell onClose={onClose} title="🧭 Life Coach" width={320} onClear={messages.length > 0 ? clear : undefined} headerColor={BTN_COLORS[1].active}>
+      {/* Life / Career switch tabs — always visible */}
+      <div style={{ display: "flex", borderBottom: "1px solid oklch(0.82 0.040 285 / 0.4)", background: "oklch(0.97 0.008 285)" }}>
+        {(["life", "career"] as const).map(type => {
+          const isActive = coachType === type;
+          const hasHistory = (type === "life" ? lifeMessages : careerMessages).length > 0;
+          return (
+            <button key={type} onClick={() => switchCoach(type)}
+              style={{ flex: 1, padding: "6px 8px", border: "none", borderBottom: isActive ? "2px solid oklch(0.55 0.14 285)" : "2px solid transparent", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+                fontFamily: "'DM Sans', sans-serif", fontSize: "0.70rem", fontWeight: isActive ? 700 : 400,
+                color: isActive ? "oklch(0.35 0.12 285)" : "oklch(0.55 0.040 330)", transition: "all 0.15s" }}>
+              <span>{type === "life" ? "🌱" : "🚀"}</span>
+              <span>{type === "life" ? "Life" : "Career"}</span>
+              {hasHistory && <span style={{ width: 5, height: 5, borderRadius: "50%", background: isActive ? "oklch(0.55 0.14 285)" : "oklch(0.70 0.08 285)", flexShrink: 0 }} />}
+            </button>
+          );
+        })}
+      </div>
       {mode === "pick" ? (
         <div style={{ padding: "16px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.80rem", color: "oklch(0.45 0.040 330)", lineHeight: 1.5, margin: 0 }}>AI guides you through building your life framework.</p>
-          {[{ type: "life" as const, emoji: "🌱", label: "Life Planning", sub: "Values, purpose, 1/3/10yr vision" }, { type: "career" as const, emoji: "🚀", label: "Career Coaching", sub: "Direction, roadmap, skill gaps" }].map(({ type, emoji, label, sub }) => (
-            <button key={type} onClick={() => startChat(type)} style={{ padding: "12px 14px", borderRadius: 8, background: "oklch(0.55 0.12 285 / 0.06)", border: "1px solid oklch(0.55 0.12 285 / 0.25)", cursor: "pointer", textAlign: "left", display: "flex", gap: 10, alignItems: "center" }}>
-              <span style={{ fontSize: "1.2rem" }}>{emoji}</span>
-              <div><p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 700, color: "oklch(0.28 0.040 320)", margin: 0, fontSize: "0.85rem" }}>{label}</p>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.72rem", color: "oklch(0.52 0.040 330)", margin: 0 }}>{sub}</p></div>
-            </button>
-          ))}
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.80rem", color: "oklch(0.45 0.040 330)", lineHeight: 1.5, margin: 0 }}>Start a conversation with your {coachType === "life" ? "Life Planning" : "Career Coaching"} coach.</p>
+          <button onClick={() => startChat(coachType)} style={{ padding: "12px 14px", borderRadius: 8, background: "oklch(0.55 0.12 285 / 0.06)", border: "1px solid oklch(0.55 0.12 285 / 0.25)", cursor: "pointer", textAlign: "left", display: "flex", gap: 10, alignItems: "center" }}>
+            <span style={{ fontSize: "1.2rem" }}>{coachType === "life" ? "🌱" : "🚀"}</span>
+            <div>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 700, color: "oklch(0.28 0.040 320)", margin: 0, fontSize: "0.85rem" }}>{coachType === "life" ? "Life Planning" : "Career Coaching"}</p>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.72rem", color: "oklch(0.52 0.040 330)", margin: 0 }}>{coachType === "life" ? "Values, purpose, 1/3/10yr vision" : "Direction, roadmap, skill gaps"}</p>
+            </div>
+          </button>
         </div>
       ) : (
         <>
-          <div style={{ flex: 1, overflowY: "auto", padding: "8px 12px", display: "flex", flexDirection: "column", gap: 8, minHeight: 200, maxHeight: 320 }}>
+          <div style={{ flex: 1, overflowY: "auto", padding: "8px 12px", display: "flex", flexDirection: "column", gap: 8, minHeight: 200, maxHeight: 300 }}>
             {messages.map((m, i) => (
               <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
                 <div style={{ maxWidth: "85%", padding: "6px 10px", borderRadius: m.role === "user" ? "10px 10px 2px 10px" : "10px 10px 10px 2px", background: m.role === "user" ? "oklch(0.55 0.14 285)" : "white", color: m.role === "user" ? "white" : "oklch(0.28 0.040 320)", fontSize: "0.82rem", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5, border: m.role === "coach" ? "1px solid oklch(0.86 0.030 300)" : "none" }}>
@@ -446,7 +459,7 @@ Be specific and personal. Use the person's exact words/goals.`,
             <div ref={bottomRef} />
           </div>
           <div style={{ padding: "8px 10px", borderTop: "1px solid oklch(0.86 0.030 300)", display: "flex", gap: 6 }}>
-            <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") send(); }} placeholder="Share your thoughts…" autoComplete="off"
+            <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") send(); }} placeholder={`Chat with ${coachType === "life" ? "Life" : "Career"} Coach…`} autoComplete="off"
               style={{ flex: 1, padding: "6px 10px", borderRadius: 6, border: "1px solid oklch(0.86 0.030 300)", fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", outline: "none" }} />
             <button onClick={send} disabled={streaming || !input.trim()} style={{ padding: "6px 12px", borderRadius: 6, background: input.trim() ? "oklch(0.55 0.14 285)" : "transparent", border: `1px solid ${input.trim() ? "oklch(0.55 0.14 285)" : "oklch(0.86 0.030 300)"}`, color: input.trim() ? "white" : "oklch(0.60 0.040 330)", cursor: "pointer" }}>→</button>
           </div>
