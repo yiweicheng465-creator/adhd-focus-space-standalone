@@ -36,14 +36,25 @@ const BTN_COLORS = [
 const BTN_STYLE = (active: boolean, idx: number = 0): React.CSSProperties => {
   const c = BTN_COLORS[idx] ?? BTN_COLORS[0];
   return {
-    display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-    padding: "12px 8px", background: active ? c.active : c.idle,
+    display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+    padding: "10px 4px", background: active ? c.active : c.idle,
     color: active ? "white" : c.text,
-    border: "none", borderRadius: "8px 0 0 8px",
-    cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: "0.40rem",
-    letterSpacing: "0.10em", boxShadow: `-2px 0 10px ${c.active}33`,
-    transition: "all 0.15s", minWidth: 34,
+    border: "none", borderRadius: "6px 0 0 6px",
+    cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: "0.38rem",
+    letterSpacing: "0.08em", boxShadow: `-2px 0 8px ${c.active}28`,
+    transition: "padding 0.18s ease, background 0.15s",
+    minWidth: 24,
   };
+};
+
+// Hover handlers — expand left only (wider padding-left)
+const onBtnHover = (e: React.MouseEvent<HTMLButtonElement>) => {
+  (e.currentTarget as HTMLButtonElement).style.paddingLeft = "10px";
+  (e.currentTarget as HTMLButtonElement).style.paddingRight = "4px";
+};
+const onBtnLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
+  (e.currentTarget as HTMLButtonElement).style.paddingLeft = "4px";
+  (e.currentTarget as HTMLButtonElement).style.paddingRight = "4px";
 };
 
 export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin }: Props) {
@@ -94,19 +105,19 @@ export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin }: Props)
       {/* Right-edge button stack */}
       <div data-tour-id="tour-right-panel" style={{ position: "fixed", right: 0, top: "50%", transform: "translateY(-50%)", zIndex: 101, display: "flex", flexDirection: "column", gap: 2 }}>
         {/* AI */}
-        <button data-tour-id="tour-ai-btn" style={BTN_STYLE(panel === "ai" || aiActiveOnDashboard, 0)} onClick={handleAIClick} title="AI Assistant">
+        <button data-tour-id="tour-ai-btn" style={BTN_STYLE(panel === "ai" || aiActiveOnDashboard, 0)} onClick={handleAIClick} onMouseEnter={onBtnHover} onMouseLeave={onBtnLeave} title="AI Assistant">
           <Bot size={14} />
           <span style={{ writingMode: "vertical-rl", fontSize: "0.38rem" }}>{aiActiveOnDashboard ? "HIDE AI" : "AI"}</span>
         </button>
         {/* Life Coach */}
-        <button data-tour-id="tour-coach-btn" style={BTN_STYLE(panel === "coach", 1)} onClick={() => toggle("coach")} title="Life Coach">
+        <button data-tour-id="tour-coach-btn" style={BTN_STYLE(panel === "coach", 1)} onClick={() => toggle("coach")} onMouseEnter={onBtnHover} onMouseLeave={onBtnLeave} title="Life Coach">
           <span style={{ fontSize: "0.85rem", lineHeight: 1 }}>🧭</span>
           <span style={{ writingMode: "vertical-rl", fontSize: "0.38rem" }}>COACH</span>
         </button>
         {/* Timer */}
         <TimerButton active={panel === "timer"} onClick={() => toggle("timer")} />
         {/* Routine */}
-        <button data-tour-id="tour-routine-btn" style={BTN_STYLE(panel === "routine", 3)} onClick={() => toggle("routine")} title="Daily Routine">
+        <button data-tour-id="tour-routine-btn" style={BTN_STYLE(panel === "routine", 3)} onClick={() => toggle("routine")} onMouseEnter={onBtnHover} onMouseLeave={onBtnLeave} title="Daily Routine">
           <span style={{ fontSize: "0.85rem", lineHeight: 1 }}>💫</span>
           <span style={{ writingMode: "vertical-rl", fontSize: "0.38rem" }}>ROUTINE</span>
         </button>
@@ -141,7 +152,7 @@ function TimerButton({ active, onClick }: { active: boolean; onClick: () => void
           border: `2px solid ${modeColor}`,
         } : {}),
       }}
-      onClick={onClick} title="Timer"
+      onClick={onClick} onMouseEnter={onBtnHover} onMouseLeave={onBtnLeave} title="Timer"
     >
       <span style={{ fontFamily: "'Space Mono', monospace", fontSize: isActive ? "0.52rem" : "0.38rem", fontWeight: 700, letterSpacing: "-0.02em" }}>
         {isActive ? `${mm}:${ss}` : "⏱"}
