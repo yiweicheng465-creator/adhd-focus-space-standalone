@@ -706,6 +706,16 @@ html.work-mode {
   filter: grayscale(1) hue-rotate(var(--hue-rotate-deg, 0deg));
 }
 
+/* ── Hue-rotate cancel: applied to the Theme Hue section so preset dots & slider
+   always show their true stored colours, unaffected by the global hue-rotate. ──
+   The inverse rotation exactly cancels the parent's hue-rotate. */
+.hue-rotate-cancel {
+  filter: hue-rotate(calc(-1 * var(--hue-rotate-deg, 0deg)));
+}
+html.work-mode .hue-rotate-cancel {
+  filter: hue-rotate(calc(-1 * var(--hue-rotate-deg, 0deg))) saturate(1);
+}
+
 /* Smooth transition when toggling */
 .work-mode,
 .work-mode * {

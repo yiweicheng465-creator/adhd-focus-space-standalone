@@ -363,7 +363,9 @@ export function EffectsPanel() {
                 <div style={{ height: 1, background: "oklch(0.88 0.06 340)", margin: "0 -2px" }} />
 
                 {/* ── Hue Shift section ── */}
-                <div>
+                {/* hue-rotate-cancel: inverts the global hue-rotate so preset dots & slider
+                    always show their true stored colours regardless of current page hue */}
+                <div className="hue-rotate-cancel">
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                     <span style={{ fontSize: "0.55rem", color: "oklch(0.45 0.12 340)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
                       ◈ Theme Hue
