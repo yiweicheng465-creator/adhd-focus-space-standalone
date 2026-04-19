@@ -362,6 +362,7 @@ Rules:
     if (type === "life") setLifeMessages(starter); else setCareerMessages(starter);
   };
   const clear = () => {
+    if (streaming) return; // never clear while a stream is in flight
     localStorage.removeItem(storageKey);
     localStorage.removeItem("adhd-life-coach-insights");
     if (coachType === "life") setLifeMessages([]); else setCareerMessages([]);
@@ -395,7 +396,7 @@ Be specific and personal. Use the person's exact words/goals.`,
     setStreaming(true);
     try {
       await callAIStream(SYSTEMS[coachType], `Conversation:\n${newMsgs.map(m => `${m.role}: ${m.text}`).join("\n")}\n\nContinue as coach.`,
-        (delta) => setMessages(prev => { const u = [...prev]; u[u.length-1] = { ...u[u.length-1], text: u[u.length-1].text + delta }; return u; }),
+        (delta) => setMessages(prev => { if (!prev.length) return prev; const u = [...prev]; u[u.length-1] = { ...u[u.length-1], text: (u[u.length-1].text ?? "") + delta }; return u; }),
         () => {
           setStreaming(false);
           // Generate/update summary after every few exchanges
@@ -417,7 +418,7 @@ Be specific and personal. Use the person's exact words/goals.`,
     }
   };
   return (
-    <PopupShell onClose={onClose} title="🧭 Life Coach" width={320} onClear={messages.length > 0 ? clear : undefined} headerColor={BTN_COLORS[1].active}>
+    <PopupShell onClose={onClose} title="🧭 Life Coach" width={320} onClear={messages.length > 0 ? clear : undefined} clearDisabled={streaming} headerColor={BTN_COLORS[1].active}>
       {/* Life / Career switch tabs — always visible */}
       <div style={{ display: "flex", borderBottom: "1px solid oklch(0.82 0.040 285 / 0.4)", background: "oklch(0.97 0.008 285)" }}>
         {(["life", "career"] as const).map(type => {
@@ -678,14 +679,27 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
 const M_MUTED = "oklch(0.52 0.040 330)";
 
 /* ── Shared popup shell ──────────────────────────────────────── */
-function PopupShell({ onClose, title, width = 300, children, onClear, headerColor }: { onClose: () => void; title: string; width?: number; children: React.ReactNode; onClear?: () => void; headerColor?: string; }) {
+function PopupShell({ onClose, title, width = 300, children, onClear, clearDisabled, headerColor }: { onClose: () => void; title: string; width?: number; children: React.ReactNode; onClear?: () => void; clearDisabled?: boolean; headerColor?: string; }) {
   const hdr = headerColor ?? "oklch(0.93 0.025 355)";
+  const [tourHighlight, setTourHighlight] = useState(false);
+  useEffect(() => {
+    const onHL = () => setTourHighlight(true);
+    const offHL = () => setTourHighlight(false);
+    window.addEventListener("tour-highlight-panel", onHL);
+    window.addEventListener("tour-unhighlight-panel", offHL);
+    window.addEventListener("tour-close-panel", offHL);
+    return () => {
+      window.removeEventListener("tour-highlight-panel", onHL);
+      window.removeEventListener("tour-unhighlight-panel", offHL);
+      window.removeEventListener("tour-close-panel", offHL);
+    };
+  }, []);
   return (
-    <div style={{ position: "fixed", right: 42, top: "50%", transform: "translateY(-50%)", zIndex: 100, width, background: "#fdf4f8", borderRadius: 14, boxShadow: "0 20px 48px rgba(120,40,180,0.18), 0 4px 12px rgba(0,0,0,0.08)", display: "flex", flexDirection: "column", overflow: "hidden", border: `1px solid ${hdr}` }}>
+    <div style={{ position: "fixed", right: 42, top: "50%", transform: "translateY(-50%)", zIndex: 100, width, background: "#fdf4f8", borderRadius: 14, boxShadow: tourHighlight ? "0 0 0 3px oklch(0.58 0.18 340), 0 0 24px oklch(0.58 0.18 340 / 0.45), 0 20px 48px rgba(120,40,180,0.18)" : "0 20px 48px rgba(120,40,180,0.18), 0 4px 12px rgba(0,0,0,0.08)", display: "flex", flexDirection: "column", overflow: "hidden", border: tourHighlight ? "2px solid oklch(0.58 0.18 340)" : `1px solid ${hdr}`, transition: "box-shadow 0.3s ease, border 0.3s ease" }}>
       <div style={{ padding: "10px 14px", borderBottom: `1px solid ${hdr}`, background: hdr, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "0.90rem", fontWeight: 700, color: "oklch(0.28 0.040 320)", fontStyle: "italic" }}>{title}</span>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          {onClear && <button onClick={onClear} style={{ fontSize: "0.48rem", fontFamily: "'Space Mono', monospace", padding: "2px 6px", border: "1px solid oklch(0.72 0.050 330)", borderRadius: 3, background: "transparent", color: "oklch(0.45 0.050 330)", cursor: "pointer" }}>Clear</button>}
+          {onClear && <button onClick={clearDisabled ? undefined : onClear} style={{ fontSize: "0.48rem", fontFamily: "'Space Mono', monospace", padding: "2px 6px", border: "1px solid oklch(0.72 0.050 330)", borderRadius: 3, background: "transparent", color: "oklch(0.45 0.050 330)", cursor: clearDisabled ? "not-allowed" : "pointer", opacity: clearDisabled ? 0.4 : 1 }}>Clear</button>}
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1rem", color: "oklch(0.45 0.040 330)", lineHeight: 1 }}>×</button>
         </div>
       </div>
