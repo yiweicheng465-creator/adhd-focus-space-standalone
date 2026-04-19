@@ -672,6 +672,25 @@ export function FocusTimer({ onSessionComplete, onBlockComplete, onQuit, fillHei
 
   // ── Cyber pet state ────────────────────────────────────────────────────────
   const [deaths, setDeaths] = useLocalStorage<number>("cyber-pet-deaths", 0);
+
+  // ── Daily hearts system ─────────────────────────────────────────────────────
+  const todayHeartsKey = `cyber-pet-hearts-${new Date().toISOString().slice(0, 10)}`;
+  const [hearts5, setHearts5] = useState<number>(() => {
+    try {
+      const v = parseInt(localStorage.getItem(todayHeartsKey) ?? "", 10);
+      return isNaN(v) ? 5 : Math.max(0, Math.min(5, v));
+    } catch { return 5; }
+  });
+  const saveHearts5 = (n: number) => {
+    const clamped = Math.max(0, Math.min(5, n));
+    setHearts5(clamped);
+    try { localStorage.setItem(todayHeartsKey, String(clamped)); } catch {}
+  };
+  // Track sessions completed today for heart restoration (every 4 → +1 heart)
+  const todaySessionsKey = `cyber-pet-sessions-${new Date().toISOString().slice(0, 10)}`;
+  const [sessionsToday, setSessionsToday] = useState<number>(() => {
+    try { return parseInt(localStorage.getItem(todaySessionsKey) ?? "0", 10) || 0; } catch { return 0; }
+  });
   const [blink, setBlink] = useState(false);
   const [bounce, setBounce] = useState(false);
   const [hearts, setHearts] = useState<HeartBubble[]>([]);
@@ -690,13 +709,28 @@ export function FocusTimer({ onSessionComplete, onBlockComplete, onQuit, fillHei
 
   const isRunning = phase === "running";
 
-  // Track deaths from quit events
+  // Track deaths from quit (lose 1 heart) and session completions (every 4 → restore 1 heart)
   const prevPhaseForDeaths = useRef(phase);
   useEffect(() => {
     if (phase === "quit" && prevPhaseForDeaths.current !== "quit") {
       setDeaths((d: number) => d + 1);
+      saveHearts5(hearts5 - 1);
+    }
+    if (
+      (phase === "complete" || phase === "block_complete") &&
+      prevPhaseForDeaths.current !== "complete" &&
+      prevPhaseForDeaths.current !== "block_complete"
+    ) {
+      const newCount = sessionsToday + 1;
+      setSessionsToday(newCount);
+      try { localStorage.setItem(todaySessionsKey, String(newCount)); } catch {}
+      // Every 4 sessions completed today → restore 1 heart (up to max 5)
+      if (newCount % 4 === 0 && hearts5 < 5) {
+        saveHearts5(hearts5 + 1);
+      }
     }
     prevPhaseForDeaths.current = phase;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, setDeaths]);
 
   // Blink while running
@@ -782,7 +816,26 @@ export function FocusTimer({ onSessionComplete, onBlockComplete, onQuit, fillHei
     }
   }, [phase]);
 
-  const resetDeaths = () => setDeaths(0);
+  const resetDeaths = () => { setDeaths(0); saveHearts5(5); };
+
+  // Render hearts as filled/empty icons with tooltip
+  const sessionsUntilRestore = hearts5 < 5 ? 4 - (sessionsToday % 4) : null;
+  const renderHearts = () => (
+    <span
+      title={
+        hearts5 === 5
+          ? "♥♥♥♥♥ Full hearts! Quit a session to lose one."
+          : `${sessionsUntilRestore} more session${sessionsUntilRestore === 1 ? "" : "s"} to restore a heart (${sessionsToday % 4}/4)`
+      }
+      style={{ fontSize: 9, letterSpacing: 1, cursor: "default" }}
+    >
+      {Array.from({ length: 5 }, (_, i) => (
+        <span key={i} style={{ color: i < hearts5 ? "#ff6b8a" : "#FAF6F1", opacity: i < hearts5 ? 1 : 0.45 }}>
+          {i < hearts5 ? "♥" : "♡"}
+        </span>
+      ))}
+    </span>
+  );
 
   // Determine pet face
   const petFace = () => {
@@ -829,7 +882,7 @@ export function FocusTimer({ onSessionComplete, onBlockComplete, onQuit, fillHei
           textTransform: "uppercase",
         }}>CYBER_PET.EXE</span>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <span style={{ fontSize: 7, color: "#FAF6F1", letterSpacing: "0.06em", opacity: 0.9 }}>♥ {Math.max(0, 3 - deaths)}</span>
+          {renderHearts()}
           <button
             onClick={running ? undefined : undefined}
             style={{
@@ -1012,8 +1065,25 @@ export function FocusTimer({ onSessionComplete, onBlockComplete, onQuit, fillHei
         </div>
       )}
 
+      {/* ── GAME OVER screen when all hearts are lost ── */}
+      {hearts5 === 0 && showMainScene && (
+        <div style={{
+          background: DARK, padding: "24px 16px", textAlign: "center",
+          display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
+        }}>
+          <div style={{ fontSize: 22 }}>💀</div>
+          <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: "0.22em", color: "#ff6b8a", textTransform: "uppercase", fontWeight: 700 }}>YOUR PET IS GONE</p>
+          <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 7, color: "#FAF6F1", opacity: 0.7, lineHeight: 1.7 }}>You ran out of hearts today.<br />Come back tomorrow — or reset to try again.</p>
+          <button onClick={resetDeaths} style={{
+            fontFamily: "'JetBrains Mono', monospace", fontSize: 7, letterSpacing: "0.14em",
+            background: "#ff6b8a", color: "#fff", border: "none", padding: "6px 16px",
+            cursor: "pointer", marginTop: 4, boxShadow: `2px 2px 0 #FAF6F1`,
+          }}>↺ Revive pet</button>
+        </div>
+      )}
+
       {/* ── Main timer scene (idle / running / paused) ── */}
-      {showMainScene && (
+      {showMainScene && hearts5 > 0 && (
         <div style={{ display: "flex", flexDirection: "column" }}>
           {/* Pet screen */}
           <div style={{
