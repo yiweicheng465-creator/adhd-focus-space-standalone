@@ -506,10 +506,10 @@ Be direct, warm, specific. No bullet points. Occasionally (not every day) weave 
                       key={m.value}
                       onClick={() => setMood(m.value)}
                       className="flex flex-col items-center gap-1 flex-1 focus:outline-none"
-                      style={{ transition: "transform 0.15s cubic-bezier(0.34,1.56,0.64,1)", transform: "scale(1)" }}
-                      onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.18)")}
-                      onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                      onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.transform = "scale(1.12)"; }}
+                      onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.transform = "scale(1)"; }}
                       style={{
+                        transition: "transform 0.15s cubic-bezier(0.34,1.56,0.64,1), filter 0.15s, opacity 0.15s",
                         transform: isSelected ? "scale(1.18) translateY(-4px)" : "scale(1)",
                         filter: isSelected ? `drop-shadow(0 6px 12px ${m.shadow})` : "none",
                         opacity: mood !== null && !isSelected ? 0.55 : 1,
