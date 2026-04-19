@@ -107,7 +107,7 @@ export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin }: Props)
       )}
 
       {/* Right-edge button stack */}
-      <div data-tour-id="tour-right-panel" style={{ position: "fixed", right: 0, top: "50%", transform: "translateY(-50%)", zIndex: 101, display: "flex", flexDirection: "column", gap: 2 }}>
+      <div data-tour-id="tour-right-panel" style={{ position: "fixed", right: 0, top: "50%", transform: "translateY(-50%)", zIndex: 101, display: "flex", flexDirection: "column", gap: 0 }}>
         {/* AI */}
         <button data-tour-id="tour-ai-btn" style={BTN_STYLE(panel === "ai" || aiActiveOnDashboard, 0)} onClick={handleAIClick} title="AI Assistant">
           <Bot size={14} />
