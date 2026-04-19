@@ -386,6 +386,12 @@ export default function Home() {
   const [pendingDump, setPendingDump] = useState<string | null>(null);
   const [pendingAgentTask, setPendingAgentTask] = useState<string | null>(null);
   const [dashboardKey, setDashboardKey] = useState(0);
+  // Listen for coach summary updates from GlobalRightPanel so the card refreshes without a page reload
+  useEffect(() => {
+    const handler = () => setDashboardKey(k => k + 1);
+    window.addEventListener("coach-summary-updated", handler);
+    return () => window.removeEventListener("coach-summary-updated", handler);
+  }, []);
   // Routine refresh counter — increments when adhd-routine-done changes so header re-reads localStorage
   const [routineRefresh, setRoutineRefresh] = useState(0);
   useEffect(() => {

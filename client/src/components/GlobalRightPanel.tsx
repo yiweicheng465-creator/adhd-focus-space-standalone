@@ -36,25 +36,14 @@ const BTN_COLORS = [
 const BTN_STYLE = (active: boolean, idx: number = 0): React.CSSProperties => {
   const c = BTN_COLORS[idx] ?? BTN_COLORS[0];
   return {
-    display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
-    padding: "10px 4px", background: active ? c.active : c.idle,
+    display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+    padding: "12px 8px", background: active ? c.active : c.idle,
     color: active ? "white" : c.text,
-    border: "none", borderRadius: "6px 0 0 6px",
-    cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: "0.38rem",
-    letterSpacing: "0.08em", boxShadow: `-2px 0 8px ${c.active}28`,
-    transition: "padding 0.18s ease, background 0.15s",
-    minWidth: 24,
+    border: "none", borderRadius: "8px 0 0 8px",
+    cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: "0.40rem",
+    letterSpacing: "0.10em", boxShadow: `-2px 0 10px ${c.active}33`,
+    transition: "all 0.15s", minWidth: 34,
   };
-};
-
-// Hover handlers — expand left only (wider padding-left)
-const onBtnHover = (e: React.MouseEvent<HTMLButtonElement>) => {
-  (e.currentTarget as HTMLButtonElement).style.paddingLeft = "10px";
-  (e.currentTarget as HTMLButtonElement).style.paddingRight = "4px";
-};
-const onBtnLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
-  (e.currentTarget as HTMLButtonElement).style.paddingLeft = "4px";
-  (e.currentTarget as HTMLButtonElement).style.paddingRight = "4px";
 };
 
 export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin }: Props) {
@@ -120,19 +109,19 @@ export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin }: Props)
       {/* Right-edge button stack */}
       <div data-tour-id="tour-right-panel" style={{ position: "fixed", right: 0, top: "50%", transform: "translateY(-50%)", zIndex: 101, display: "flex", flexDirection: "column", gap: 2 }}>
         {/* AI */}
-        <button data-tour-id="tour-ai-btn" style={BTN_STYLE(panel === "ai" || aiActiveOnDashboard, 0)} onClick={handleAIClick} onMouseEnter={onBtnHover} onMouseLeave={onBtnLeave} title="AI Assistant">
+        <button data-tour-id="tour-ai-btn" style={BTN_STYLE(panel === "ai" || aiActiveOnDashboard, 0)} onClick={handleAIClick} title="AI Assistant">
           <Bot size={14} />
           <span style={{ writingMode: "vertical-rl", fontSize: "0.38rem" }}>{aiActiveOnDashboard ? "HIDE AI" : "AI"}</span>
         </button>
         {/* Life Coach */}
-        <button data-tour-id="tour-coach-btn" style={BTN_STYLE(panel === "coach", 1)} onClick={() => toggle("coach")} onMouseEnter={onBtnHover} onMouseLeave={onBtnLeave} title="Life Coach">
+        <button data-tour-id="tour-coach-btn" style={BTN_STYLE(panel === "coach", 1)} onClick={() => toggle("coach")} title="Life Coach">
           <span style={{ fontSize: "0.85rem", lineHeight: 1 }}>🧭</span>
           <span style={{ writingMode: "vertical-rl", fontSize: "0.38rem" }}>COACH</span>
         </button>
         {/* Timer */}
         <TimerButton active={panel === "timer"} onClick={() => toggle("timer")} />
         {/* Routine */}
-        <button data-tour-id="tour-routine-btn" style={BTN_STYLE(panel === "routine", 3)} onClick={() => toggle("routine")} onMouseEnter={onBtnHover} onMouseLeave={onBtnLeave} title="Daily Routine">
+        <button data-tour-id="tour-routine-btn" style={BTN_STYLE(panel === "routine", 3)} onClick={() => toggle("routine")} title="Daily Routine">
           <span style={{ fontSize: "0.85rem", lineHeight: 1 }}>💫</span>
           <span style={{ writingMode: "vertical-rl", fontSize: "0.38rem" }}>ROUTINE</span>
         </button>
@@ -167,7 +156,7 @@ function TimerButton({ active, onClick }: { active: boolean; onClick: () => void
           border: `2px solid ${modeColor}`,
         } : {}),
       }}
-      onClick={onClick} onMouseEnter={isActive ? undefined : onBtnHover} onMouseLeave={isActive ? undefined : onBtnLeave} title="Timer"
+      onClick={onClick} title="Timer"
     >
       <span style={{ fontFamily: "'Space Mono', monospace", fontSize: isActive ? "0.52rem" : "0.38rem", fontWeight: 700, letterSpacing: "-0.02em" }}>
         {isActive ? `${mm}:${ss}` : "⏱"}
@@ -313,13 +302,21 @@ function CoachPopup({ onClose, goals }: { onClose: () => void; goals: Goal[] }) 
   const STORAGE_LIFE   = "adhd-life-coach-chat-life";
   const STORAGE_CAREER = "adhd-life-coach-chat-career";
   const loadMsgs = (key: string) => { try { return JSON.parse(localStorage.getItem(key) ?? "[]"); } catch { return []; } };
+  const STARTERS_INIT = {
+    life: "Let's explore what matters most to you. What area of your life feels most out of alignment with where you want to be — relationships, health, purpose, or something else?",
+    career: "What does success look like in 3 years — go deeper, pivot, or build something of your own?"
+  };
+  const initMsgs = (key: string, type: "life" | "career") => {
+    const saved = loadMsgs(key);
+    if (saved.length > 0) return saved;
+    return [{ role: "coach" as const, text: STARTERS_INIT[type] }];
+  };
   const [coachType, setCoachType] = useState<"life" | "career">("life");
-  const [lifeMessages,   setLifeMessages]   = useState<{ role: "user" | "coach"; text: string }[]>(() => loadMsgs(STORAGE_LIFE));
-  const [careerMessages, setCareerMessages] = useState<{ role: "user" | "coach"; text: string }[]>(() => loadMsgs(STORAGE_CAREER));
+  const [lifeMessages,   setLifeMessages]   = useState<{ role: "user" | "coach"; text: string }[]>(() => initMsgs(STORAGE_LIFE, "life"));
+  const [careerMessages, setCareerMessages] = useState<{ role: "user" | "coach"; text: string }[]>(() => initMsgs(STORAGE_CAREER, "career"));
   const messages    = coachType === "life" ? lifeMessages   : careerMessages;
   const setMessages = coachType === "life" ? setLifeMessages : setCareerMessages;
   const storageKey  = coachType === "life" ? STORAGE_LIFE   : STORAGE_CAREER;
-  const mode = messages.length > 0 ? "chat" : "pick";
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -383,6 +380,8 @@ Be specific and personal. Use the person's exact words/goals.`,
         const existing = (() => { try { return JSON.parse(localStorage.getItem("adhd-life-dashboard") ?? "{}"); } catch { return {}; } })();
         existing[type] = { ...parsed, updatedAt: new Date().toISOString() };
         localStorage.setItem("adhd-life-dashboard", JSON.stringify(existing));
+        // Notify Dashboard to re-render the coach summary card without a page refresh
+        window.dispatchEvent(new CustomEvent("coach-summary-updated"));
       }
     } catch {} // silent fail
   };
@@ -422,7 +421,11 @@ Be specific and personal. Use the person's exact words/goals.`,
       <div style={{ display: "flex", borderBottom: "1px solid oklch(0.82 0.040 285 / 0.4)", background: "oklch(0.97 0.008 285)" }}>
         {(["life", "career"] as const).map(type => {
           const isActive = coachType === type;
-          const hasHistory = (type === "life" ? lifeMessages : careerMessages).length > 0;
+          const typeMsgs = type === "life" ? lifeMessages : careerMessages;
+          // Show dot only when user has NOT sent any message AND no coach summary exists yet
+          const hasUserChat = typeMsgs.some(m => m.role === "user");
+          const hasSummary = (() => { try { const d = JSON.parse(localStorage.getItem("adhd-life-dashboard") ?? "{}"); return !!d[type]; } catch { return false; } })();
+          const showDot = !hasUserChat && !hasSummary;
           return (
             <button key={type} onClick={() => switchCoach(type)}
               style={{ flex: 1, padding: "6px 8px", border: "none", borderBottom: isActive ? "2px solid oklch(0.55 0.14 285)" : "2px solid transparent", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
@@ -430,41 +433,26 @@ Be specific and personal. Use the person's exact words/goals.`,
                 color: isActive ? "oklch(0.35 0.12 285)" : "oklch(0.55 0.040 330)", transition: "all 0.15s" }}>
               <span>{type === "life" ? "🌱" : "🚀"}</span>
               <span>{type === "life" ? "Life" : "Career"}</span>
-              {hasHistory && <span style={{ width: 5, height: 5, borderRadius: "50%", background: isActive ? "oklch(0.55 0.14 285)" : "oklch(0.70 0.08 285)", flexShrink: 0 }} />}
+              {showDot && <span style={{ width: 5, height: 5, borderRadius: "50%", background: isActive ? "oklch(0.55 0.14 285)" : "oklch(0.70 0.08 285)", flexShrink: 0 }} />}
             </button>
           );
         })}
       </div>
-      {mode === "pick" ? (
-        <div style={{ padding: "16px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.80rem", color: "oklch(0.45 0.040 330)", lineHeight: 1.5, margin: 0 }}>Start a conversation with your {coachType === "life" ? "Life Planning" : "Career Coaching"} coach.</p>
-          <button onClick={() => startChat(coachType)} style={{ padding: "12px 14px", borderRadius: 8, background: "oklch(0.55 0.12 285 / 0.06)", border: "1px solid oklch(0.55 0.12 285 / 0.25)", cursor: "pointer", textAlign: "left", display: "flex", gap: 10, alignItems: "center" }}>
-            <span style={{ fontSize: "1.2rem" }}>{coachType === "life" ? "🌱" : "🚀"}</span>
-            <div>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 700, color: "oklch(0.28 0.040 320)", margin: 0, fontSize: "0.85rem" }}>{coachType === "life" ? "Life Planning" : "Career Coaching"}</p>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.72rem", color: "oklch(0.52 0.040 330)", margin: 0 }}>{coachType === "life" ? "Values, purpose, 1/3/10yr vision" : "Direction, roadmap, skill gaps"}</p>
+      <div style={{ flex: 1, overflowY: "auto", padding: "8px 12px", display: "flex", flexDirection: "column", gap: 8, minHeight: 200, maxHeight: 300 }}>
+        {messages.map((m, i) => (
+          <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
+            <div style={{ maxWidth: "85%", padding: "6px 10px", borderRadius: m.role === "user" ? "10px 10px 2px 10px" : "10px 10px 10px 2px", background: m.role === "user" ? "oklch(0.55 0.14 285)" : "white", color: m.role === "user" ? "white" : "oklch(0.28 0.040 320)", fontSize: "0.82rem", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5, border: m.role === "coach" ? "1px solid oklch(0.86 0.030 300)" : "none" }}>
+              {m.text || (streaming && i === messages.length-1 ? "▊" : "")}
             </div>
-          </button>
-        </div>
-      ) : (
-        <>
-          <div style={{ flex: 1, overflowY: "auto", padding: "8px 12px", display: "flex", flexDirection: "column", gap: 8, minHeight: 200, maxHeight: 300 }}>
-            {messages.map((m, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
-                <div style={{ maxWidth: "85%", padding: "6px 10px", borderRadius: m.role === "user" ? "10px 10px 2px 10px" : "10px 10px 10px 2px", background: m.role === "user" ? "oklch(0.55 0.14 285)" : "white", color: m.role === "user" ? "white" : "oklch(0.28 0.040 320)", fontSize: "0.82rem", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5, border: m.role === "coach" ? "1px solid oklch(0.86 0.030 300)" : "none" }}>
-                  {m.text || (streaming && i === messages.length-1 ? "▊" : "")}
-                </div>
-              </div>
-            ))}
-            <div ref={bottomRef} />
           </div>
-          <div style={{ padding: "8px 10px", borderTop: "1px solid oklch(0.86 0.030 300)", display: "flex", gap: 6 }}>
-            <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") send(); }} placeholder={`Chat with ${coachType === "life" ? "Life" : "Career"} Coach…`} autoComplete="off"
-              style={{ flex: 1, padding: "6px 10px", borderRadius: 6, border: "1px solid oklch(0.86 0.030 300)", fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", outline: "none" }} />
-            <button onClick={send} disabled={streaming || !input.trim()} style={{ padding: "6px 12px", borderRadius: 6, background: input.trim() ? "oklch(0.55 0.14 285)" : "transparent", border: `1px solid ${input.trim() ? "oklch(0.55 0.14 285)" : "oklch(0.86 0.030 300)"}`, color: input.trim() ? "white" : "oklch(0.60 0.040 330)", cursor: "pointer" }}>→</button>
-          </div>
-        </>
-      )}
+        ))}
+        <div ref={bottomRef} />
+      </div>
+      <div style={{ padding: "8px 10px", borderTop: "1px solid oklch(0.86 0.030 300)", display: "flex", gap: 6 }}>
+        <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") send(); }} placeholder={`Chat with ${coachType === "life" ? "Life" : "Career"} Coach…`} autoComplete="off"
+          style={{ flex: 1, padding: "6px 10px", borderRadius: 6, border: "1px solid oklch(0.86 0.030 300)", fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", outline: "none" }} />
+        <button onClick={send} disabled={streaming || !input.trim()} style={{ padding: "6px 12px", borderRadius: 6, background: input.trim() ? "oklch(0.55 0.14 285)" : "transparent", border: `1px solid ${input.trim() ? "oklch(0.55 0.14 285)" : "oklch(0.86 0.030 300)"}`, color: input.trim() ? "white" : "oklch(0.60 0.040 330)", cursor: "pointer" }}>→</button>
+      </div>
     </PopupShell>
   );
 }
