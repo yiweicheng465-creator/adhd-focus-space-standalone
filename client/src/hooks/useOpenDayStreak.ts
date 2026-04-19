@@ -1,8 +1,9 @@
 /* ============================================================
    useOpenDayStreak — tracks consecutive days the app was opened.
 
-   Call recordOpen() once on app mount. It records today's visit
-   and updates the streak counter.
+   On first run (no existing streak data), bootstraps from
+   "adhd-daily-logs" (the calendar dot data) so the streak
+   reflects real historical usage rather than starting at 1.
 
    Storage key: "adhd-open-day-streak"
    Shape: {
@@ -21,13 +22,83 @@ interface OpenDayData {
 }
 
 const STORAGE_KEY = "adhd-open-day-streak";
+const DAILY_LOGS_KEY = "adhd-daily-logs";
 
-function toDateStr(d: Date): string {
-  return d.toISOString().slice(0, 10); // "YYYY-MM-DD"
+function toYMD(d: Date): string {
+  // "YYYY-MM-DD" in local time (not UTC) to avoid timezone off-by-one
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
-function todayStr(): string {
-  return toDateStr(new Date());
+function todayYMD(): string {
+  return toYMD(new Date());
+}
+
+/** Convert "Mon Apr 07 2026" (Date.toDateString) → "2026-04-07" */
+function dateStringToYMD(s: string): string | null {
+  try {
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return null;
+    return toYMD(d);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Compute the consecutive-day streak ending on `today` from a set of
+ * visited date strings in "YYYY-MM-DD" format.
+ */
+function computeStreakFromHistory(history: Record<string, true>, today: string): number {
+  let streak = 0;
+  const d = new Date(today + "T12:00:00"); // noon local to avoid DST edge cases
+  while (true) {
+    const key = toYMD(d);
+    if (!history[key]) break;
+    streak++;
+    d.setDate(d.getDate() - 1);
+  }
+  return streak;
+}
+
+/**
+ * Bootstrap history from adhd-daily-logs.
+ * Any day that has any activity (wrapUpDone, dumpCount, winsCount,
+ * tasksCompleted, focusSessions, routinesDone) counts as "opened".
+ */
+function bootstrapFromDailyLogs(): Record<string, true> {
+  try {
+    const raw = localStorage.getItem(DAILY_LOGS_KEY);
+    if (!raw) return {};
+    const logs = JSON.parse(raw) as Record<string, {
+      wrapUpDone?: boolean;
+      dumpCount?: number;
+      winsCount?: number;
+      tasksCompleted?: number;
+      focusSessions?: number;
+      routinesDone?: number;
+    }>;
+    const history: Record<string, true> = {};
+    for (const [dateStr, log] of Object.entries(logs)) {
+      if (!log) continue;
+      const hasActivity =
+        log.wrapUpDone ||
+        (log.dumpCount ?? 0) > 0 ||
+        (log.winsCount ?? 0) > 0 ||
+        (log.tasksCompleted ?? 0) > 0 ||
+        (log.focusSessions ?? 0) > 0 ||
+        (log.routinesDone ?? 0) > 0;
+      if (hasActivity) {
+        const ymd = dateStringToYMD(dateStr);
+        if (ymd) history[ymd] = true;
+      }
+    }
+    return history;
+  } catch {
+    return {};
+  }
 }
 
 function loadData(): OpenDayData {
@@ -51,40 +122,43 @@ function saveData(data: OpenDayData) {
 
 export function useOpenDayStreak() {
   const [data, setData] = useState<OpenDayData>(() => {
-    // On first load, record today's open immediately
     const existing = loadData();
-    const t = todayStr();
+    const t = todayYMD();
 
-    if (existing.lastOpenDate === t) {
-      // Already recorded today — return as-is
+    // --- Bootstrap from adhd-daily-logs if this is the first time ---
+    // Also re-bootstrap if the saved streak is suspiciously low (streak<=1 with
+    // only today in history) — this catches the broken first-run case where the
+    // old hook started fresh without reading historical data.
+    const historyKeys = Object.keys(existing.history);
+    const isFirstRun = existing.lastOpenDate === null && historyKeys.length === 0;
+    const isBrokenFirstRun =
+      existing.streak <= 1 &&
+      historyKeys.length <= 1 &&
+      (historyKeys.length === 0 || historyKeys[0] === existing.lastOpenDate);
+
+    if (existing.lastOpenDate === t && !isFirstRun && !isBrokenFirstRun) {
+      // Already recorded today with a valid streak — return as-is
       return existing;
     }
 
-    // Compute new streak
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yStr = toDateStr(yesterday);
-
-    let newStreak: number;
-    if (existing.lastOpenDate === yStr) {
-      // Opened yesterday → extend streak
-      newStreak = existing.streak + 1;
-    } else if (existing.lastOpenDate === null) {
-      // First ever open
-      newStreak = 1;
-    } else {
-      // Gap of 2+ days → reset
-      newStreak = 1;
+    let baseHistory = existing.history;
+    if (isFirstRun || isBrokenFirstRun) {
+      baseHistory = bootstrapFromDailyLogs();
     }
 
-    // Update history, prune entries older than 90 days
-    const newHistory = { ...existing.history, [t]: true as const };
+    // Mark today as visited
+    const newHistory = { ...baseHistory, [t]: true as const };
+
+    // Prune entries older than 90 days
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 90);
-    const cutoffStr = toDateStr(cutoff);
+    const cutoffStr = toYMD(cutoff);
     for (const key of Object.keys(newHistory)) {
       if (key < cutoffStr) delete newHistory[key as keyof typeof newHistory];
     }
+
+    // Compute streak from the full history (handles bootstrap correctly)
+    const newStreak = computeStreakFromHistory(newHistory, t);
 
     const next: OpenDayData = {
       streak: newStreak,
@@ -98,23 +172,18 @@ export function useOpenDayStreak() {
   /** Manually record today's open (idempotent — safe to call multiple times) */
   const recordOpen = useCallback(() => {
     setData((prev) => {
-      const t = todayStr();
+      const t = todayYMD();
       if (prev.lastOpenDate === t) return prev; // already recorded today
-
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yStr = toDateStr(yesterday);
-
-      const newStreak =
-        prev.lastOpenDate === yStr ? prev.streak + 1 : 1;
 
       const newHistory = { ...prev.history, [t]: true as const };
       const cutoff = new Date();
       cutoff.setDate(cutoff.getDate() - 90);
-      const cutoffStr = toDateStr(cutoff);
+      const cutoffStr = toYMD(cutoff);
       for (const key of Object.keys(newHistory)) {
         if (key < cutoffStr) delete newHistory[key as keyof typeof newHistory];
       }
+
+      const newStreak = computeStreakFromHistory(newHistory, t);
 
       const next: OpenDayData = {
         streak: newStreak,
