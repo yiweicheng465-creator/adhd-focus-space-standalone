@@ -37,17 +37,16 @@ const BTN_STYLE = (active: boolean, idx: number = 0, hovered = false): React.CSS
   const c = BTN_COLORS[idx] ?? BTN_COLORS[0];
   return {
     display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-    // Narrow by default; grow left on hover via paddingLeft
-    paddingTop: 12, paddingBottom: 12,
-    paddingRight: 6,
-    paddingLeft: hovered ? 18 : 6,
+    padding: "12px 6px",
     background: active ? c.active : c.idle,
     color: active ? "white" : c.text,
     border: "none", borderRadius: "8px 0 0 8px",
     cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: "0.40rem",
     letterSpacing: "0.10em", boxShadow: `-2px 0 10px ${c.active}33`,
-    transition: "padding-left 0.18s ease, background 0.15s, color 0.15s",
-    minWidth: 28, width: 28,
+    // Grow to the left: width transitions from narrow to wide; right edge is fixed
+    width: hovered ? 46 : 28,
+    overflow: "hidden",
+    transition: "width 0.18s ease, background 0.15s, color 0.15s",
   };
 };
 
@@ -187,8 +186,6 @@ function TimerButton({ active, onClick, hovered = false, onHoverChange }: {
       data-tour-id="tour-timer-btn"
       style={{
         ...BTN_STYLE(active || isActive, 2, hovered),
-        // Lock width so the countdown digits never widen the button
-        maxWidth: hovered ? 46 : 28, overflow: "hidden",
         ...(isActive ? {
           background: modeLightBg,
           color: modeColor,
