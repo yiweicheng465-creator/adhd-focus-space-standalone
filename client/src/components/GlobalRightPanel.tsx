@@ -99,6 +99,7 @@ export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin }: Props)
   };
 
   const aiActiveOnDashboard = onDashboard() && dashboardAIOn;
+  const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
 
   return (
     <>
@@ -111,7 +112,7 @@ export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin }: Props)
       )}
 
       {/* Right-edge button stack */}
-      <div data-tour-id="tour-right-panel" style={{ position: "fixed", right: 0, top: "50%", transform: "translateY(-50%)", zIndex: 101, display: "flex", flexDirection: "column", gap: 2 }}>
+      <div data-tour-id="tour-right-panel" style={{ position: "fixed", right: 0, top: "50%", transform: "translateY(-50%)", zIndex: 101, display: "flex", flexDirection: "column", gap: 0 }}>
         {/* AI */}
         <button data-tour-id="tour-ai-btn"
           style={BTN_STYLE(panel === "ai" || aiActiveOnDashboard, 0, hoveredBtn === "ai")}
@@ -189,7 +190,7 @@ function TimerButton({ active, onClick, hovered = false, onHoverChange }: {
       onMouseLeave={() => onHoverChange?.(false)}
       title="Timer"
     >
-      <span style={{ fontFamily: "'Space Mono', monospace", fontSize: isActive ? "0.40rem" : "0.38rem", fontWeight: 700, letterSpacing: "-0.03em" }}>
+      <span style={{ fontFamily: "'Space Mono', monospace", fontSize: isActive ? "0.38rem" : "0.38rem", fontWeight: 700, letterSpacing: "-0.03em" }}>
         {isActive ? `${mm}:${ss}` : "⏱"}
       </span>
       <span style={{ writingMode: "vertical-rl", fontSize: "0.38rem" }}>{isActive ? (phase === "paused" ? "PAUSE" : mode?.toUpperCase()) : "TIMER"}</span>

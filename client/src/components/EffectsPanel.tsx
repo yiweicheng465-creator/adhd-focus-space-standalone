@@ -250,7 +250,7 @@ export function EffectsPanel() {
 
       {/* ── Popup panel ── */}
       {open && (
-        <div style={{
+        <div data-tour-id="tour-settings-panel" style={{
           position: "fixed",
           left: "max(56px, env(safe-area-inset-left, 0px))",
           bottom: 8,
