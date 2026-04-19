@@ -150,6 +150,8 @@ function TimerButton({ active, onClick }: { active: boolean; onClick: () => void
       data-tour-id="tour-timer-btn"
       style={{
         ...BTN_STYLE(active || isActive, 2),
+        // Lock width so the countdown digits never widen the button
+        width: 34, maxWidth: 34, overflow: "hidden",
         ...(isActive ? {
           background: modeLightBg,
           color: modeColor,
@@ -158,7 +160,7 @@ function TimerButton({ active, onClick }: { active: boolean; onClick: () => void
       }}
       onClick={onClick} title="Timer"
     >
-      <span style={{ fontFamily: "'Space Mono', monospace", fontSize: isActive ? "0.52rem" : "0.38rem", fontWeight: 700, letterSpacing: "-0.02em" }}>
+      <span style={{ fontFamily: "'Space Mono', monospace", fontSize: isActive ? "0.40rem" : "0.38rem", fontWeight: 700, letterSpacing: "-0.03em" }}>
         {isActive ? `${mm}:${ss}` : "⏱"}
       </span>
       <span style={{ writingMode: "vertical-rl", fontSize: "0.38rem" }}>{isActive ? (phase === "paused" ? "PAUSE" : mode?.toUpperCase()) : "TIMER"}</span>
