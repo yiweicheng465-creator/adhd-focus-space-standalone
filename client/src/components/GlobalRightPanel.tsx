@@ -37,15 +37,15 @@ const BTN_STYLE = (active: boolean, idx: number = 0, hovered = false): React.CSS
   const c = BTN_COLORS[idx] ?? BTN_COLORS[0];
   return {
     display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-    padding: "12px 6px", background: active ? c.active : c.idle,
+    // Grow left on hover: increase paddingLeft so the right edge stays flush with the screen edge
+    padding: `12px ${hovered ? 10 : 6}px 12px ${hovered ? 10 : 6}px`,
+    background: active ? c.active : c.idle,
     color: active ? "white" : c.text,
     border: "none", borderRadius: "8px 0 0 8px",
     cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: "0.40rem",
     letterSpacing: "0.10em", boxShadow: `-2px 0 10px ${c.active}33`,
-    // Grow slightly to the left on hover; right edge stays anchored
-    width: hovered ? 42 : 34,
     overflow: "hidden",
-    transition: "width 0.18s ease, background 0.15s, color 0.15s",
+    transition: "padding 0.18s ease, background 0.15s, color 0.15s",
   };
 };
 
