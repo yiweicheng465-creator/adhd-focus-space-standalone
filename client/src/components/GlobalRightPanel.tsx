@@ -99,7 +99,6 @@ export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin }: Props)
   };
 
   const aiActiveOnDashboard = onDashboard() && dashboardAIOn;
-  const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
 
   return (
     <>
