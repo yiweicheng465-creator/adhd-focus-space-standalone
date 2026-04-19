@@ -106,10 +106,13 @@ function DayCellHoverContent({ log, day, month, year }: { log?: DailyLog; day: n
               <span style={{ fontSize: 11, color: M.ink }}>{log!.dumpCount} brain dump {log!.dumpCount === 1 ? "entry" : "entries"}</span>
             </div>
           )}
-          {(log?.winsCount ?? 0) > 0 && (
+          {((log?.winsCount ?? 0) > 0 || (log?.focusSessions ?? 0) > 0 || (log?.blocksCompleted ?? 0) > 0) && (
             <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
               <Sparkles size={13} style={{ color: M.gold, flexShrink: 0 }} />
-              <span style={{ fontSize: 11, color: M.ink }}>{log!.winsCount} {log!.winsCount === 1 ? "win" : "wins"} logged</span>
+              <span style={{ fontSize: 11, color: M.ink }}>
+                {(log?.winsCount ?? 0) + (log?.focusSessions ?? 0) + (log?.blocksCompleted ?? 0)}{" "}
+                {((log?.winsCount ?? 0) + (log?.focusSessions ?? 0) + (log?.blocksCompleted ?? 0)) === 1 ? "win" : "wins"} logged
+              </span>
             </div>
           )}
           {(log?.tasksCompleted ?? 0) > 0 && (
@@ -180,7 +183,8 @@ function DayCell({
   onClick: () => void;
 }) {
   const hasRoutineDone = (log?.routinesDone ?? 0) > 0;
-  const hasActivity = log && (log.wrapUpDone || log.dumpCount > 0 || log.winsCount > 0 || hasRoutineDone);
+  const hasFocusWins = (log?.focusSessions ?? 0) > 0 || (log?.blocksCompleted ?? 0) > 0;
+  const hasActivity = log && (log.wrapUpDone || log.dumpCount > 0 || log.winsCount > 0 || hasRoutineDone || hasFocusWins);
   const moodColor = log?.mood ? MOOD_COLORS[(log?.mood ?? 4) - 1] : null;
 
   const cellButton = (
@@ -227,7 +231,7 @@ function DayCell({
         <div style={{ display: "flex", gap: 2, flexWrap: "wrap", justifyContent: "center" }}>
           {log?.wrapUpDone && <div style={{ width: 5, height: 5, borderRadius: "50%", background: M.sage }} />}
           {(log?.dumpCount ?? 0) > 0 && <div style={{ width: 5, height: 5, borderRadius: "50%", background: M.coral }} />}
-          {(log?.winsCount ?? 0) > 0 && <div style={{ width: 5, height: 5, borderRadius: "50%", background: M.gold }} />}
+          {((log?.winsCount ?? 0) > 0 || hasFocusWins) && <div style={{ width: 5, height: 5, borderRadius: "50%", background: M.gold }} />}
           {hasRoutineDone && <div title={`${log?.routinesDone}/${log?.routinesTotal} routines`} style={{ width: 5, height: 5, borderRadius: "50%", background: "oklch(0.55 0.14 245)" }} />}
         </div>
       )}
@@ -360,8 +364,13 @@ function DayDetail({ log, dateStr, dateKey: dk, onClose, isPast }: { log?: Daily
     } catch { return [] as string[]; }
   })();
   // Group wins by category
+  // iconIdx 97 (focus session) and 99 (deep focus block) are normalised to 5 (Mindful)
+  const normWinIdx = (raw: number | undefined) => {
+    if (raw === 97 || raw === 99) return 5;
+    return typeof raw === "number" ? raw % WIN_CAT_LABELS.length : 4;
+  };
   const winsByCategory = dayWins.reduce<Record<number, typeof dayWins>>((acc, w) => {
-    const idx = w.iconIdx ?? 4;
+    const idx = normWinIdx(w.iconIdx);
     if (!acc[idx]) acc[idx] = [];
     acc[idx].push(w);
     return acc;
