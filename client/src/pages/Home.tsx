@@ -24,6 +24,7 @@ import { recordWrapUp, recordDumpEntry, recordFocusSession, recordBlockComplete,
 import { DailyCheckIn, useDailyCheckIn, type CheckInResult } from "@/components/DailyCheckIn";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useBlockStreak } from "@/hooks/useBlockStreak";
+import { useOpenDayStreak } from "@/hooks/useOpenDayStreak";
 import { useTimer } from "@/contexts/TimerContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { LoginScreen } from "@/components/LoginScreen";
@@ -380,6 +381,7 @@ export default function Home() {
   useEffect(() => { setFocusSessions(focusSessionsToday); }, [focusSessionsToday]);
 
   const { streak: blockStreak, history: blockHistory, recordBlock } = useBlockStreak();
+  const { streak: openDayStreak } = useOpenDayStreak();
   const [timerQuitCount, setTimerQuitCount] = useState(0);
   const [confettiTrigger, setConfettiTrigger] = useState(false);
   const [wrapUpOpen, setWrapUpOpen] = useState(false);
@@ -715,7 +717,7 @@ export default function Home() {
                 agents={agents}
                 mood={mood}
                 displayName={displayName || undefined}
-                blockStreak={blockStreak}
+                blockStreak={openDayStreak}
                 blockHistory={blockHistory}
                 onNavigate={(s) => setActiveSection(s as Section)}
                 onSessionComplete={handleSessionComplete}

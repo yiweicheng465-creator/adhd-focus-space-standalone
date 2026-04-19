@@ -546,7 +546,7 @@ export default function StorageBackup() {
           { label: "AI & Coach", items: ["AI chat history", "Life Coach conversation", "Life Coach insights", "Life Dashboard (direction & goals)"] },
           { label: "Layout & order", items: ["Calendar day order", "Priority matrix order", "Goal task order", "Deleted custom tags", "AI panel preference"] },
           { label: "Sound & music", items: ["Sound effects on/off", "SFX volume", "Music on/off", "Music volume", "Music track"] },
-          { label: "Appearance", items: ["Display name", "Theme hue", "Film grain intensity/speed", "Work mode", "Custom quick chips", "Block streak data", "Pixel pet deaths"] },
+          { label: "Appearance", items: ["Display name", "Theme hue", "Theme hue presets (6 slots)", "Film grain intensity/speed", "Work mode", "Custom quick chips", "Block streak data", "Open-day streak", "Pixel pet deaths"] },
         ].map(({ label, items }) => (
           <div key={label} style={{ marginBottom: 10 }}>
             <p style={{ fontSize: 9, fontFamily: "'Space Mono', monospace", letterSpacing: "0.10em", textTransform: "uppercase", color: M.coral, marginBottom: 4 }}>{label}</p>
