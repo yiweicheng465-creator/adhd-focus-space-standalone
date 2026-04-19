@@ -70,7 +70,6 @@ const MAX_CHAT_HISTORY = 10;
 const CHAT_SUGGESTIONS = [
   "What should I focus on first today?",
   "How are my routines going? Give me a detailed breakdown",
-  "Which routines am I struggling with and which are going well?",
   "Add task: review my emails — urgent",
   "What tasks do I have left?",
   "Mark my most urgent task as done",

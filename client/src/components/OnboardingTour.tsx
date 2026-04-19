@@ -46,6 +46,8 @@ export interface TourStep {
   title: string;
   /** Longer description shown in the tooltip */
   description: string;
+  /** Optional bullet list items rendered below the description (for structured steps) */
+  descriptionItems?: string[];
   /** Emoji icon for visual flair */
   icon: string;
   /** Preferred tooltip placement relative to spotlight */
@@ -111,7 +113,8 @@ export const TOUR_STEPS: TourStep[] = [
       "The 🤖 button on the right edge is available on every page. On the Dashboard it shows/hides the inline AI panel. On any other page it opens a floating chat so you never lose your place.",
     icon: "🤖",
     placement: "left",
-  },
+    openAction: "panel:ai",
+  } as TourStep & { openAction?: string },
   // ── 5. Life Coach button ───────────────────────────────────────────────────
   {
     section: "dashboard",
@@ -122,7 +125,8 @@ export const TOUR_STEPS: TourStep[] = [
       "The compass button opens your personal AI Life Coach. Have a real conversation about your life direction or career path. When you finish, the coach saves a structured summary as your Life Dashboard — visible at the top of the Goals page.",
     icon: "🧭",
     placement: "left",
-  },
+    openAction: "panel:coach",
+  } as TourStep & { openAction?: string },
   // ── 6. Timer button (right panel) ─────────────────────────────────────────
   {
     section: "dashboard",
@@ -133,7 +137,8 @@ export const TOUR_STEPS: TourStep[] = [
       "The timer button on the right edge lets you start or pause a Pomodoro from any page without leaving what you're doing. The live countdown is shown right on the button.",
     icon: "⏱",
     placement: "left",
-  },
+    openAction: "panel:timer",
+  } as TourStep & { openAction?: string },
   // ── 7. Daily Routine button ────────────────────────────────────────────────
   {
     section: "dashboard",
@@ -144,7 +149,8 @@ export const TOUR_STEPS: TourStep[] = [
       "The 💫 button opens your Daily Routine panel — a checklist of habits you want to build. Complete a habit and it auto-logs as a Win. A consistent daily anchor is especially powerful for ADHD brains.",
     icon: "💫",
     placement: "left",
-  },
+    openAction: "panel:routine",
+  } as TourStep & { openAction?: string },
   // ── 8. Tasks ───────────────────────────────────────────────────────────────
   {
     section: "tasks",
@@ -239,8 +245,17 @@ export const TOUR_STEPS: TourStep[] = [
     targetId: "tour-wrapup-panel",
     label: "WRAP UP",
     title: "🌙 Daily Wrap Up",
-    description:
-      "This is your end-of-day ritual. Scroll through to see:\n\n✅ Tasks completed today\n🤖 AI Agents you delegated\n🏆 Wins ring — every win grouped by category\n💫 Daily routines — which habits you ticked off\n⏱ Focus tracker — total focus time today\n📓 Diary — a private note to yourself\n✨ AI Day Summary — tap to get a personalised reflection\n\nEverything here feeds your Monthly Progress calendar.",
+    description: "Your end-of-day ritual. Scroll through to see:",
+    descriptionItems: [
+      "✅ Tasks completed today",
+      "🤖 AI Agents you delegated",
+      "🏆 Wins ring — every win grouped by category",
+      "💫 Daily routines — which habits you ticked off",
+      "⏱ Focus tracker — total focus time today",
+      "📓 Diary — a private note to yourself",
+      "✨ AI Day Summary — tap for a personalised reflection",
+      "📅 Everything here feeds your Monthly Progress calendar",
+    ],
     icon: "🌙",
     placement: "center",
     openAction: "wrapup",
@@ -252,7 +267,7 @@ export const TOUR_STEPS: TourStep[] = [
     label: "MONTHLY",
     title: "📅 Monthly Progress",
     description:
-      "This is your Monthly Progress page. Each day on the calendar shows coloured dots: green = wrap-up done, coral = brain dump, gold = wins, periwinkle = routines. Tap any day to see its full summary. Your streak, active days, and win count are shown at the top. Scroll down for an AI monthly reflection.",
+      "This is your Monthly Progress page. Each day on the calendar shows coloured dots. Tap any day to see its full summary. Your streak, active days, and win count are shown at the top. Scroll down for an AI monthly reflection.",
     icon: "📅",
     placement: "center",
   },
@@ -594,17 +609,29 @@ function TooltipCard({
         >
           {step.title}
         </h3>
-        <p
-          style={{
-            fontFamily: FONT_SANS,
-            fontSize: "0.78rem",
-            color: P.muted,
-            margin: 0,
-            lineHeight: 1.55,
-          }}
-        >
-          {step.description}
-        </p>
+        {step.description && (
+          <p
+            style={{
+              fontFamily: FONT_SANS,
+              fontSize: "0.78rem",
+              color: P.muted,
+              margin: step.descriptionItems ? "0 0 8px" : 0,
+              lineHeight: 1.55,
+            }}
+          >
+            {step.description}
+          </p>
+        )}
+        {step.descriptionItems && (
+          <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 5 }}>
+            {step.descriptionItems.map((item, i) => (
+              <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 7, fontFamily: FONT_SANS, fontSize: "0.76rem", color: P.muted, lineHeight: 1.45 }}>
+                <span style={{ flexShrink: 0, marginTop: 1 }}>•</span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {/* Progress dots */}
@@ -909,14 +936,6 @@ function WelcomeSplash({ displayName, onStart, onSkip }: WelcomeSplashProps) {
               Skip for now
             </button>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{
-                fontFamily: FONT_MONO,
-                fontSize: "0.44rem",
-                color: P.muted,
-                letterSpacing: "0.06em",
-                opacity: 0.65,
-                whiteSpace: "nowrap",
-              }}>press →</span>
               <button
                 onClick={onStart}
                 style={{
@@ -939,6 +958,14 @@ function WelcomeSplash({ displayName, onStart, onSkip }: WelcomeSplashProps) {
                 <Sparkles size={12} />
                 Start Tour
               </button>
+              <span style={{
+                fontFamily: FONT_MONO,
+                fontSize: "0.44rem",
+                color: P.muted,
+                letterSpacing: "0.06em",
+                opacity: 0.65,
+                whiteSpace: "nowrap",
+              }}>press →</span>
             </div>
           </div>
         </div>
@@ -1081,6 +1108,8 @@ export function OnboardingTour({ onClose, onNavigate, onOpenWrapUp, onCloseWrapU
     // Fire wrap-up open/close callbacks
     if (openAction === "wrapup") {
       onOpenWrapUp?.();
+      // Close any open right panel when entering wrap-up
+      window.dispatchEvent(new CustomEvent("tour-close-panel"));
       setSectionReady(false);
       // Give the modal time to mount
       const t = setTimeout(() => setSectionReady(true), 500);
@@ -1088,6 +1117,18 @@ export function OnboardingTour({ onClose, onNavigate, onOpenWrapUp, onCloseWrapU
     } else {
       // If we're leaving the wrapup step, close the modal
       onCloseWrapUp?.();
+    }
+
+    // Fire right-panel open/close for panel:* openActions
+    if (openAction?.startsWith("panel:")) {
+      const panelName = openAction.slice(6); // e.g. "coach", "timer", "routine", "ai"
+      window.dispatchEvent(new CustomEvent("tour-open-panel", { detail: panelName }));
+      setSectionReady(false);
+      const t = setTimeout(() => setSectionReady(true), 400);
+      return () => clearTimeout(t);
+    } else {
+      // Leaving a panel step — close the panel
+      window.dispatchEvent(new CustomEvent("tour-close-panel"));
     }
 
     if (!skip && prevSectionRef.current !== targetSection) {
