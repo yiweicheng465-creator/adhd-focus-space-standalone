@@ -641,7 +641,23 @@ Be specific and personal.`,
         {/* Header */}
         <div style={{ padding: "10px 16px", borderBottom: "1px solid oklch(0.80 0.06 285 / 0.5)", background: "oklch(0.93 0.022 285)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "0.95rem", fontWeight: 700, color: "oklch(0.28 0.040 320)", fontStyle: "italic" }}>🧭 Life Coach AI</span>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1rem", color: "oklch(0.52 0.040 330)" }}>×</button>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {(coachType === "life" ? lifeMessages : careerMessages).length > 0 && (
+              <button
+                onClick={() => {
+                  if (!window.confirm(`Clear ${coachType === "life" ? "Life Planning" : "Career Coaching"} conversation? This cannot be undone.`)) return;
+                  const key = coachType === "life" ? STORAGE_LIFE : STORAGE_CAREER;
+                  localStorage.removeItem(key);
+                  if (coachType === "life") setLifeMessages([]); else setCareerMessages([]);
+                  setMode("pick");
+                }}
+                style={{ background: "none", border: "1px solid oklch(0.72 0.06 285)", borderRadius: 5, cursor: "pointer", fontSize: "0.68rem", color: "oklch(0.48 0.08 285)", padding: "2px 8px", fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Clear
+              </button>
+            )}
+            <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1rem", color: "oklch(0.52 0.040 330)" }}>×</button>
+          </div>
         </div>
 
         {/* Coach switch tabs — always visible */}
