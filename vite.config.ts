@@ -53,5 +53,16 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist"),
     emptyOutDir: true,
+    chunkSizeWarningLimit: 1400,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "vendor-ui": ["lucide-react", "sonner", "@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu", "@radix-ui/react-tooltip"],
+          "vendor-query": ["@tanstack/react-query"],
+          "vendor-mermaid": ["mermaid"],
+          "vendor-marked": ["marked"],
+        },
+      },
+    },
   },
 });
