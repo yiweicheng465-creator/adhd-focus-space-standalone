@@ -38,18 +38,19 @@ const BTN_STYLE = (active: boolean, idx: number = 0, hovered = false): React.CSS
   const c = BTN_COLORS[idx] ?? BTN_COLORS[0];
   return {
     display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-    // Fixed width so all buttons match the TIMER button width; hover grows left via transform
-    width: 36,
+    // Half-width buttons; hover grows left via paddingLeft so right edge stays flush (no gap)
+    width: 20,
     boxSizing: "border-box",
-    padding: `12px 6px`,
-    transform: hovered ? "translateX(-4px)" : "translateX(0)",
+    paddingTop: 12, paddingBottom: 12,
+    paddingLeft: hovered ? 8 : 4,
+    paddingRight: 4,
     background: active ? c.active : c.idle,
     color: active ? "white" : c.text,
     border: "none", borderRadius: "8px 0 0 8px",
     cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: "0.40rem",
     letterSpacing: "0.10em", boxShadow: `-2px 0 10px ${c.active}33`,
     overflow: "hidden",
-    transition: "transform 0.18s ease, background 0.15s, color 0.15s",
+    transition: "padding-left 0.18s ease, background 0.15s, color 0.15s",
   };
 };
 
@@ -185,7 +186,8 @@ function TimerButton({ active, onClick, hovered = false, onHoverChange }: {
         ...(isActive ? {
           background: modeLightBg,
           color: modeColor,
-          border: `2px solid ${modeColor}`,
+          outline: `2px solid ${modeColor}`,
+          outlineOffset: "-2px",
         } : {}),
       }}
       onClick={onClick}
