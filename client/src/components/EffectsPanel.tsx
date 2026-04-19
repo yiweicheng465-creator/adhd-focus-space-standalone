@@ -6,7 +6,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useFilmGrain } from "@/components/FilmGrain";
 import { useWorkMode } from "@/components/WorkModeToggle";
-import { useHue, HUE_PRESETS } from "@/components/HueShift";
+import { useHue } from "@/components/HueShift";
 import { toast } from "sonner";
 
 /* ─── Horizontal range slider ─────────────────────────────── */
@@ -93,7 +93,8 @@ export function EffectsPanel() {
   const panelRef = useRef<HTMLDivElement>(null);
   const { intensity, setIntensity, speed, setSpeed } = useFilmGrain();
   const { enabled: workMode, toggle: toggleWorkMode } = useWorkMode();
-  const { hue, setHue, reset: resetHue } = useHue();
+  const { hue, setHue, reset: resetHue, presets, setPresetHue } = useHue();
+  const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
 
   // Listen for openSettingsApiKey event — opens panel directly on API Key tab
   useEffect(() => {
@@ -371,29 +372,66 @@ export function EffectsPanel() {
                     </button>
                   </div>
                   {/* Preset swatches */}
-                  <div style={{ display: "flex", gap: 5, marginBottom: 8, flexWrap: "wrap" }}>
-                    {HUE_PRESETS.map((p) => (
+                  <div style={{ display: "flex", gap: 5, marginBottom: 6, flexWrap: "wrap" }}>
+                    {presets.map((p, idx) => (
                       <button
-                        key={p.label}
-                        title={p.label}
-                        onClick={() => setHue(p.hue)}
+                        key={idx}
+                        title={selectedSlot === idx ? `Slot ${idx + 1} selected — click 设为 to save current hue` : p.label}
+                        onClick={() => setSelectedSlot(selectedSlot === idx ? null : idx)}
                         style={{
                           width: 18, height: 18,
                           borderRadius: "50%",
                           background: p.color,
-                          border: Math.abs(hue - p.hue) < 10
-                            ? "2.5px solid oklch(0.30 0 0)"
-                            : "2px solid transparent",
+                          border: selectedSlot === idx
+                            ? "2.5px solid oklch(0.28 0.14 330)"
+                            : Math.abs(hue - p.hue) < 5
+                              ? "2.5px solid oklch(0.50 0.10 330)"
+                              : "2px solid transparent",
                           cursor: "pointer",
                           flexShrink: 0,
                           transition: "border-color 0.15s, transform 0.15s",
-                          transform: Math.abs(hue - p.hue) < 10 ? "scale(1.25)" : "scale(1)",
+                          transform: selectedSlot === idx ? "scale(1.30)" : "scale(1)",
                           boxShadow: "0 1px 3px rgba(0,0,0,0.20)",
                           outline: "none",
                         }}
                       />
                     ))}
                   </div>
+                  {/* 设为 button — shown when a slot is selected */}
+                  {selectedSlot !== null && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                      <div style={{
+                        width: 12, height: 12, borderRadius: "50%",
+                        background: `hsl(${hue},60%,62%)`,
+                        border: "1.5px solid oklch(0.40 0 0)",
+                        flexShrink: 0,
+                      }} />
+                      <button
+                        onClick={() => {
+                          setPresetHue(selectedSlot, hue);
+                          setSelectedSlot(null);
+                        }}
+                        style={{
+                          fontSize: "0.42rem",
+                          fontFamily: "'Space Mono', monospace",
+                          letterSpacing: "0.08em",
+                          padding: "2px 8px",
+                          borderRadius: 10,
+                          border: "1px solid oklch(0.55 0.12 330)",
+                          background: "oklch(0.92 0.04 330)",
+                          color: "oklch(0.35 0.12 330)",
+                          cursor: "pointer",
+                          transition: "all 0.15s",
+                          fontWeight: 700,
+                        }}
+                      >
+                        设为 #{selectedSlot + 1}
+                      </button>
+                      <span style={{ fontSize: "0.38rem", color: "oklch(0.60 0.040 330)", letterSpacing: "0.04em" }}>
+                        {hue}° → slot {selectedSlot + 1}
+                      </span>
+                    </div>
+                  )}
                   {/* Hue range slider */}
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
