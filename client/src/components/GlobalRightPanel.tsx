@@ -364,7 +364,9 @@ Rules:
     if (streaming) return; // never clear while a stream is in flight
     localStorage.removeItem(storageKey);
     localStorage.removeItem("adhd-life-coach-insights");
-    if (coachType === "life") setLifeMessages([]); else setCareerMessages([]);
+    // Reset to starter message so the conversation view always shows the initial prompt
+    const starter = [{ role: "coach" as const, text: STARTERS[coachType] }];
+    if (coachType === "life") setLifeMessages(starter); else setCareerMessages(starter);
   };
 
   const generateSummary = async (allMsgs: typeof messages, type: "life" | "career") => {
