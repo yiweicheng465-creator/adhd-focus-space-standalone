@@ -399,7 +399,7 @@ export function EffectsPanel() {
                       <button
                         key={idx}
                         title={selectedSlot === idx ? `Slot ${idx + 1} selected — click "Set as" to save current hue` : p.label}
-                        onClick={() => { setSelectedSlot(selectedSlot === idx ? null : idx); }}
+                        onClick={() => { setHue(p.hue); setSelectedSlot(selectedSlot === idx ? null : idx); }}
                         style={{
                           width: 18, height: 18,
                           borderRadius: "50%",
@@ -419,8 +419,8 @@ export function EffectsPanel() {
                       />
                     ))}
                   </div>
-                  {/* "Set as" button — shown when a slot is selected */}
-                  {selectedSlot !== null && (
+                  {/* "Set as" button — shown when slot is selected AND hue differs from slot's saved value */}
+                  {selectedSlot !== null && hue !== presets[selectedSlot].hue && (
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
                       <div style={{
                         width: 12, height: 12, borderRadius: "50%",
