@@ -369,7 +369,14 @@ export function EffectsPanel() {
                       ◈ Theme Hue
                     </span>
                     <button
-                      onClick={resetHue}
+                      onClick={() => {
+                        if (selectedSlot !== null) {
+                          // Reset to the selected slot's saved hue
+                          setHue(presets[selectedSlot].hue);
+                        } else {
+                          resetHue();
+                        }
+                      }}
                       style={{
                         fontSize: "0.40rem",
                         fontFamily: "'Space Mono', monospace",
@@ -392,7 +399,7 @@ export function EffectsPanel() {
                       <button
                         key={idx}
                         title={selectedSlot === idx ? `Slot ${idx + 1} selected — click "Set as" to save current hue` : p.label}
-                        onClick={() => { setHue(p.hue); setSelectedSlot(selectedSlot === idx ? null : idx); }}
+                        onClick={() => { setSelectedSlot(selectedSlot === idx ? null : idx); }}
                         style={{
                           width: 18, height: 18,
                           borderRadius: "50%",
