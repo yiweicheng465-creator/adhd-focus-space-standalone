@@ -277,10 +277,11 @@ export const TOUR_STEPS: TourStep[] = [
     label: "SETTINGS",
     title: "⚙️ Settings — Atmosphere",
     description:
-      "The gear icon opens Settings. In the Effects tab you can dial in Film Grain intensity for that lo-fi feel, and shift the Theme Hue to change the entire app's colour palette to match your mood.",
+      "The gear icon opens Settings. In the Effects tab you can dial in Film Grain intensity for that lo-fi feel, and shift the Theme Hue to change the entire app’s colour palette to match your mood.",
     icon: "🎨",
     placement: "right",
-  },
+    openAction: "sidebar",
+  } as TourStep & { openAction?: string },
   // ── 19. Settings — Work Mode ──────────────────────────────────────────────
   {
     section: "dashboard",
@@ -291,7 +292,8 @@ export const TOUR_STEPS: TourStep[] = [
       "Work Mode (in Settings → Effects) strips the UI down to pure function — no decorative elements, muted colours, maximum focus. Toggle it on when you need to get serious. It persists across sessions.",
     icon: "🖤",
     placement: "right",
-  },
+    openAction: "sidebar",
+  } as TourStep & { openAction?: string },
   // ── 20. Settings — API Key ────────────────────────────────────────────────
   {
     section: "dashboard",
@@ -302,7 +304,8 @@ export const TOUR_STEPS: TourStep[] = [
       "All AI features work out of the box — you get 6 free AI calls included. When you run out, open Settings → API Key tab and paste your own OpenAI key. Your key is encrypted and stored securely on the server.",
     icon: "🔑",
     placement: "right",
-  },
+    openAction: "sidebar",
+  } as TourStep & { openAction?: string },
   // ── 21. Guide ─────────────────────────────────────────────────────────────
   {
     section: "dashboard",   // stay on dashboard — guide is a separate route
@@ -1123,12 +1126,26 @@ export function OnboardingTour({ onClose, onNavigate, onOpenWrapUp, onCloseWrapU
     if (openAction?.startsWith("panel:")) {
       const panelName = openAction.slice(6); // e.g. "coach", "timer", "routine", "ai"
       window.dispatchEvent(new CustomEvent("tour-open-panel", { detail: panelName }));
+      // After panel opens, highlight the popup window
+      const tHL = setTimeout(() => window.dispatchEvent(new CustomEvent("tour-highlight-panel")), 450);
       setSectionReady(false);
       const t = setTimeout(() => setSectionReady(true), 400);
+      return () => { clearTimeout(t); clearTimeout(tHL); };
+    } else {
+      // Leaving a panel step — close the panel and remove highlight
+      window.dispatchEvent(new CustomEvent("tour-unhighlight-panel"));
+      window.dispatchEvent(new CustomEvent("tour-close-panel"));
+    }
+
+    // Fire sidebar open/close for sidebar openAction
+    if (openAction === "sidebar") {
+      window.dispatchEvent(new CustomEvent("tour-open-sidebar"));
+      setSectionReady(false);
+      const t = setTimeout(() => setSectionReady(true), 350);
       return () => clearTimeout(t);
     } else {
-      // Leaving a panel step — close the panel
-      window.dispatchEvent(new CustomEvent("tour-close-panel"));
+      // Leaving a sidebar step — close the sidebar
+      window.dispatchEvent(new CustomEvent("tour-close-sidebar"));
     }
 
     if (!skip && prevSectionRef.current !== targetSection) {

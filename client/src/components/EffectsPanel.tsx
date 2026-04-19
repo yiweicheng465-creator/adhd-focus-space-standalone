@@ -102,6 +102,19 @@ export function EffectsPanel() {
     return () => window.removeEventListener("openSettingsApiKey", handler);
   }, []);
 
+  // Tour: auto-open/close settings panel when tour highlights sidebar items
+  const [tourActive, setTourActive] = useState(false);
+  useEffect(() => {
+    const onOpen = () => { setTourActive(true); setOpen(true); setActiveTab("effects"); };
+    const onClose = () => { setTourActive(false); setOpen(false); };
+    window.addEventListener("tour-open-sidebar", onOpen);
+    window.addEventListener("tour-close-sidebar", onClose);
+    return () => {
+      window.removeEventListener("tour-open-sidebar", onOpen);
+      window.removeEventListener("tour-close-sidebar", onClose);
+    };
+  }, []);
+
   // ── API Key state ──
   const [apiKeyInput, setApiKeyInput] = useState("");
   const [showKey, setShowKey] = useState(false);
@@ -173,15 +186,17 @@ export function EffectsPanel() {
     ? "oklch(0.48 0.18 340)"
     : "oklch(0.60 0.060 330)";
 
-  // Close on outside click or Escape key
+  // Close on outside click or Escape key (disabled during tour)
   useEffect(() => {
     if (!open) return;
     function onDown(e: MouseEvent) {
+      if (tourActive) return; // keep open while tour is active
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
     }
     function onKey(e: KeyboardEvent) {
+      if (tourActive) return;
       if (e.key === "Escape") setOpen(false);
     }
     document.addEventListener("mousedown", onDown);
@@ -190,7 +205,7 @@ export function EffectsPanel() {
       document.removeEventListener("mousedown", onDown);
       document.removeEventListener("keydown", onKey);
     };
-  }, [open]);
+  }, [open, tourActive]);
 
   return (
     <div ref={panelRef} style={{ position: "relative", width: "100%" }}>
