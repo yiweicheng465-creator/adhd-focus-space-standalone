@@ -42,19 +42,19 @@ const BTN_STYLE = (active: boolean, idx: number = 0): React.CSSProperties => {
     border: "none", borderRadius: "6px 0 0 6px",
     cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: "0.38rem",
     letterSpacing: "0.08em", boxShadow: `-2px 0 8px ${c.active}28`,
-    transition: "transform 0.18s ease, box-shadow 0.18s ease, background 0.15s",
+    transition: "padding 0.18s ease, background 0.15s",
     minWidth: 24,
   };
 };
 
-// Hover handlers for the pop/grow effect
+// Hover handlers — expand left only (wider padding-left)
 const onBtnHover = (e: React.MouseEvent<HTMLButtonElement>) => {
-  (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.12) translateX(-2px)";
-  (e.currentTarget as HTMLButtonElement).style.boxShadow = "-4px 0 14px oklch(0.60 0.10 320 / 0.25)";
+  (e.currentTarget as HTMLButtonElement).style.paddingLeft = "10px";
+  (e.currentTarget as HTMLButtonElement).style.paddingRight = "4px";
 };
 const onBtnLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
-  (e.currentTarget as HTMLButtonElement).style.transform = "scale(1) translateX(0)";
-  (e.currentTarget as HTMLButtonElement).style.boxShadow = "";
+  (e.currentTarget as HTMLButtonElement).style.paddingLeft = "4px";
+  (e.currentTarget as HTMLButtonElement).style.paddingRight = "4px";
 };
 
 export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin }: Props) {
@@ -167,7 +167,7 @@ function TimerButton({ active, onClick }: { active: boolean; onClick: () => void
           border: `2px solid ${modeColor}`,
         } : {}),
       }}
-      onClick={onClick} onMouseEnter={onBtnHover} onMouseLeave={onBtnLeave} title="Timer"
+      onClick={onClick} onMouseEnter={isActive ? undefined : onBtnHover} onMouseLeave={isActive ? undefined : onBtnLeave} title="Timer"
     >
       <span style={{ fontFamily: "'Space Mono', monospace", fontSize: isActive ? "0.52rem" : "0.38rem", fontWeight: 700, letterSpacing: "-0.02em" }}>
         {isActive ? `${mm}:${ss}` : "⏱"}
