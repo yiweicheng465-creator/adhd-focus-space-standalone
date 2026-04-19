@@ -317,10 +317,20 @@ function CoachPopup({ onClose, goals }: { onClose: () => void; goals: Goal[] }) 
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, coachType]);
 
-  const STARTERS = { life: "Let's explore what matters most to you. What area feels most out of alignment?", career: "What does success look like to you in 3 years?" };
+  const STARTERS = {
+    life: "Let's explore what matters most to you. What area of your life feels most out of alignment with where you want to be — relationships, health, purpose, or something else?",
+    career: "Let's map out your career direction. What does success look like to you in 3 years — are you looking to go deeper in your current field, pivot to something new, or build something of your own?",
+  };
+  const goalSummary = goals.map(g => g.text).join(", ") || "none";
   const SYSTEMS = {
-    life: `Warm life coach. User goals: ${goals.map(g => g.text).join(", ") || "none"}. Ask one question at a time, 2-3 sentences max.`,
-    career: `Expert career coach. User goals: ${goals.map(g => g.text).join(", ") || "none"}. Ask one question at a time, 2-3 sentences max.`,
+    life: `You are a warm, wise life coach helping with personal growth and life planning.
+The user's current goals: ${goalSummary}.
+Guide them through: understanding their values, identifying what matters most, and building a 1/3/10 year vision.
+Ask one question at a time. Be thoughtful, specific, and encouraging. Keep responses concise (2-3 sentences + question).`,
+    career: `You are an expert career coach helping with professional growth and planning.
+The user's current goals: ${goalSummary}.
+Guide them to clarify career direction, identify skill gaps, and create an actionable roadmap.
+Ask one question at a time. Be direct, practical, and encouraging. Keep responses concise (2-3 sentences + question).`,
   };
 
   const startChat = (type: "life" | "career") => { setCoachType(type); setMode("chat"); setMessages([{ role: "coach", text: STARTERS[type] }]); };
