@@ -5,6 +5,7 @@
    ============================================================ */
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { toast } from "sonner";
 import { Bot, Loader2 } from "lucide-react";
 import { callAIStream, callAI } from "@/lib/ai";
 import { buildRoutineContext } from "@/lib/routineContext";
@@ -111,7 +112,7 @@ export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin }: Props)
       )}
 
       {/* Right-edge button stack */}
-      <div data-tour-id="tour-right-panel" style={{ position: "fixed", right: 0, top: "50%", transform: "translateY(-50%)", zIndex: 101, display: "flex", flexDirection: "column", gap: 0 }}>
+      <div data-tour-id="tour-right-panel" style={{ position: "fixed", right: 0, top: "50%", transform: "translateY(-50%)", zIndex: 101, display: "flex", flexDirection: "column", gap: 0, alignItems: "flex-end" }}>
         {/* AI */}
         <button data-tour-id="tour-ai-btn"
           style={BTN_STYLE(panel === "ai" || aiActiveOnDashboard, 0, hoveredBtn === "ai")}
@@ -260,7 +261,7 @@ function AIChatPopup({ onClose, goals }: { onClose: () => void; goals: Goal[] })
       const entries = JSON.parse(localStorage.getItem("adhd_braindump_entries") ?? "[]");
       entries.unshift({ id: `dump-${Date.now()}`, text, tags: [], createdAt: new Date().toISOString(), converted: false });
       localStorage.setItem("adhd_braindump_entries", JSON.stringify(entries));
-      import("sonner").then(({ toast }) => toast.success(`✓ Dumped to Brain Dump`));
+      toast.success(`✓ Dumped to Brain Dump`);
     } catch {}
   };
 
@@ -565,7 +566,7 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
     } catch {}
     saveDoneToday(new Set([...doneToday, r.id]));
     onLogWin?.(win.text, win.iconIdx);
-    import("sonner").then(({ toast }) => toast.success(`✓ ${r.name} logged as win!`));
+    toast.success(`✓ ${r.name} logged as win!`);
   };
 
   return (
