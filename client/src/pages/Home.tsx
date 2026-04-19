@@ -24,6 +24,7 @@ import { recordWrapUp, recordDumpEntry, recordFocusSession, recordBlockComplete,
 import { DailyCheckIn, useDailyCheckIn, type CheckInResult } from "@/components/DailyCheckIn";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useBlockStreak } from "@/hooks/useBlockStreak";
+import { useOpenDayStreak } from "@/hooks/useOpenDayStreak";
 import { useTimer } from "@/contexts/TimerContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { LoginScreen } from "@/components/LoginScreen";
@@ -380,6 +381,7 @@ export default function Home() {
   useEffect(() => { setFocusSessions(focusSessionsToday); }, [focusSessionsToday]);
 
   const { streak: blockStreak, history: blockHistory, recordBlock } = useBlockStreak();
+  const { streak: openDayStreak } = useOpenDayStreak();
   const [timerQuitCount, setTimerQuitCount] = useState(0);
   const [confettiTrigger, setConfettiTrigger] = useState(false);
   const [wrapUpOpen, setWrapUpOpen] = useState(false);
@@ -646,7 +648,7 @@ export default function Home() {
                   const routineLabel = routineTotal > 0 ? `${routineDone}/${routineTotal} routine` : null;
 
                   const stats: { label: string; value: string | number; section: Section }[] = [
-                    { label: "today's tasks", value: tasks.filter((t) => !t.done && new Date(t.createdAt).toDateString() === today).length, section: "tasks" as Section },
+                    { label: "tasks left today", value: tasks.filter((t) => !t.done && (!t.dueDate || t.dueDate === todayKey2)).length, section: "tasks" as Section },
                     { label: "wins",  value: wins.filter((w) => new Date(w.createdAt).toDateString() === today).length, section: "wins" as Section },
                     { label: "agents live", value: agents.filter((a) => a.status === "running").length, section: "agents" as Section },
                     ...(routineLabel ? [{ label: "routine", value: routineDone === routineTotal && routineTotal > 0 ? "✓" : `${routineDone}/${routineTotal}`, section: "dashboard" as Section }] : []),
@@ -715,7 +717,7 @@ export default function Home() {
                 agents={agents}
                 mood={mood}
                 displayName={displayName || undefined}
-                blockStreak={blockStreak}
+                blockStreak={openDayStreak}
                 blockHistory={blockHistory}
                 onNavigate={(s) => setActiveSection(s as Section)}
                 onSessionComplete={handleSessionComplete}

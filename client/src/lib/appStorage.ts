@@ -38,6 +38,7 @@ export const APP_STORAGE_KEYS = [
 
   // ── Streaks & scores ──
   "adhd-block-streak-data",
+  "adhd-open-day-streak",
   "adhd-api-calls-total",       // total AI calls ever
 
   // ── Sound & music ──
@@ -50,6 +51,7 @@ export const APP_STORAGE_KEYS = [
   // ── Theme & appearance ──
   "adhd-hue-rotate",
   "adhd-base-hue",
+  "adhd-hue-presets",
   "adhd-film-grain-intensity",
   "adhd-film-grain-speed",
 
