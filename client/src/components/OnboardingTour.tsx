@@ -474,6 +474,7 @@ interface TooltipCardProps {
   stepIndex: number;
   totalSteps: number;
   rect: DOMRect;
+  secondaryRect?: DOMRect | null;
   onNext: () => void;
   onBack: () => void;
   onSkip: () => void;
@@ -483,10 +484,13 @@ interface TooltipCardProps {
 const CARD_W = 300;
 const CARD_H_APPROX = 240; // slightly taller estimate to prevent bottom overflow
 const GAP = 20;
+const POPUP_W = 300; // width of PopupShell
+const POPUP_RIGHT_OFFSET = 42; // PopupShell is positioned at right: 42px
 
 function computeCardPosition(
   rect: DOMRect,
-  placement: TourStep["placement"] = "right"
+  placement: TourStep["placement"] = "right",
+  secondaryRect?: DOMRect | null
 ): React.CSSProperties {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
@@ -506,8 +510,15 @@ function computeCardPosition(
     left = Math.min(rect.right + GAP, vw - CARD_W - 12);
     top = Math.max(12, Math.min(cy - CARD_H_APPROX / 2, safeBottom - CARD_H_APPROX));
   } else if (placement === "left") {
-    left = Math.max(12, rect.left - CARD_W - GAP);
-    top = Math.max(12, Math.min(cy - CARD_H_APPROX / 2, safeBottom - CARD_H_APPROX));
+    // If there's a popup open (secondaryRect), position the card to the left of the popup
+    // to avoid overlapping it
+    if (secondaryRect) {
+      left = Math.max(12, secondaryRect.left - CARD_W - GAP);
+      top = Math.max(12, Math.min(secondaryRect.top + (secondaryRect.height - CARD_H_APPROX) / 2, safeBottom - CARD_H_APPROX));
+    } else {
+      left = Math.max(12, rect.left - CARD_W - GAP);
+      top = Math.max(12, Math.min(cy - CARD_H_APPROX / 2, safeBottom - CARD_H_APPROX));
+    }
   } else if (placement === "bottom") {
     left = Math.max(12, Math.min(cx - CARD_W / 2, vw - CARD_W - 12));
     top = Math.min(rect.bottom + GAP, safeBottom - CARD_H_APPROX);
@@ -535,6 +546,7 @@ function TooltipCard({
   stepIndex,
   totalSteps,
   rect,
+  secondaryRect,
   onNext,
   onBack,
   onSkip,
@@ -542,7 +554,7 @@ function TooltipCard({
 }: TooltipCardProps) {
   const isFirst = stepIndex === 0;
   const isLast = stepIndex === totalSteps - 1;
-  const pos = computeCardPosition(rect, step.placement);
+  const pos = computeCardPosition(rect, step.placement, secondaryRect);
 
   return (
     <motion.div
@@ -1186,8 +1198,10 @@ export function OnboardingTour({ onClose, onNavigate, onOpenWrapUp, onCloseWrapU
 
   // For sidebar steps, also track the Settings panel rect to merge into spotlight
   const hasSidebarAction = phase === "touring" && (currentStep as TourStep & { openAction?: string }).openAction === "sidebar";
+  // For panel steps, also spotlight the popup window
+  const hasPanelAction = phase === "touring" && (currentStep as TourStep & { openAction?: string }).openAction?.startsWith("panel:");
   const secondaryRect = useTargetRect(
-    hasSidebarAction ? "tour-settings-panel" : "__none__",
+    hasSidebarAction ? "tour-settings-panel" : hasPanelAction ? "tour-panel-popup" : "__none__",
     [stepIndex, sectionReady]
   );
 
@@ -1277,6 +1291,7 @@ export function OnboardingTour({ onClose, onNavigate, onOpenWrapUp, onCloseWrapU
             stepIndex={stepIndex}
             totalSteps={TOUR_STEPS.length}
             rect={rect}
+            secondaryRect={secondaryRect}
             onNext={handleNext}
             onBack={handleBack}
             onSkip={handleFinish}
