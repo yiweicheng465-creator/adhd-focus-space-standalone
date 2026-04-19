@@ -476,41 +476,42 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
 
 /* ── Life Coach AI Modal ──────────────────────────────────────────────────── */
 function LifeCoachModal({ onClose, onClear, onDashboardUpdate, goals }: { onClose: () => void; onClear?: () => void; onDashboardUpdate?: () => void; goals: Goal[] }) {
-  const STORAGE_KEY = "adhd-life-coach-chat";
-  const [mode, setMode] = useState<"pick" | "chat">(() => {
-    try { const s = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}"); return s.messages?.length ? "chat" : "pick"; } catch { return "pick"; }
-  });
+  // Separate storage keys per coach type
+  const STORAGE_LIFE   = "adhd-life-coach-chat-life";
+  const STORAGE_CAREER = "adhd-life-coach-chat-career";
+
+  const loadMsgs = (key: string) => { try { return JSON.parse(localStorage.getItem(key) ?? "[]") as { role: "user" | "coach"; text: string }[]; } catch { return []; } };
+
+  // Active tab: life or career
   const [coachType, setCoachType] = useState<"life" | "career">(() => {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}").coachType ?? "life"; } catch { return "life"; }
+    // Default to whichever has messages, preferring life
+    const life = loadMsgs(STORAGE_LIFE);
+    const career = loadMsgs(STORAGE_CAREER);
+    if (life.length === 0 && career.length > 0) return "career";
+    return "life";
   });
-  const [messages, setMessages] = useState<{ role: "user" | "coach"; text: string }[]>(() => {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}").messages ?? []; } catch { return []; }
-  });
+
+  // Per-coach message state
+  const [lifeMessages,   setLifeMessages]   = useState<{ role: "user" | "coach"; text: string }[]>(() => loadMsgs(STORAGE_LIFE));
+  const [careerMessages, setCareerMessages] = useState<{ role: "user" | "coach"; text: string }[]>(() => loadMsgs(STORAGE_CAREER));
+
+  const messages    = coachType === "life" ? lifeMessages   : careerMessages;
+  const setMessages = coachType === "life" ? setLifeMessages : setCareerMessages;
+  const storageKey  = coachType === "life" ? STORAGE_LIFE   : STORAGE_CAREER;
+
+  // mode: show pick screen only if BOTH coaches have no messages
+  const [mode, setMode] = useState<"pick" | "chat">(() =>
+    loadMsgs(STORAGE_LIFE).length === 0 && loadMsgs(STORAGE_CAREER).length === 0 ? "pick" : "chat"
+  );
+
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Persist chat to localStorage
+  // Persist active coach messages
   useEffect(() => {
-    if (messages.length > 0) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ coachType, messages }));
-    }
-  }, [messages, coachType]);
-
-  const clearChat = () => {
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem("adhd-life-coach-insights");
-    setMessages([]); setMode("pick"); setInput("");
-    onClear?.();
-  };
-
-  // Save insights to localStorage for Goals page to read
-  useEffect(() => {
-    if (messages.length > 2) {
-      const coachMsgs = messages.filter(m => m.role === "coach").map(m => m.text);
-      localStorage.setItem("adhd-life-coach-insights", JSON.stringify({ coachType, summary: coachMsgs[coachMsgs.length - 1], updatedAt: new Date().toISOString() }));
-    }
-  }, [messages]);
+    localStorage.setItem(storageKey, JSON.stringify(messages));
+  }, [messages, storageKey]);
 
   const goalSummary = goals.filter(g => !g.archived).map(g => `"${g.text}" (${g.progress}%)`).join(", ") || "none yet";
 
@@ -561,11 +562,14 @@ Communication Rules:
     career: "Let's map out your career direction. What does success look like to you in 3 years — are you looking to go deeper in your current field, pivot to something new, or build something of your own?",
   };
 
-  const startChat = async (type: "life" | "career") => {
+  const startChat = (type: "life" | "career") => {
     setCoachType(type);
     setMode("chat");
-    const starter = STARTERS[type];
-    setMessages([{ role: "coach", text: starter }]);
+    const existing = loadMsgs(type === "life" ? STORAGE_LIFE : STORAGE_CAREER);
+    if (existing.length === 0) {
+      const starter = [{ role: "coach" as const, text: STARTERS[type] }];
+      if (type === "life") setLifeMessages(starter); else setCareerMessages(starter);
+    }
   };
 
   const generateDashboard = async (allMsgs: typeof messages, type: "life" | "career") => {
@@ -596,10 +600,8 @@ Be specific and personal.`,
     const newMsgs = [...messages, { role: "user" as const, text: userMsg }];
     setMessages(newMsgs);
     setStreaming(true);
-
     const history = newMsgs.map(m => `${m.role === "user" ? "User" : "Coach"}: ${m.text}`).join("\n");
     setMessages(prev => [...prev, { role: "coach", text: "" }]);
-
     try {
       await callAIStream(
         SYSTEM_PROMPTS[coachType],
@@ -611,7 +613,6 @@ Be specific and personal.`,
         }),
         () => {
           setStreaming(false);
-          // Generate dashboard after 2+ user messages or every 2 thereafter
           const userMsgCount = newMsgs.filter(m => m.role === "user").length;
           if (userMsgCount >= 2) generateDashboard(newMsgs, coachType);
         }
@@ -619,33 +620,53 @@ Be specific and personal.`,
     } catch { setStreaming(false); }
   };
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, coachType]);
+
+  // Switch tab — preserve each coach's conversation
+  const switchCoach = (type: "life" | "career") => {
+    setCoachType(type);
+    if (loadMsgs(type === "life" ? STORAGE_LIFE : STORAGE_CAREER).length === 0) {
+      const starter = [{ role: "coach" as const, text: STARTERS[type] }];
+      if (type === "life") setLifeMessages(starter); else setCareerMessages(starter);
+    }
+    setMode("chat");
+  };
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(140,40,90,0.2)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
       onClick={onClose}>
-      <div style={{ background: "#fdf4f8", borderRadius: 16, width: "min(480px, 94vw)", height: "min(560px, 90vh)", display: "flex", flexDirection: "column", boxShadow: "0 24px 60px rgba(140,40,90,0.25)", overflow: "hidden" }}
+      <div style={{ background: "#fdf4f8", borderRadius: 16, width: "min(480px, 94vw)", height: "min(580px, 90vh)", display: "flex", flexDirection: "column", boxShadow: "0 24px 60px rgba(140,40,90,0.25)", overflow: "hidden" }}
         onClick={e => e.stopPropagation()}>
+
         {/* Header */}
-        <div style={{ padding: "12px 16px", borderBottom: "1px solid oklch(0.80 0.06 285 / 0.5)", background: "oklch(0.93 0.022 285)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: "1.1rem" }}>🧭</span>
-            <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "1rem", fontWeight: 700, color: "oklch(0.28 0.040 320)", fontStyle: "italic" }}>
-              {mode === "pick" ? "Life Coach AI" : coachType === "life" ? "Life Planning" : "Career Coaching"}
-            </span>
-          </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            {messages.length > 0 && (
-              <button onClick={clearChat} style={{ fontSize: "0.50rem", fontFamily: "'Space Mono', monospace", letterSpacing: "0.08em", padding: "2px 8px", border: "1px solid oklch(0.72 0.050 330)", borderRadius: 3, background: "transparent", color: "oklch(0.55 0.050 330)", cursor: "pointer" }}>Clear</button>
-            )}
-            <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1rem", color: "oklch(0.52 0.040 330)" }}>×</button>
-          </div>
+        <div style={{ padding: "10px 16px", borderBottom: "1px solid oklch(0.80 0.06 285 / 0.5)", background: "oklch(0.93 0.022 285)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "0.95rem", fontWeight: 700, color: "oklch(0.28 0.040 320)", fontStyle: "italic" }}>🧭 Life Coach AI</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1rem", color: "oklch(0.52 0.040 330)" }}>×</button>
+        </div>
+
+        {/* Coach switch tabs — always visible */}
+        <div style={{ display: "flex", borderBottom: "1px solid oklch(0.82 0.040 285 / 0.5)", background: "oklch(0.97 0.008 285)" }}>
+          {(["life", "career"] as const).map(type => {
+            const isActive = coachType === type && mode === "chat";
+            const hasHistory = (type === "life" ? lifeMessages : careerMessages).length > 0;
+            return (
+              <button key={type} onClick={() => switchCoach(type)}
+                style={{ flex: 1, padding: "8px 12px", border: "none", borderBottom: isActive ? "2px solid oklch(0.55 0.14 285)" : "2px solid transparent", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                  fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem", fontWeight: isActive ? 700 : 400,
+                  color: isActive ? "oklch(0.35 0.12 285)" : "oklch(0.55 0.040 330)",
+                  transition: "all 0.15s" }}>
+                <span>{type === "life" ? "🌱" : "🚀"}</span>
+                <span>{type === "life" ? "Life Planning" : "Career Coaching"}</span>
+                {hasHistory && <span style={{ width: 6, height: 6, borderRadius: "50%", background: isActive ? "oklch(0.55 0.14 285)" : "oklch(0.70 0.08 285)", flexShrink: 0 }} />}
+              </button>
+            );
+          })}
         </div>
 
         {mode === "pick" ? (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 20, padding: 24 }}>
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.90rem", color: "oklch(0.45 0.040 330)", textAlign: "center", lineHeight: 1.6, maxWidth: 340 }}>
-              AI will guide you through building your life framework — values, vision, and an actionable roadmap.
+              Choose a coach to start. Your conversations are saved separately and persist across sessions.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
               <button onClick={() => startChat("life")} style={{ padding: "14px 20px", borderRadius: 10, background: "oklch(0.55 0.12 285 / 0.08)", border: "1.5px solid oklch(0.55 0.12 285 / 0.30)", cursor: "pointer", textAlign: "left", display: "flex", gap: 12, alignItems: "center" }}>
@@ -668,6 +689,11 @@ Be specific and personal.`,
           <>
             {/* Messages */}
             <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+              {messages.length === 0 && (
+                <div style={{ textAlign: "center", color: "oklch(0.60 0.040 330)", fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", marginTop: 40, opacity: 0.7 }}>
+                  Starting a new {coachType === "life" ? "life planning" : "career coaching"} session...
+                </div>
+              )}
               {messages.map((m, i) => (
                 <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
                   <div style={{
@@ -688,7 +714,7 @@ Be specific and personal.`,
               <input
                 value={input} onChange={e => setInput(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-                placeholder="Share your thoughts…"
+                placeholder={`Chat with ${coachType === "life" ? "Life" : "Career"} Coach…`}
                 autoComplete="off"
                 style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: "1px solid oklch(0.82 0.040 285)", background: "white", fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", outline: "none" }}
               />

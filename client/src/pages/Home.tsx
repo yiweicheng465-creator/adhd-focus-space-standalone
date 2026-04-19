@@ -902,9 +902,37 @@ export default function Home() {
                       <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid oklch(0.82 0.040 285)", background: "oklch(0.975 0.010 285)", marginBottom: 12 }}>
                         <div style={{ padding: "8px 14px", background: "oklch(0.58 0.12 285 / 0.10)", borderBottom: "1px solid oklch(0.82 0.040 285)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                           <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "0.85rem", fontWeight: 700, fontStyle: "italic", color: "oklch(0.35 0.10 285)" }}>🧭 Life Dashboard</span>
-                          <button onClick={() => document.querySelector<HTMLButtonElement>("[data-life-coach-trigger]")?.click()} style={{ fontSize: "0.48rem", fontFamily: "'Space Mono', monospace", color: "oklch(0.55 0.12 285)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 0, letterSpacing: "0.06em" }}>
-                            Update with Coach →
-                          </button>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            {data.life && (
+                              <button onClick={() => {
+                                if (window.confirm("Clear Life Planning dashboard and conversation? This cannot be undone.")) {
+                                  const d = (() => { try { return JSON.parse(localStorage.getItem("adhd-life-dashboard") ?? "{}"); } catch { return {}; } })();
+                                  delete d.life;
+                                  if (Object.keys(d).length === 0) localStorage.removeItem("adhd-life-dashboard"); else localStorage.setItem("adhd-life-dashboard", JSON.stringify(d));
+                                  localStorage.removeItem("adhd-life-coach-chat-life");
+                                  setDashboardKey(k => k + 1);
+                                }
+                              }} style={{ fontSize: "0.44rem", fontFamily: "'Space Mono', monospace", letterSpacing: "0.06em", padding: "2px 7px", border: "1px solid oklch(0.72 0.050 330 / 0.6)", borderRadius: 3, background: "transparent", color: "oklch(0.60 0.060 20)", cursor: "pointer" }}>
+                                🌱 Clear Life
+                              </button>
+                            )}
+                            {data.career && (
+                              <button onClick={() => {
+                                if (window.confirm("Clear Career Coaching dashboard and conversation? This cannot be undone.")) {
+                                  const d = (() => { try { return JSON.parse(localStorage.getItem("adhd-life-dashboard") ?? "{}"); } catch { return {}; } })();
+                                  delete d.career;
+                                  if (Object.keys(d).length === 0) localStorage.removeItem("adhd-life-dashboard"); else localStorage.setItem("adhd-life-dashboard", JSON.stringify(d));
+                                  localStorage.removeItem("adhd-life-coach-chat-career");
+                                  setDashboardKey(k => k + 1);
+                                }
+                              }} style={{ fontSize: "0.44rem", fontFamily: "'Space Mono', monospace", letterSpacing: "0.06em", padding: "2px 7px", border: "1px solid oklch(0.72 0.050 330 / 0.6)", borderRadius: 3, background: "transparent", color: "oklch(0.60 0.060 20)", cursor: "pointer" }}>
+                                🚀 Clear Career
+                              </button>
+                            )}
+                            <button onClick={() => document.querySelector<HTMLButtonElement>("[data-life-coach-trigger]")?.click()} style={{ fontSize: "0.48rem", fontFamily: "'Space Mono', monospace", color: "oklch(0.55 0.12 285)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 0, letterSpacing: "0.06em" }}>
+                              Update with Coach →
+                            </button>
+                          </div>
                         </div>
                         <div style={{ padding: "10px 14px", display: "grid", gridTemplateColumns: data.life && data.career ? "1fr 1fr" : "1fr", gap: 12 }}>
                           {data.life && (
