@@ -391,8 +391,8 @@ export function EffectsPanel() {
                     {presets.map((p, idx) => (
                       <button
                         key={idx}
-                        title={selectedSlot === idx ? `Slot ${idx + 1} selected — click 设为 to save current hue` : p.label}
-                        onClick={() => setSelectedSlot(selectedSlot === idx ? null : idx)}
+                        title={selectedSlot === idx ? `Slot ${idx + 1} selected — click "Set as" to save current hue` : p.label}
+                        onClick={() => { setHue(p.hue); setSelectedSlot(selectedSlot === idx ? null : idx); }}
                         style={{
                           width: 18, height: 18,
                           borderRadius: "50%",
@@ -412,7 +412,7 @@ export function EffectsPanel() {
                       />
                     ))}
                   </div>
-                  {/* 设为 button — shown when a slot is selected */}
+                  {/* "Set as" button — shown when a slot is selected */}
                   {selectedSlot !== null && (
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
                       <div style={{
@@ -440,7 +440,7 @@ export function EffectsPanel() {
                           fontWeight: 700,
                         }}
                       >
-                        设为 #{selectedSlot + 1}
+                        Set as #{selectedSlot + 1}
                       </button>
                       <span style={{ fontSize: "0.38rem", color: "oklch(0.60 0.040 330)", letterSpacing: "0.04em" }}>
                         {hue}° → slot {selectedSlot + 1}

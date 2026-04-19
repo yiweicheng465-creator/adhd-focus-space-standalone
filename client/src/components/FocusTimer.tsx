@@ -830,7 +830,7 @@ export function FocusTimer({ onSessionComplete, onBlockComplete, onQuit, fillHei
       style={{ fontSize: 9, letterSpacing: 1, cursor: "default" }}
     >
       {Array.from({ length: 5 }, (_, i) => (
-        <span key={i} style={{ color: i < hearts5 ? "#ff6b8a" : "#FAF6F1", opacity: i < hearts5 ? 1 : 0.45 }}>
+        <span key={i} style={{ color: "#FAF6F1", opacity: i < hearts5 ? 1 : 0.35 }}>
           {i < hearts5 ? "♥" : "♡"}
         </span>
       ))}

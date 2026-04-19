@@ -473,10 +473,11 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
                 >
                   {cleanText}
                 </p>
-                {task.dueDate && (() => {
+                {task.dueDate && task.dueDate !== "null" && task.dueDate.includes('-') && (() => {
                   // Parse as LOCAL date (not UTC) to avoid timezone shift
                   const [dy, dm, dd] = task.dueDate.split('-').map(Number);
                   const due = new Date(dy, dm - 1, dd);
+                  if (isNaN(due.getTime())) return null;
                   const today = new Date(); today.setHours(0,0,0,0);
                   const isOverdue = due < today && !task.done;
                   const isTomorrow = due.getTime() === today.getTime() + 86400000;

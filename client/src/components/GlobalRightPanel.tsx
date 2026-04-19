@@ -33,22 +33,26 @@ const BTN_COLORS = [
   { active: "oklch(0.76 0.05 245)", idle: "oklch(0.90 0.018 245)", text: "oklch(0.44 0.06 245)" }, // Routine: dusty periwinkle
 ];
 
-const BTN_STYLE = (active: boolean, idx: number = 0): React.CSSProperties => {
+const BTN_STYLE = (active: boolean, idx: number = 0, hovered = false): React.CSSProperties => {
   const c = BTN_COLORS[idx] ?? BTN_COLORS[0];
   return {
     display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-    padding: "12px 8px", background: active ? c.active : c.idle,
+    padding: "12px 6px", background: active ? c.active : c.idle,
     color: active ? "white" : c.text,
     border: "none", borderRadius: "8px 0 0 8px",
     cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: "0.40rem",
     letterSpacing: "0.10em", boxShadow: `-2px 0 10px ${c.active}33`,
-    transition: "all 0.15s", minWidth: 34,
+    // Grow slightly to the left on hover; right edge stays anchored
+    width: hovered ? 42 : 34,
+    overflow: "hidden",
+    transition: "width 0.18s ease, background 0.15s, color 0.15s",
   };
 };
 
 export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin }: Props) {
   const [panel, setPanel] = useState<"ai" | "coach" | "timer" | "routine" | null>(null);
   const toggle = (p: "ai" | "coach" | "timer" | "routine") => setPanel(v => v === p ? null : p);
+  const [hoveredBtn, setHoveredBtn] = useState<"ai" | "coach" | "timer" | "routine" | null>(null);
 
   // Track dashboard AI state so the button reflects it
   const [dashboardAIOn, setDashboardAIOn] = useState(() =>
@@ -109,19 +113,39 @@ export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin }: Props)
       {/* Right-edge button stack */}
       <div data-tour-id="tour-right-panel" style={{ position: "fixed", right: 0, top: "50%", transform: "translateY(-50%)", zIndex: 101, display: "flex", flexDirection: "column", gap: 2 }}>
         {/* AI */}
-        <button data-tour-id="tour-ai-btn" style={BTN_STYLE(panel === "ai" || aiActiveOnDashboard, 0)} onClick={handleAIClick} title="AI Assistant">
+        <button data-tour-id="tour-ai-btn"
+          style={BTN_STYLE(panel === "ai" || aiActiveOnDashboard, 0, hoveredBtn === "ai")}
+          onClick={handleAIClick}
+          onMouseEnter={() => setHoveredBtn("ai")}
+          onMouseLeave={() => setHoveredBtn(null)}
+          title="AI Assistant">
           <Bot size={14} />
           <span style={{ writingMode: "vertical-rl", fontSize: "0.38rem" }}>{aiActiveOnDashboard ? "HIDE AI" : "AI"}</span>
         </button>
         {/* Life Coach */}
-        <button data-tour-id="tour-coach-btn" style={BTN_STYLE(panel === "coach", 1)} onClick={() => toggle("coach")} title="Life Coach">
+        <button data-tour-id="tour-coach-btn"
+          style={BTN_STYLE(panel === "coach", 1, hoveredBtn === "coach")}
+          onClick={() => toggle("coach")}
+          onMouseEnter={() => setHoveredBtn("coach")}
+          onMouseLeave={() => setHoveredBtn(null)}
+          title="Life Coach">
           <span style={{ fontSize: "0.85rem", lineHeight: 1 }}>🧭</span>
           <span style={{ writingMode: "vertical-rl", fontSize: "0.38rem" }}>COACH</span>
         </button>
         {/* Timer */}
-        <TimerButton active={panel === "timer"} onClick={() => toggle("timer")} />
+        <TimerButton
+          active={panel === "timer"}
+          onClick={() => toggle("timer")}
+          hovered={hoveredBtn === "timer"}
+          onHoverChange={(h) => setHoveredBtn(h ? "timer" : null)}
+        />
         {/* Routine */}
-        <button data-tour-id="tour-routine-btn" style={BTN_STYLE(panel === "routine", 3)} onClick={() => toggle("routine")} title="Daily Routine">
+        <button data-tour-id="tour-routine-btn"
+          style={BTN_STYLE(panel === "routine", 3, hoveredBtn === "routine")}
+          onClick={() => toggle("routine")}
+          onMouseEnter={() => setHoveredBtn("routine")}
+          onMouseLeave={() => setHoveredBtn(null)}
+          title="Daily Routine">
           <span style={{ fontSize: "0.85rem", lineHeight: 1 }}>💫</span>
           <span style={{ writingMode: "vertical-rl", fontSize: "0.38rem" }}>ROUTINE</span>
         </button>
@@ -137,28 +161,33 @@ export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin }: Props)
 }
 
 /* ── Timer button (shows live countdown) ─────────────────────────── */
-function TimerButton({ active, onClick }: { active: boolean; onClick: () => void }) {
+function TimerButton({ active, onClick, hovered = false, onHoverChange }: {
+  active: boolean;
+  onClick: () => void;
+  hovered?: boolean;
+  onHoverChange?: (h: boolean) => void;
+}) {
   const { phase, remaining, mode } = useTimer();
   const isActive = phase === "running" || phase === "paused";
   const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
   const ss = String(remaining % 60).padStart(2, "0");
-  // Use timer button's own color (dusty lavender) at different depths
-  const modeColor = "oklch(0.42 0.12 275)";    // darker lavender for text/border
-  const modeLightBg = BTN_COLORS[2].active;     // same as button active bg
+  const modeColor = "oklch(0.42 0.12 275)";
+  const modeLightBg = BTN_COLORS[2].active;
   return (
     <button
       data-tour-id="tour-timer-btn"
       style={{
-        ...BTN_STYLE(active || isActive, 2),
-        // Lock width so the countdown digits never widen the button
-        width: 34, maxWidth: 34, overflow: "hidden",
+        ...BTN_STYLE(active || isActive, 2, hovered),
         ...(isActive ? {
           background: modeLightBg,
           color: modeColor,
           border: `2px solid ${modeColor}`,
         } : {}),
       }}
-      onClick={onClick} title="Timer"
+      onClick={onClick}
+      onMouseEnter={() => onHoverChange?.(true)}
+      onMouseLeave={() => onHoverChange?.(false)}
+      title="Timer"
     >
       <span style={{ fontFamily: "'Space Mono', monospace", fontSize: isActive ? "0.40rem" : "0.38rem", fontWeight: 700, letterSpacing: "-0.03em" }}>
         {isActive ? `${mm}:${ss}` : "⏱"}

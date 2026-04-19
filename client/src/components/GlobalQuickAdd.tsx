@@ -134,6 +134,7 @@ Today is ${today} (${todayName}). Available goals: ${goalList || "none"}.`,
           const taskPriority = (["urgent","focus","normal"].includes(parsed.priority ?? "") ? parsed.priority : "focus") as Priority;
           const taskContext = (["work","personal"].includes(parsed.context ?? "") ? parsed.context : "personal") as "work" | "personal";
           let taskDue = parsed.dueDate ?? null;
+          if (taskDue === "null" || taskDue === "undefined") taskDue = null;
           if (taskDue === "today") taskDue = today;
           if (taskDue === "tomorrow") { const d = new Date(); d.setDate(d.getDate()+1); taskDue = d.toISOString().slice(0,10); }
           let taskGoalId: string | undefined;
