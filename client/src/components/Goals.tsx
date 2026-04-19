@@ -648,8 +648,12 @@ Be specific and personal.`,
                   if (!window.confirm(`Clear ${coachType === "life" ? "Life Planning" : "Career Coaching"} conversation? This cannot be undone.`)) return;
                   const key = coachType === "life" ? STORAGE_LIFE : STORAGE_CAREER;
                   localStorage.removeItem(key);
-                  if (coachType === "life") setLifeMessages([]); else setCareerMessages([]);
-                  setMode("pick");
+                  // Reset to starter message (same as small popup behavior)
+                  const starter = [{ role: "coach" as const, text: STARTERS[coachType] }];
+                  if (coachType === "life") setLifeMessages(starter); else setCareerMessages(starter);
+                  // Stay in chat mode if dashboard already exists; otherwise go to pick
+                  const hasDashboard = (() => { try { const d = JSON.parse(localStorage.getItem("adhd-life-dashboard") ?? "{}"); return !!d[coachType]; } catch { return false; } })();
+                  if (!hasDashboard) setMode("pick");
                 }}
                 style={{ background: "none", border: "1px solid oklch(0.72 0.06 285)", borderRadius: 5, cursor: "pointer", fontSize: "0.68rem", color: "oklch(0.48 0.08 285)", padding: "2px 8px", fontFamily: "'DM Sans', sans-serif" }}
               >
@@ -664,7 +668,9 @@ Be specific and personal.`,
         <div style={{ display: "flex", borderBottom: "1px solid oklch(0.82 0.040 285 / 0.5)", background: "oklch(0.97 0.008 285)" }}>
           {(["life", "career"] as const).map(type => {
             const isActive = coachType === type && mode === "chat";
-            const hasHistory = (type === "life" ? lifeMessages : careerMessages).length > 0;
+            // Show dot only when this coach type has NO dashboard summary yet
+            const hasSummary = (() => { try { const d = JSON.parse(localStorage.getItem("adhd-life-dashboard") ?? "{}"); return !!d[type]; } catch { return false; } })();
+            const showDot = !hasSummary;
             return (
               <button key={type} onClick={() => switchCoach(type)}
                 style={{ flex: 1, padding: "8px 12px", border: "none", borderBottom: isActive ? "2px solid oklch(0.55 0.14 285)" : "2px solid transparent", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
@@ -673,7 +679,7 @@ Be specific and personal.`,
                   transition: "all 0.15s" }}>
                 <span>{type === "life" ? "🌱" : "🚀"}</span>
                 <span>{type === "life" ? "Life Planning" : "Career Coaching"}</span>
-                {hasHistory && <span style={{ width: 6, height: 6, borderRadius: "50%", background: isActive ? "oklch(0.55 0.14 285)" : "oklch(0.70 0.08 285)", flexShrink: 0 }} />}
+                {showDot && <span style={{ width: 6, height: 6, borderRadius: "50%", background: isActive ? "oklch(0.55 0.14 285)" : "oklch(0.70 0.08 285)", flexShrink: 0 }} />}
               </button>
             );
           })}
