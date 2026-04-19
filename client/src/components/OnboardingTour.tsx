@@ -382,20 +382,38 @@ function useTargetRect(targetId: string, deps: unknown[]) {
 
 interface SpotlightProps {
   rect: DOMRect;
+  secondaryRect?: DOMRect | null;
   padding?: number;
 }
 
-function Spotlight({ rect, padding = 14 }: SpotlightProps) {
+function makeRoundedHole(x: number, y: number, w: number, h: number, r: number) {
+  return `M${x + r},${y} H${x + w - r} Q${x + w},${y} ${x + w},${y + r} V${y + h - r} Q${x + w},${y + h} ${x + w - r},${y + h} H${x + r} Q${x},${y + h} ${x},${y + h - r} V${y + r} Q${x},${y} ${x + r},${y} Z`;
+}
+
+function Spotlight({ rect, secondaryRect, padding = 14 }: SpotlightProps) {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const x = rect.left - padding;
-  const y = rect.top - padding;
-  const w = rect.width + padding * 2;
-  const h = rect.height + padding * 2;
   const r = 10; // corner radius
 
+  // If we have a secondary rect (e.g. Settings panel), merge both into one bounding box
+  let bLeft = rect.left;
+  let bTop = rect.top;
+  let bRight = rect.right;
+  let bBottom = rect.bottom;
+  if (secondaryRect) {
+    bLeft = Math.min(bLeft, secondaryRect.left);
+    bTop = Math.min(bTop, secondaryRect.top);
+    bRight = Math.max(bRight, secondaryRect.right);
+    bBottom = Math.max(bBottom, secondaryRect.bottom);
+  }
+
+  const x = bLeft - padding;
+  const y = bTop - padding;
+  const w = (bRight - bLeft) + padding * 2;
+  const h = (bBottom - bTop) + padding * 2;
+
   // SVG clip-path with a rounded rectangle hole
-  const clipPath = `M0,0 H${vw} V${vh} H0 Z M${x + r},${y} H${x + w - r} Q${x + w},${y} ${x + w},${y + r} V${y + h - r} Q${x + w},${y + h} ${x + w - r},${y + h} H${x + r} Q${x},${y + h} ${x},${y + h - r} V${y + r} Q${x},${y} ${x + r},${y} Z`;
+  const clipPath = `M0,0 H${vw} V${vh} H0 Z ` + makeRoundedHole(x, y, w, h, r);
 
   return (
     <motion.svg
@@ -1166,6 +1184,13 @@ export function OnboardingTour({ onClose, onNavigate, onOpenWrapUp, onCloseWrapU
     [stepIndex, sectionReady]
   );
 
+  // For sidebar steps, also track the Settings panel rect to merge into spotlight
+  const hasSidebarAction = phase === "touring" && (currentStep as TourStep & { openAction?: string }).openAction === "sidebar";
+  const secondaryRect = useTargetRect(
+    hasSidebarAction ? "tour-settings-panel" : "__none__",
+    [stepIndex, sectionReady]
+  );
+
   // ── Arrow-right keyboard shortcut to advance steps ───────────────────────────────
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -1246,7 +1271,7 @@ export function OnboardingTour({ onClose, onNavigate, onOpenWrapUp, onCloseWrapU
 
       {phase === "touring" && rect && (
         <React.Fragment key={`step-${stepIndex}`}>
-          <Spotlight rect={rect} />
+          <Spotlight rect={rect} secondaryRect={secondaryRect} />
           <TooltipCard
             step={currentStep}
             stepIndex={stepIndex}
