@@ -37,14 +37,13 @@ const BTN_STYLE = (active: boolean, idx: number = 0, hovered = false): React.CSS
   const c = BTN_COLORS[idx] ?? BTN_COLORS[0];
   return {
     display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-    padding: "12px 6px",
-    background: active ? c.active : c.idle,
+    padding: "12px 6px", background: active ? c.active : c.idle,
     color: active ? "white" : c.text,
     border: "none", borderRadius: "8px 0 0 8px",
     cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: "0.40rem",
     letterSpacing: "0.10em", boxShadow: `-2px 0 10px ${c.active}33`,
-    // Grow to the left: width transitions from narrow to wide; right edge is fixed
-    width: hovered ? 46 : 28,
+    // Grow slightly to the left on hover; right edge stays anchored
+    width: hovered ? 42 : 34,
     overflow: "hidden",
     transition: "width 0.18s ease, background 0.15s, color 0.15s",
   };
@@ -53,6 +52,7 @@ const BTN_STYLE = (active: boolean, idx: number = 0, hovered = false): React.CSS
 export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin }: Props) {
   const [panel, setPanel] = useState<"ai" | "coach" | "timer" | "routine" | null>(null);
   const toggle = (p: "ai" | "coach" | "timer" | "routine") => setPanel(v => v === p ? null : p);
+  const [hoveredBtn, setHoveredBtn] = useState<"ai" | "coach" | "timer" | "routine" | null>(null);
 
   // Track dashboard AI state so the button reflects it
   const [dashboardAIOn, setDashboardAIOn] = useState(() =>
@@ -114,26 +114,22 @@ export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin }: Props)
       {/* Right-edge button stack */}
       <div data-tour-id="tour-right-panel" style={{ position: "fixed", right: 0, top: "50%", transform: "translateY(-50%)", zIndex: 101, display: "flex", flexDirection: "column", gap: 0 }}>
         {/* AI */}
-        <button
-          data-tour-id="tour-ai-btn"
+        <button data-tour-id="tour-ai-btn"
           style={BTN_STYLE(panel === "ai" || aiActiveOnDashboard, 0, hoveredBtn === "ai")}
           onClick={handleAIClick}
           onMouseEnter={() => setHoveredBtn("ai")}
           onMouseLeave={() => setHoveredBtn(null)}
-          title="AI Assistant"
-        >
+          title="AI Assistant">
           <Bot size={14} />
           <span style={{ writingMode: "vertical-rl", fontSize: "0.38rem" }}>{aiActiveOnDashboard ? "HIDE AI" : "AI"}</span>
         </button>
         {/* Life Coach */}
-        <button
-          data-tour-id="tour-coach-btn"
+        <button data-tour-id="tour-coach-btn"
           style={BTN_STYLE(panel === "coach", 1, hoveredBtn === "coach")}
           onClick={() => toggle("coach")}
           onMouseEnter={() => setHoveredBtn("coach")}
           onMouseLeave={() => setHoveredBtn(null)}
-          title="Life Coach"
-        >
+          title="Life Coach">
           <span style={{ fontSize: "0.85rem", lineHeight: 1 }}>🧭</span>
           <span style={{ writingMode: "vertical-rl", fontSize: "0.38rem" }}>COACH</span>
         </button>
@@ -145,14 +141,12 @@ export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin }: Props)
           onHoverChange={(h) => setHoveredBtn(h ? "timer" : null)}
         />
         {/* Routine */}
-        <button
-          data-tour-id="tour-routine-btn"
+        <button data-tour-id="tour-routine-btn"
           style={BTN_STYLE(panel === "routine", 3, hoveredBtn === "routine")}
           onClick={() => toggle("routine")}
           onMouseEnter={() => setHoveredBtn("routine")}
           onMouseLeave={() => setHoveredBtn(null)}
-          title="Daily Routine"
-        >
+          title="Daily Routine">
           <span style={{ fontSize: "0.85rem", lineHeight: 1 }}>💫</span>
           <span style={{ writingMode: "vertical-rl", fontSize: "0.38rem" }}>ROUTINE</span>
         </button>
@@ -178,9 +172,8 @@ function TimerButton({ active, onClick, hovered = false, onHoverChange }: {
   const isActive = phase === "running" || phase === "paused";
   const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
   const ss = String(remaining % 60).padStart(2, "0");
-  // Use timer button's own color (dusty lavender) at different depths
-  const modeColor = "oklch(0.42 0.12 275)";    // darker lavender for text/border
-  const modeLightBg = BTN_COLORS[2].active;     // same as button active bg
+  const modeColor = "oklch(0.42 0.12 275)";
+  const modeLightBg = BTN_COLORS[2].active;
   return (
     <button
       data-tour-id="tour-timer-btn"

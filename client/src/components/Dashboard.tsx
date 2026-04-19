@@ -285,6 +285,7 @@ ${routineContext}`;
             // Resolve "today" / "tomorrow" as actual dates (local)
             const nn = new Date();
             let dueDate = action.dueDate as string | undefined;
+            if (dueDate === "null" || dueDate === "undefined") dueDate = undefined;
             if (dueDate === "today") dueDate = `${nn.getFullYear()}-${String(nn.getMonth()+1).padStart(2,'0')}-${String(nn.getDate()).padStart(2,'0')}`;
             if (dueDate === "tomorrow") { const d = new Date(); d.setDate(d.getDate()+1); dueDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
             // Use direct goalId from AI, or fall back to name match
@@ -674,10 +675,11 @@ ${routineContext}`;
                       </p>
 
                       {/* Due date — only in bigger view (AI off) */}
-                      {!showAI && !isCompleting && t.dueDate && (() => {
+                      {!showAI && !isCompleting && t.dueDate && t.dueDate !== "null" && t.dueDate.includes('-') && (() => {
+                        const d = new Date(t.dueDate + "T00:00:00");
+                        if (isNaN(d.getTime())) return null;
                         const isOverdue = t.dueDate < todayYMD;
                         const isToday = t.dueDate === todayYMD;
-                        const d = new Date(t.dueDate + "T00:00:00");
                         const label = isToday ? "Today" : d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
                         return (
                           <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.48rem", letterSpacing: "0.04em", color: isOverdue ? "#c0306a" : isToday ? "#7a50a0" : MUTED, flexShrink: 0, padding: "1px 4px", borderRadius: 2, background: isOverdue ? "rgba(192,48,106,0.10)" : isToday ? "rgba(122,80,160,0.10)" : "transparent" }}>
