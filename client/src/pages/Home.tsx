@@ -159,7 +159,7 @@ function MoodPill({ mood, onMoodChange }: { mood: number | null; onMoodChange: (
         onClick={() => setOpen((o: boolean) => !o)}
         className="flex items-center gap-1.5 px-2.5 py-1 transition-all"
         style={{
-          border: "1px solid oklch(0.87 0.025 340)",
+          border: "none",
           background: open ? "oklch(0.965 0.015 355)" : "transparent",
           borderRadius: 20,
           fontFamily: "'DM Sans', sans-serif",
