@@ -656,8 +656,9 @@ export function FocusTimer({ onSessionComplete, onBlockComplete, onQuit, fillHei
   }, [tornCount]);
 
   useEffect(() => {
+    if (phase === "transition" && transitionCountdown < prevTransitionRef.current && transitionCountdown > 0) sound.playTickSfx();
     prevTransitionRef.current = transitionCountdown;
-  }, [transitionCountdown]);
+  }, [transitionCountdown, phase, sound]);
 
   const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
   const ss = String(remaining % 60).padStart(2, "0");
