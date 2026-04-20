@@ -652,9 +652,8 @@ export function FocusTimer({ onSessionComplete, onBlockComplete, onQuit, fillHei
   }, [phase, sound]);
 
   useEffect(() => {
-    if (tornCount > prevTornRef.current && phase === "running") sound.playRipSfx();
     prevTornRef.current = tornCount;
-  }, [tornCount, phase, sound]);
+  }, [tornCount]);
 
   useEffect(() => {
     if (phase === "transition" && transitionCountdown < prevTransitionRef.current && transitionCountdown > 0) sound.playTickSfx();
