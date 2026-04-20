@@ -520,15 +520,18 @@ export default function Home() {
 
   // ── Unified category system: aggregate all contexts from tasks, goals, agents ──
   // Custom tags (non-builtin) are only shown if at least 1 item uses them
+  // Filter out null/undefined/"null"/"undefined" values that may come from old localStorage data
+  const isValidContext = (c: unknown): c is string =>
+    typeof c === "string" && c.length > 0 && c !== "null" && c !== "undefined";
   const allItemContexts = new Set([
-    ...tasks.map((t) => t.context),
-    ...goals.map((g) => g.context),
-    ...agents.map((a) => a.context),
+    ...tasks.map((t) => t.context).filter(isValidContext),
+    ...goals.map((g) => g.context).filter(isValidContext),
+    ...agents.map((a) => a.context).filter(isValidContext),
   ]);
   const allCategories = Array.from(new Set([
     "work", "personal",
     ...Array.from(allItemContexts),
-  ])).filter(Boolean).filter((c) => {
+  ])).filter(isValidContext).filter((c) => {
     if (deletedCategories.includes(c)) return false;
     // Always keep builtins; auto-remove custom tags with no items
     if (c === "work" || c === "personal") return true;
