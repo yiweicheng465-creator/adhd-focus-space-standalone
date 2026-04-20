@@ -42,6 +42,7 @@ const BTN_STYLE = (active: boolean, idx: number = 0, hovered = false): React.CSS
     // The container uses alignItems:flex-end so the right edge stays flush against the screen.
     // paddingLeft expands on hover → button widens to the left, no gap, no text-only shift.
     width: "auto",
+    minWidth: 32,  // ensures all buttons match the widest label (COACH/ROUTINE) when idle
     paddingTop: 12, paddingBottom: 12,
     paddingLeft: hovered ? 16 : 6,
     paddingRight: 6,
