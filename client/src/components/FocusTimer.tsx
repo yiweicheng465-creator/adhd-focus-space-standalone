@@ -640,7 +640,11 @@ export function FocusTimer({ onSessionComplete, onBlockComplete, onQuit, fillHei
     const prev = prevPhaseRef.current;
     prevPhaseRef.current = phase;
     if (phase === "transition" && prev !== "transition") sound.playChimeSfx();
-    if (phase === "block_complete" && prev !== "block_complete") sound.playFanfareSfx();
+    if (phase === "block_complete" && prev !== "block_complete") {
+      // Stop music so user notices the block is done, then play gentle bell chime
+      sound.stopMusicForBlockComplete();
+      sound.playFanfareSfx();
+    }
     // Notify global sound context so music pauses/resumes with timer
     if (phase === "running") sound.onTimerPhaseChange("running");
     else if (phase === "paused") sound.onTimerPhaseChange("paused");

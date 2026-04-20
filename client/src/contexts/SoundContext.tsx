@@ -103,21 +103,22 @@ function playTick(ctx: AudioContext, volume = 0.5) {
   osc.stop(ctx.currentTime + 0.08);
 }
 
-/** Block complete fanfare */
+/** Block complete fanfare — soft 3-bell chime sequence */
 function playFanfare(ctx: AudioContext, volume = 0.5) {
-  const notes = [523, 659, 784, 1047];
+  // Three gentle bell tones: C5 → E5 → G5, soft and airy
+  const notes = [523, 659, 784];
   notes.forEach((freq, i) => {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.type = "sine";
-    osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.15);
-    gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.15);
-    gain.gain.linearRampToValueAtTime(volume * 0.3, ctx.currentTime + i * 0.15 + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.15 + 0.5);
-    osc.start(ctx.currentTime + i * 0.15);
-    osc.stop(ctx.currentTime + i * 0.15 + 0.5);
+    osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.22);
+    gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.22);
+    gain.gain.linearRampToValueAtTime(volume * 0.18, ctx.currentTime + i * 0.22 + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.22 + 0.9);
+    osc.start(ctx.currentTime + i * 0.22);
+    osc.stop(ctx.currentTime + i * 0.22 + 0.9);
   });
 }
 
@@ -147,6 +148,8 @@ export interface SoundContextValue {
   playRipSfx: () => void;
   playTickSfx: () => void;
   playFanfareSfx: () => void;
+  /** Stop music when block completes (without changing musicEnabled state) */
+  stopMusicForBlockComplete: () => void;
 }
 
 const SoundContext = createContext<SoundContextValue | null>(null);
@@ -405,6 +408,13 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
       if (ctx) playFanfare(ctx, sfxVolume);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [sfxEnabled, sfxVolume]),
+    stopMusicForBlockComplete: useCallback(() => {
+      // Pause audio element without touching musicEnabled state
+      // so music resumes automatically on next session start
+      pauseAudio();
+      timerPausedRef.current = false;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pauseAudio]),
   };
   return (
     <SoundContext.Provider value={value}>{children}</SoundContext.Provider>
