@@ -38,18 +38,19 @@ const BTN_STYLE = (active: boolean, idx: number = 0, hovered = false): React.CSS
   const c = BTN_COLORS[idx] ?? BTN_COLORS[0];
   return {
     display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-    // Half-width buttons; hover grows left via paddingLeft so right edge stays flush (no gap)
-    width: 20,
-    boxSizing: "border-box",
+    // width:auto lets the button genuinely grow leftward on hover.
+    // The container uses alignItems:flex-end so the right edge stays flush against the screen.
+    // paddingLeft expands on hover → button widens to the left, no gap, no text-only shift.
+    width: "auto",
     paddingTop: 12, paddingBottom: 12,
-    paddingLeft: hovered ? 8 : 4,
-    paddingRight: 4,
+    paddingLeft: hovered ? 16 : 6,
+    paddingRight: 6,
     background: active ? c.active : c.idle,
     color: active ? "white" : c.text,
     border: "none", borderRadius: "8px 0 0 8px",
     cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: "0.40rem",
     letterSpacing: "0.10em", boxShadow: `-2px 0 10px ${c.active}33`,
-    overflow: "hidden",
+    overflow: "visible",
     transition: "padding-left 0.18s ease, background 0.15s, color 0.15s",
   };
 };
@@ -195,7 +196,7 @@ function TimerButton({ active, onClick, hovered = false, onHoverChange }: {
       onMouseLeave={() => onHoverChange?.(false)}
       title="Timer"
     >
-      <span style={{ fontFamily: "'Space Mono', monospace", fontSize: isActive ? "0.38rem" : "0.38rem", fontWeight: 700, letterSpacing: "-0.03em" }}>
+      <span style={{ fontFamily: "'Space Mono', monospace", fontSize: isActive ? "0.30rem" : "0.38rem", fontWeight: 700, letterSpacing: "-0.03em" }}>
         {isActive ? `${mm}:${ss}` : "⏱"}
       </span>
       <span style={{ writingMode: "vertical-rl", fontSize: "0.38rem" }}>{isActive ? (phase === "paused" ? "PAUSE" : mode?.toUpperCase()) : "TIMER"}</span>
