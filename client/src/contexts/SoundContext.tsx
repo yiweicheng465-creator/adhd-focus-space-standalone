@@ -163,8 +163,12 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
   const [sfxEnabled, setSfxEnabled] = useState(() => {
     try { return localStorage.getItem("adhd-sfx-enabled") !== "false"; } catch { return true; }
   });
-  // Music always starts OFF on page load — user must explicitly enable it each session.
-  const [musicEnabled, setMusicEnabled] = useState(false);
+  // Restore music enabled state from localStorage — auto-resume if user had it on.
+  const [musicEnabled, setMusicEnabled] = useState(() => {
+    try { return localStorage.getItem("adhd-music-enabled") === "true"; } catch { return false; }
+  });
+  // Track if we're waiting for a user gesture to satisfy autoplay policy
+  const pendingAutoplayRef = useRef(false);
   const [musicVolume, setMusicVolumeState] = useState(() => {
     try { return parseFloat(localStorage.getItem("adhd-music-vol") ?? "0.25"); } catch { return 0.25; }
   });
@@ -232,8 +236,13 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
     ensureCtx();
     setMusicLoading(true);
     audio.play()
-      .then(() => { setMusicLoading(false); setMusicPlaying(true); })
-      .catch(() => { setMusicLoading(false); setMusicPlaying(false); });
+      .then(() => { setMusicLoading(false); setMusicPlaying(true); pendingAutoplayRef.current = false; })
+      .catch(() => {
+        setMusicLoading(false);
+        setMusicPlaying(false);
+        // Autoplay blocked — mark as pending so we retry on first user gesture
+        pendingAutoplayRef.current = true;
+      });
   }, [ensureCtx, musicVolume, selectedTrackId]);
 
   // Internal helper: pause the audio
@@ -244,6 +253,23 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
     setMusicPlaying(false);
     setMusicLoading(false);
   }, []);
+
+  // Retry autoplay on first user gesture (handles browser autoplay policy)
+  useEffect(() => {
+    const retry = () => {
+      if (pendingAutoplayRef.current && musicEnabled) {
+        pendingAutoplayRef.current = false;
+        playAudio();
+      }
+    };
+    window.addEventListener("click", retry, { once: true, capture: true });
+    window.addEventListener("keydown", retry, { once: true, capture: true });
+    return () => {
+      window.removeEventListener("click", retry, true);
+      window.removeEventListener("keydown", retry, true);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [musicEnabled]);
 
   // React to musicEnabled changes
   useEffect(() => {
