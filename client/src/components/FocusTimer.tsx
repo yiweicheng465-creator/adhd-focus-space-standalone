@@ -652,14 +652,12 @@ export function FocusTimer({ onSessionComplete, onBlockComplete, onQuit, fillHei
   }, [phase, sound]);
 
   useEffect(() => {
-    if (tornCount > prevTornRef.current && phase === "running") sound.playRipSfx();
     prevTornRef.current = tornCount;
-  }, [tornCount, phase, sound]);
+  }, [tornCount]);
 
   useEffect(() => {
-    if (phase === "transition" && transitionCountdown < prevTransitionRef.current && transitionCountdown > 0) sound.playTickSfx();
     prevTransitionRef.current = transitionCountdown;
-  }, [transitionCountdown, phase, sound]);
+  }, [transitionCountdown]);
 
   const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
   const ss = String(remaining % 60).padStart(2, "0");
