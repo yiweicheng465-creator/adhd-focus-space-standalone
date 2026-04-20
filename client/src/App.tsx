@@ -13,6 +13,7 @@ import { TimerProvider } from "./contexts/TimerContext";
 import { SoundProvider } from "./contexts/SoundContext";
 import Home from "./pages/Home";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 import Monthly from "@/pages/Monthly";
 import Guide from "@/pages/Guide";
 import AdminDashboard from "@/pages/AdminDashboard";
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/monthly" component={Monthly} />
       <Route path="/guide" component={Guide} />
       <Route path="/privacy" component={PrivacyPolicy} />
+      <Route path="/terms" component={TermsOfService} />
       {/* Admin-only route — no nav entry point, direct URL access only */}
       <Route path="/admin" component={AdminDashboard} />
       <Route path={"/404"} component={NotFound} />

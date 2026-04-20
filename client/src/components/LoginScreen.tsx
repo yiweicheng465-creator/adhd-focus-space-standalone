@@ -143,15 +143,27 @@ export function LoginScreen({ onLogin }: Props) {
           }}>
             Your OpenAI key is stored encrypted. Tasks, wins, and goals live in your browser only.
           </p>
-          <a
-            href="/privacy"
-            style={{
-              fontFamily: "'DM Sans', sans-serif", fontSize: "0.68rem",
-              color: "oklch(0.52 0.10 340)", textDecoration: "underline",
-            }}
-          >
-            Privacy Policy
-          </a>
+          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+            <a
+              href="/privacy"
+              style={{
+                fontFamily: "'DM Sans', sans-serif", fontSize: "0.68rem",
+                color: "oklch(0.52 0.10 340)", textDecoration: "underline",
+              }}
+            >
+              Privacy Policy
+            </a>
+            <span style={{ fontSize: "0.68rem", color: "oklch(0.65 0.03 330)" }}>·</span>
+            <a
+              href="/terms"
+              style={{
+                fontFamily: "'DM Sans', sans-serif", fontSize: "0.68rem",
+                color: "oklch(0.52 0.10 340)", textDecoration: "underline",
+              }}
+            >
+              Terms of Service
+            </a>
+          </div>
         </div>
       </div>
     </div>
