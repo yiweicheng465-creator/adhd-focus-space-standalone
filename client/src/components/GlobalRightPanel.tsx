@@ -724,7 +724,7 @@ function PopupShell({ onClose, title, width = 300, children, onClear, clearDisab
     };
   }, []);
   return (
-    <div data-tour-id="tour-panel-popup" style={{ position: "fixed", right: 42, top: "50%", transform: "translateY(-50%)", zIndex: 100, width, background: "#fdf4f8", borderRadius: 14, boxShadow: tourHighlight ? "0 0 0 3px oklch(0.58 0.18 340), 0 0 24px oklch(0.58 0.18 340 / 0.45), 0 20px 48px rgba(120,40,180,0.18)" : "0 20px 48px rgba(120,40,180,0.18), 0 4px 12px rgba(0,0,0,0.08)", display: "flex", flexDirection: "column", overflow: "hidden", border: tourHighlight ? "2px solid oklch(0.58 0.18 340)" : `1px solid ${hdr}`, transition: "box-shadow 0.3s ease, border 0.3s ease" }}>
+    <div data-tour-id="tour-panel-popup" style={{ position: "fixed", right: 19, top: "50%", transform: "translateY(-50%)", zIndex: 100, width, background: "#fdf4f8", borderRadius: 14, boxShadow: tourHighlight ? "0 0 0 3px oklch(0.58 0.18 340), 0 0 24px oklch(0.58 0.18 340 / 0.45), 0 20px 48px rgba(120,40,180,0.18)" : "0 20px 48px rgba(120,40,180,0.18), 0 4px 12px rgba(0,0,0,0.08)", display: "flex", flexDirection: "column", overflow: "hidden", border: tourHighlight ? "2px solid oklch(0.58 0.18 340)" : `1px solid ${hdr}`, transition: "box-shadow 0.3s ease, border 0.3s ease" }}>
       <div style={{ padding: "10px 14px", borderBottom: `1px solid ${hdr}`, background: hdr, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "0.90rem", fontWeight: 700, color: "oklch(0.28 0.040 320)", fontStyle: "italic" }}>{title}</span>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
