@@ -197,11 +197,11 @@ export default function StorageBackup() {
   const [gdClientId, setGdClientId] = useState("");
   // Fetch Google Client ID from server on mount
   useEffect(() => { fetch("/api/config").then(r=>r.json()).then(d=>{ if(d.googleClientId) setGdClientId(d.googleClientId); }).catch(()=>{}); }, []);
-  // Auto-backup to Google Drive every 24 hours if token exists
+  // Auto-backup to Google Drive every 1 hour if token exists
   useEffect(() => {
     const run = async () => {
       const AUTO_BACKUP_KEY = "adhd-gdrive-auto-backup-ts";
-      const AUTO_INTERVAL = 24 * 60 * 60 * 1000;
+      const AUTO_INTERVAL = 1 * 60 * 60 * 1000; // 1 hour
       if (!getPersistedToken() || !gdClientId) return;
       const last = Number(localStorage.getItem(AUTO_BACKUP_KEY) ?? 0);
       if (Date.now() - last < AUTO_INTERVAL) return;
@@ -515,7 +515,7 @@ export default function StorageBackup() {
             <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", background: "oklch(0.97 0.018 340)", border: "1px solid oklch(0.82 0.08 340)", borderRadius: 4 }}>
               <CheckCircle2 size={11} style={{ color: "oklch(0.50 0.14 168)", flexShrink: 0 }} />
               <p style={{ fontSize: 10, color: "oklch(0.40 0.12 168)", fontFamily: "'DM Sans', sans-serif", margin: 0, flex: 1 }}>
-                <strong>Google Drive connected</strong> — auto-backup every 24 hours.
+                <strong>Google Drive connected</strong> — auto-backup every hour.
               </p>
               <button
                 onClick={async () => {
