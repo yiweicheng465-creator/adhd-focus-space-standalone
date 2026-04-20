@@ -2,7 +2,7 @@ import { Link } from "wouter";
 
 const APP_NAME = "ADHD Focus Space";
 const APP_URL = "https://adhdfocus.space";
-const CONTACT_EMAIL = "yiweicheng465@gmail.com";
+const CONTACT_EMAIL = "vicky1272432881@gmail.com";
 const EFFECTIVE_DATE = "April 20, 2026";
 
 export default function TermsOfService() {
