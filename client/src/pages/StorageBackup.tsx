@@ -62,6 +62,9 @@ const BACKUP_MIME = "application/json";
 /** Connect Google Drive via authorization code flow — one time setup */
 function connectGoogleDrive(clientId: string): Promise<string> {
   return new Promise((resolve, reject) => {
+    let settled = false;
+    const settle = (fn: () => void) => { if (!settled) { settled = true; fn(); } };
+
     const redirectUri = window.location.origin;
     const codeClient = (window as any).google.accounts.oauth2.initCodeClient({
       client_id: clientId,
@@ -72,7 +75,7 @@ function connectGoogleDrive(clientId: string): Promise<string> {
       callback: async (response: any) => {
         if (response.error) {
           const cancelled = ["popup_closed_by_user", "access_denied", "popup_failed_to_open", "user_cancel"];
-          reject(new Error(cancelled.includes(response.error) ? "CANCELLED" : response.error));
+          settle(() => reject(new Error(cancelled.includes(response.error) ? "CANCELLED" : response.error)));
           return;
         }
         try {
@@ -85,11 +88,46 @@ function connectGoogleDrive(clientId: string): Promise<string> {
           if (!res.ok) throw new Error(data.error ?? "Connect failed");
           localStorage.setItem("adhd-gdrive-connected", "1");
           cachedDriveToken = { token: data.accessToken, expiresAt: Date.now() + 50 * 60 * 1000 };
-          resolve(data.accessToken);
-        } catch (err: any) { reject(err); }
+          settle(() => resolve(data.accessToken));
+        } catch (err: any) { settle(() => reject(err)); }
       },
     });
+
+    // Detect popup being closed without a callback (e.g. user closes DevTools or
+    // dismisses the window in a way Google's SDK doesn't report back).
+    // We open the popup ourselves so we can watch its `closed` property.
+    let popupRef: Window | null = null;
+    const origOpen = window.open.bind(window);
+    (window as any).__gdrive_open_hook = (url: string, target: string, features: string) => {
+      popupRef = origOpen(url, target, features);
+      return popupRef;
+    };
+    // Patch window.open temporarily so the GSI SDK's popup is captured
+    const _origWindowOpen = window.open;
+    window.open = (url?: string | URL, target?: string, features?: string) => {
+      const w = _origWindowOpen.call(window, url, target, features);
+      if (url && String(url).includes("accounts.google.com")) popupRef = w;
+      return w;
+    };
+
     codeClient.requestCode();
+
+    // Poll every 500 ms — if the popup closes and we haven't settled yet, cancel
+    const poll = setInterval(() => {
+      if (settled) { clearInterval(poll); window.open = _origWindowOpen; return; }
+      if (popupRef && popupRef.closed) {
+        clearInterval(poll);
+        window.open = _origWindowOpen;
+        settle(() => reject(new Error("CANCELLED")));
+      }
+    }, 500);
+
+    // Absolute safety-net: if nothing happens in 5 minutes, cancel
+    setTimeout(() => {
+      clearInterval(poll);
+      window.open = _origWindowOpen;
+      settle(() => reject(new Error("CANCELLED")));
+    }, 5 * 60 * 1000);
   });
 }
 
