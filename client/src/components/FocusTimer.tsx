@@ -818,22 +818,30 @@ export function FocusTimer({ onSessionComplete, onBlockComplete, onQuit, fillHei
 
   const resetDeaths = () => { setDeaths(0); saveHearts5(5); };
 
-  // Render hearts as filled/empty icons with tooltip
-  const sessionsUntilRestore = hearts5 < 5 ? 4 - (sessionsToday % 4) : null;
+  // ── Cumulative all-time sessions (never resets) ──────────────────────────
+  const TOTAL_SESSIONS_KEY = "cyber-pet-total-sessions";
+  const [totalSessCount, setTotalSessCount] = useLocalStorage<number>(TOTAL_SESSIONS_KEY, 0);
+  // Increment when a session completes
+  const prevPhaseForSess = useRef(phase);
+  useEffect(() => {
+    if (
+      (phase === "complete" || phase === "block_complete") &&
+      prevPhaseForSess.current !== "complete" &&
+      prevPhaseForSess.current !== "block_complete"
+    ) {
+      setTotalSessCount((n: number) => n + 1);
+    }
+    prevPhaseForSess.current = phase;
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Single heart + cumulative session count
   const renderHearts = () => (
     <span
-      title={
-        hearts5 === 5
-          ? "♥♥♥♥♥ Full hearts! Quit a session to lose one."
-          : `${sessionsUntilRestore} more session${sessionsUntilRestore === 1 ? "" : "s"} to restore a heart (${sessionsToday % 4}/4)`
-      }
-      style={{ fontSize: 9, letterSpacing: 1, cursor: "default" }}
+      title={`${totalSessCount} session${totalSessCount !== 1 ? "s" : ""} completed`}
+      style={{ fontSize: 9, letterSpacing: 1, cursor: "default", display: "flex", alignItems: "center", gap: 2 }}
     >
-      {Array.from({ length: 5 }, (_, i) => (
-        <span key={i} style={{ color: "#FAF6F1", opacity: i < hearts5 ? 1 : 0.35 }}>
-          {i < hearts5 ? "♥" : "♡"}
-        </span>
-      ))}
+      <span style={{ color: "#FAF6F1" }}>❤</span>
+      <span style={{ color: "#FAF6F1", fontFamily: "'JetBrains Mono', monospace", fontSize: 7, fontWeight: 700 }}>{totalSessCount}</span>
     </span>
   );
 
@@ -917,10 +925,7 @@ export function FocusTimer({ onSessionComplete, onBlockComplete, onQuit, fillHei
         </div>
         {/* Death counter + sound + settings */}
         <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "0 7px", borderLeft: `1px solid ${BORDER}50` }}>
-          <span style={{ fontSize: 7, color: BORDER, letterSpacing: "0.08em" }}>💀{deaths}</span>
-          {deaths > 0 && (
-            <button onClick={resetDeaths} title="Reset death count" style={{ fontSize: 8, background: "none", border: "none", cursor: "pointer", color: BORDER, padding: "0 1px", lineHeight: 1 }}>×</button>
-          )}
+          <span title={`${deaths} quit${deaths !== 1 ? "s" : ""} total`} style={{ fontSize: 7, color: BORDER, letterSpacing: "0.08em", cursor: "default" }}>💀{deaths}</span>
           <button
             onClick={() => { setShowSound(s => !s); setShowSettings(false); }}
             title="Sound & music"

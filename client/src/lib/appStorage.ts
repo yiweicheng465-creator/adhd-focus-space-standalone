@@ -60,6 +60,7 @@ export const APP_STORAGE_KEYS = [
   "adhd-work-mode",
   "adhd-quick-chips",
   "cyber-pet-deaths",
+  "cyber-pet-total-sessions",
 ] as const;
 
 /** UI-only keys excluded from backup (theme, sidebar width, skip flags) */
