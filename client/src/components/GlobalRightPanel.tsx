@@ -41,9 +41,10 @@ const BTN_STYLE = (active: boolean, idx: number = 0, hovered = false): React.CSS
     // width:auto lets the button genuinely grow leftward on hover.
     // The container uses alignItems:flex-end so the right edge stays flush against the screen.
     // paddingLeft expands on hover → button widens to the left, no gap, no text-only shift.
-    width: "auto",
+    width: hovered ? "auto" : 28,
+    minWidth: 28,
     paddingTop: 12, paddingBottom: 12,
-    paddingLeft: hovered ? 16 : 6,
+    paddingLeft: hovered ? 14 : 6,
     paddingRight: 6,
     background: active ? c.active : c.idle,
     color: active ? "white" : c.text,
@@ -135,7 +136,7 @@ export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin }: Props)
           onMouseEnter={() => setHoveredBtn("coach")}
           onMouseLeave={() => setHoveredBtn(null)}
           title="Life Coach">
-          <span style={{ fontSize: "0.85rem", lineHeight: 1 }}>🧭</span>
+          <span style={{ fontSize: "0.75rem", lineHeight: 1 }}>🧭</span>
           <span style={{ writingMode: "vertical-rl", fontSize: "0.38rem" }}>COACH</span>
         </button>
         {/* Timer */}
@@ -152,7 +153,7 @@ export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin }: Props)
           onMouseEnter={() => setHoveredBtn("routine")}
           onMouseLeave={() => setHoveredBtn(null)}
           title="Daily Routine">
-          <span style={{ fontSize: "0.85rem", lineHeight: 1 }}>💫</span>
+          <span style={{ fontSize: "0.75rem", lineHeight: 1 }}>💫</span>
           <span style={{ writingMode: "vertical-rl", fontSize: "0.38rem" }}>ROUTINE</span>
         </button>
       </div>
