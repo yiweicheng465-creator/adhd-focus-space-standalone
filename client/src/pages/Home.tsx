@@ -650,6 +650,13 @@ export default function Home() {
                   const routineTotal = todayRoutines.length;
                   const routineLabel = routineTotal > 0 ? `${routineDone}/${routineTotal} routine` : null;
 
+                  // Retro lo-fi pastel palette — one per stat
+                  const STAT_COLORS = [
+                    { num: "#7A3060", lbl: "#C070A0" }, // tasks: dusty rose-plum
+                    { num: "#3A6840", lbl: "#70A878" }, // wins: sage green
+                    { num: "#3A4878", lbl: "#7080C8" }, // agents: dusty indigo
+                    { num: "#7A5820", lbl: "#C09840" }, // routine: warm amber
+                  ];
                   const stats: { label: string; value: string | number; section: Section }[] = [
                     { label: "tasks left today", value: tasks.filter((t) => !t.done && (!t.dueDate || t.dueDate === todayKey2)).length, section: "tasks" as Section },
                     { label: "wins",  value: wins.filter((w) => new Date(w.createdAt).toDateString() === today).length, section: "wins" as Section },
@@ -657,7 +664,9 @@ export default function Home() {
                     ...(routineLabel ? [{ label: "routine", value: routineDone === routineTotal && routineTotal > 0 ? "✓" : `${routineDone}/${routineTotal}`, section: "dashboard" as Section }] : []),
                   ];
                   return stats;
-                })().map(({ label, value, section }, i, arr) => (
+                })().map(({ label, value, section }, i, arr) => {
+                  const sc = [{ num: "#7A3060", lbl: "#C070A0" }, { num: "#3A6840", lbl: "#70A878" }, { num: "#3A4878", lbl: "#7080C8" }, { num: "#7A5820", lbl: "#C09840" }][i] ?? { num: "#6A1840", lbl: "#C070A0" };
+                  return (
                   <React.Fragment key={label}>
                     <button
                       onClick={() => setActiveSection(section)}
@@ -666,14 +675,15 @@ export default function Home() {
                       onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(212,88,152,0.10)"; }}
                       onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
                     >
-                      <span style={{ fontSize: "0.85rem", fontWeight: 700, fontFamily: "'Space Mono', monospace", color: "#6A1840", letterSpacing: "0.02em" }}>{value}</span>
-                      <span style={{ fontSize: "0.65rem", fontWeight: 400, fontFamily: "'Space Mono', monospace", color: "#C070A0", letterSpacing: "0.10em", textTransform: "uppercase" }}>{label}</span>
+                      <span style={{ fontSize: "0.85rem", fontWeight: 700, fontFamily: "'Space Mono', monospace", color: sc.num, letterSpacing: "0.02em" }}>{value}</span>
+                      <span style={{ fontSize: "0.65rem", fontWeight: 400, fontFamily: "'Space Mono', monospace", color: sc.lbl, letterSpacing: "0.10em", textTransform: "uppercase" }}>{label}</span>
                     </button>
                     {i < arr.length - 1 && (
                       <div style={{ width: 1, height: 20, background: "#E8B8D0" }} />
                     )}
                   </React.Fragment>
-                ))}
+                  );
+                })}
             </div>
 
             {/* Mood pill */}
