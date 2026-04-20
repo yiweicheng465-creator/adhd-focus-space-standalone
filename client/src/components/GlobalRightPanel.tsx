@@ -562,10 +562,23 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
   };
   const todayRoutines = routines.filter(r => r.days.includes(today));
 
+  const undoMarkDone = (routineId: string, winId: string, prevDoneIds: Set<string>) => {
+    // Remove from done set
+    saveDoneToday(prevDoneIds);
+    // Remove the win entry that was added
+    try {
+      const wins = JSON.parse(localStorage.getItem("adhd-wins") ?? "[]");
+      localStorage.setItem("adhd-wins", JSON.stringify(wins.filter((w: any) => w.id !== winId)));
+      window.dispatchEvent(new CustomEvent("adhd-storage-update", { detail: "adhd-wins" }));
+    } catch {}
+  };
+
   const markDone = (r: Routine) => {
     if (doneToday.has(r.id)) return;
     const iconIdx = typeof r.iconIdx === "number" ? r.iconIdx % WIN_ICONS.length : 0;
-    const win = { id: `routine-${Date.now()}`, text: r.name, iconIdx };
+    const winId = `routine-${Date.now()}`;
+    const win = { id: winId, text: r.name, iconIdx };
+    const prevDoneIds = new Set(doneToday); // snapshot before change
     try {
       const wins = JSON.parse(localStorage.getItem("adhd-wins") ?? "[]");
       wins.unshift({ ...win, createdAt: new Date().toISOString() });
@@ -573,7 +586,17 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
     } catch {}
     saveDoneToday(new Set([...doneToday, r.id]));
     onLogWin?.(win.text, win.iconIdx);
-    toast.success(`✓ ${r.name} logged as win!`);
+    toast.success(
+      <span style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "'DM Sans', sans-serif" }}>
+        <span>✓ {r.name} logged as win!</span>
+        <button
+          onClick={() => { undoMarkDone(r.id, winId, prevDoneIds); toast.dismiss(); }}
+          style={{ marginLeft: 4, padding: "2px 8px", fontSize: 11, fontFamily: "'Space Mono', monospace", background: "white", border: "1px solid oklch(0.78 0.10 285)", borderRadius: 4, color: "oklch(0.45 0.12 285)", cursor: "pointer", letterSpacing: "0.03em" }}
+        >
+          Undo
+        </button>
+      </span>
+    );
   };
 
   return (
@@ -600,15 +623,10 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
                       onClick={() => markDone(r)}
                       disabled={done}
                       title={done ? "Done today!" : "Mark done"}
-                      style={{ width: 28, height: 28, borderRadius: "50%", border: `2px solid ${done ? "oklch(0.55 0.14 285)" : "oklch(0.72 0.10 285)"}`, background: done ? "oklch(0.55 0.14 285)" : "transparent", cursor: done ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.2s" }}
-                      onMouseEnter={e => { if (!done) { (e.currentTarget as HTMLButtonElement).style.background = "oklch(0.62 0.14 285)"; } }}
+                      style={{ width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${done ? "oklch(0.55 0.14 285)" : "oklch(0.72 0.10 285)"}`, background: done ? "oklch(0.55 0.14 285)" : "transparent", cursor: done ? "default" : "pointer", flexShrink: 0, transition: "all 0.15s", padding: 0 }}
+                      onMouseEnter={e => { if (!done) { (e.currentTarget as HTMLButtonElement).style.background = "oklch(0.80 0.10 285)"; } }}
                       onMouseLeave={e => { if (!done) { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; } }}
-                    >
-                      {done
-                        ? <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                        : <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="oklch(0.62 0.14 285)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.3"/></svg>
-                      }
-                    </button>
+                    />
                   </div>
                   {isPickerOpen && (
                     <div style={{ position: "absolute", top: "100%", left: 0, zIndex: 200, background: "white", border: "1px solid oklch(0.86 0.030 300)", borderRadius: 8, padding: 6, display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", marginTop: 2, width: 148 }}>
