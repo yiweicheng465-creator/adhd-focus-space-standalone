@@ -53,14 +53,15 @@ function getCtx(): AudioContext | null {
 
 /** Soft sine-wave chime — used when a phase completes */
 function playChime(ctx: AudioContext, volume = 0.5) {
+  // Single soft ding — C5
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   osc.connect(gain);
   gain.connect(ctx.destination);
   osc.type = "sine";
-  osc.frequency.setValueAtTime(880, ctx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.6);
-  gain.gain.setValueAtTime(volume * 0.4, ctx.currentTime);
+  osc.frequency.setValueAtTime(523, ctx.currentTime);
+  gain.gain.setValueAtTime(0, ctx.currentTime);
+  gain.gain.linearRampToValueAtTime(volume * 0.18, ctx.currentTime + 0.02);
   gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
   osc.start(ctx.currentTime);
   osc.stop(ctx.currentTime + 1.2);
@@ -105,21 +106,18 @@ function playTick(ctx: AudioContext, volume = 0.5) {
 
 /** Block complete fanfare — soft 3-bell chime sequence */
 function playFanfare(ctx: AudioContext, volume = 0.5) {
-  // Three gentle bell tones: C5 → E5 → G5, soft and airy
-  const notes = [523, 659, 784];
-  notes.forEach((freq, i) => {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.22);
-    gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.22);
-    gain.gain.linearRampToValueAtTime(volume * 0.18, ctx.currentTime + i * 0.22 + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.22 + 0.9);
-    osc.start(ctx.currentTime + i * 0.22);
-    osc.stop(ctx.currentTime + i * 0.22 + 0.9);
-  });
+  // Single soft ding — C5
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(523, ctx.currentTime);
+  gain.gain.setValueAtTime(0, ctx.currentTime);
+  gain.gain.linearRampToValueAtTime(volume * 0.18, ctx.currentTime + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
+  osc.start(ctx.currentTime);
+  osc.stop(ctx.currentTime + 1.2);
 }
 
 // ── Context shape ─────────────────────────────────────────────────────────────
