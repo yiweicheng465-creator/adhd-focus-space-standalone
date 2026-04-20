@@ -309,7 +309,6 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle, doneFilter = 
               cursor: "w-resize", transition: "all 0.15s",
             }}
           >
-            <ChevronLeft size={20} style={{ color: M.coral, opacity: hoverZone === "left" ? 1 : 0.3, transition: "opacity 0.15s" }} />
           </div>
           <div
             onDragEnter={() => startAdvance(1)}
@@ -326,7 +325,6 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle, doneFilter = 
               cursor: "e-resize", transition: "all 0.15s",
             }}
           >
-            <ChevronRight size={20} style={{ color: M.coral, opacity: hoverZone === "right" ? 1 : 0.3, transition: "opacity 0.15s" }} />
           </div>
           {days.map(d => <DayColumn key={toYMD(d)} day={d} />)}
         </div>
