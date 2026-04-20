@@ -38,20 +38,20 @@ const BTN_STYLE = (active: boolean, idx: number = 0, hovered = false): React.CSS
   const c = BTN_COLORS[idx] ?? BTN_COLORS[0];
   return {
     display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-    // width:auto lets the button genuinely grow leftward on hover.
-    // The container uses alignItems:flex-end so the right edge stays flush against the screen.
-    // paddingLeft expands on hover → button widens to the left, no gap, no text-only shift.
-    width: hovered ? "auto" : 28,
-    minWidth: 28,
+    // Idle: 19px wide (2/3 of 28px), content clipped so text doesn't spill out.
+    // Hover: paddingLeft expands → button genuinely widens leftward; overflow visible so text shows.
+    // Container uses alignItems:flex-end so right edge stays flush against screen edge.
+    width: hovered ? "auto" : 19,
+    minWidth: 19,
     paddingTop: 12, paddingBottom: 12,
-    paddingLeft: hovered ? 14 : 6,
-    paddingRight: 6,
+    paddingLeft: hovered ? 14 : 4,
+    paddingRight: 4,
     background: active ? c.active : c.idle,
     color: active ? "white" : c.text,
     border: "none", borderRadius: "8px 0 0 8px",
     cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: "0.40rem",
     letterSpacing: "0.10em", boxShadow: `-2px 0 10px ${c.active}33`,
-    overflow: "visible",
+    overflow: hovered ? "visible" : "hidden",
     transition: "padding-left 0.18s ease, background 0.15s, color 0.15s",
   };
 };
