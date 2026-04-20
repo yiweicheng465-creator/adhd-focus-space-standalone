@@ -921,9 +921,6 @@ export function FocusTimer({ onSessionComplete, onBlockComplete, onQuit, fillHei
           {deaths > 0 && (
             <button onClick={resetDeaths} title="Reset death count" style={{ fontSize: 8, background: "none", border: "none", cursor: "pointer", color: BORDER, padding: "0 1px", lineHeight: 1 }}>×</button>
           )}
-          {sessions > 0 && (
-            <span style={{ fontSize: 7, letterSpacing: "0.10em", color: BORDER, marginLeft: 2 }}>{sessions}×</span>
-          )}
           <button
             onClick={() => { setShowSound(s => !s); setShowSettings(false); }}
             title="Sound & music"
