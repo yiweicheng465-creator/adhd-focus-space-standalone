@@ -10,6 +10,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import {
   exportAppData,
   importAppData,
+  mergeAppData,
   downloadBackupFile,
   readBackupFile,
   getBackupSummary,
@@ -198,6 +199,8 @@ export default function StorageBackup() {
   // Fetch Google Client ID from server on mount
   useEffect(() => { fetch("/api/config").then(r=>r.json()).then(d=>{ if(d.googleClientId) setGdClientId(d.googleClientId); }).catch(()=>{}); }, []);
   // Auto-backup to Google Drive every 1 hour if token exists
+  // Uses read-merge-write: fetches the Drive file first, merges with local data,
+  // then uploads the merged result — so two browsers never overwrite each other.
   useEffect(() => {
     const run = async () => {
       const AUTO_BACKUP_KEY = "adhd-gdrive-auto-backup-ts";
@@ -208,12 +211,20 @@ export default function StorageBackup() {
       const token = await getServerDriveToken().catch(() => null);
       if (!token) return;
       try {
-        const backup = exportAppData();
-        await uploadToDrive(token, backup);
+        const localBackup = exportAppData();
+        // Read existing Drive file and merge before uploading
+        let toUpload = localBackup;
+        try {
+          const remoteBackup = await downloadFromDrive(token);
+          toUpload = mergeAppData(localBackup, remoteBackup);
+          // Also apply merged data back to local storage so both sides stay in sync
+          importAppData(toUpload);
+        } catch { /* no remote file yet — first backup, just upload local */ }
+        await uploadToDrive(token, toUpload);
         const now = Date.now();
         localStorage.setItem(AUTO_BACKUP_KEY, String(now));
         localStorage.setItem("adhd-last-backup", String(now));
-        localStorage.setItem("adhd-last-backup-info", `Auto-backed up ${new Date(now).toLocaleString()} · ${Object.keys(backup.appData).length} data categories`);
+        localStorage.setItem("adhd-last-backup-info", `Auto-backed up ${new Date(now).toLocaleString()} · ${Object.keys(toUpload.appData).length} data categories`);
       } catch { /* silent fail */ }
     };
     run();
@@ -313,7 +324,9 @@ export default function StorageBackup() {
     }
   };
 
-  /* ── Google Drive restore ── */
+  /* ── Google Drive restore (merge-restore) ── */
+  // Instead of overwriting local data with the Drive file, we merge both sides
+  // so that two browsers sharing the same Drive account never lose each other's work.
   const handleDriveRestore = async () => {
     if (!gdClientId.trim()) {
       setShowClientIdInput(true);
@@ -324,15 +337,20 @@ export default function StorageBackup() {
     setGdMessage("Connecting to Google…");
     try {
       const token = await getGoogleAccessToken(gdClientId.trim());
-      setGdMessage("Downloading backup from Drive…");
-      const backup = await downloadFromDrive(token);
-      importAppData(backup);
-      const info = getBackupSummary(backup);
+      setGdMessage("Downloading & merging backup from Drive…");
+      const remoteBackup = await downloadFromDrive(token);
+      const localBackup = exportAppData();
+      const merged = mergeAppData(localBackup, remoteBackup);
+      importAppData(merged);
+      // Upload the merged result back to Drive so both browsers converge
+      await uploadToDrive(token, merged);
+      const info = getBackupSummary(merged);
       localStorage.setItem("adhd-last-backup-info", info);
       setLastBackupInfo(info);
+      recordBackupTime();
       setGdStatus("success");
-      setGdMessage(`Restored · ${info}`);
-            setTimeout(() => window.location.reload(), 1500);
+      setGdMessage(`Merged & restored · ${info}`);
+      setTimeout(() => window.location.reload(), 1500);
     } catch (e) {
       const msg = (e as Error).message;
       if (msg === "CANCELLED") {

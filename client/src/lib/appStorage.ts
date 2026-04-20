@@ -117,6 +117,70 @@ export function exportAppData(): AppBackup {
 }
 
 /**
+ * Merge two backups together.
+ *
+ * Strategy per key type:
+ *  - Arrays (tasks, goals, routines, chat history, etc.):
+ *      Concatenate both sides, deduplicate by `id` field (keep the one with
+ *      the later `updatedAt`/`createdAt`, or just keep both if no id).
+ *  - Numbers (counters like cyber-pet-deaths, total-sessions, api-calls):
+ *      Take the MAXIMUM of the two values (never lose progress).
+ *  - Strings / booleans / objects:
+ *      Take the value from whichever backup has the later `exportedAt`.
+ *
+ * The result is a new AppBackup with exportedAt = now.
+ */
+export function mergeAppData(local: AppBackup, remote: AppBackup): AppBackup {
+  const localNewer = new Date(local.exportedAt) >= new Date(remote.exportedAt);
+  const newerFirst = localNewer ? local : remote;
+  const olderSecond = localNewer ? remote : local;
+
+  const merged: Record<string, unknown> = {};
+
+  // Collect all keys from both backups
+  const allKeys = new Set([
+    ...Object.keys(newerFirst.appData),
+    ...Object.keys(olderSecond.appData),
+  ]);
+
+  for (const key of allKeys) {
+    const a = newerFirst.appData[key];   // value from newer backup
+    const b = olderSecond.appData[key];  // value from older backup
+
+    if (b === undefined) { merged[key] = a; continue; }
+    if (a === undefined) { merged[key] = b; continue; }
+
+    // Both sides have a value — apply merge strategy
+    if (Array.isArray(a) && Array.isArray(b)) {
+      // Merge arrays: deduplicate by `id`, prefer newer item when ids match
+      const byId = new Map<string, unknown>();
+      // Insert older items first, then newer items overwrite
+      for (const item of [...(b as any[]), ...(a as any[])]) {
+        if (item && typeof item === "object" && "id" in (item as object)) {
+          byId.set((item as any).id, item);
+        } else {
+          // No id — just keep it (use JSON as dedup key)
+          byId.set(JSON.stringify(item), item);
+        }
+      }
+      merged[key] = Array.from(byId.values());
+    } else if (typeof a === "number" && typeof b === "number") {
+      // Counters: take the maximum so progress is never lost
+      merged[key] = Math.max(a, b);
+    } else {
+      // Scalar / object: take value from the newer backup
+      merged[key] = a;
+    }
+  }
+
+  return {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    appData: merged,
+  };
+}
+
+/**
  * Import app data from a backup object into localStorage.
  * Overwrites existing values for all keys present in the backup.
  */
