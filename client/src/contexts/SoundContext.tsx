@@ -184,6 +184,9 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
 
   // Timer phase: "running" | "paused" | "other"
   const timerPhaseRef = useRef<"running" | "paused" | "other">("other");
+  // Whether the timer has been started at least once this session (not persisted)
+  // Music should NOT auto-play on page load — only when the timer is running.
+  const timerStartedThisSessionRef = useRef(false);
 
   const ctxRef = useRef<AudioContext | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -275,8 +278,9 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
   // React to musicEnabled changes
   useEffect(() => {
     if (musicEnabled) {
-      // Only play if timer is not paused
-      if (timerPhaseRef.current !== "paused") {
+      // Only play if the timer has been started this session AND is currently running
+      // This prevents music from auto-playing on page refresh
+      if (timerStartedThisSessionRef.current && timerPhaseRef.current === "running") {
         playAudio();
       }
     } else {
@@ -350,18 +354,23 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
     const prev = timerPhaseRef.current;
     timerPhaseRef.current = phase;
 
+    // Mark that the timer has been started at least once this session
+    if (phase === "running") {
+      timerStartedThisSessionRef.current = true;
+    }
+
     if (!musicEnabled) return;
 
-    if (phase === "paused" && prev === "running") {
-      // Timer just paused — pause music and remember we did it
-      timerPausedRef.current = true;
-      pauseAudio();
-    } else if (phase === "running" && prev === "paused") {
-      // Timer just resumed — resume music if we paused it
-      if (timerPausedRef.current) {
+    if (phase === "running" && prev !== "running") {
+      // Timer just started or resumed — play music
+      if (!timerPausedRef.current || prev === "paused") {
         timerPausedRef.current = false;
         playAudio();
       }
+    } else if (phase === "paused" && prev === "running") {
+      // Timer just paused — pause music and remember we did it
+      timerPausedRef.current = true;
+      pauseAudio();
     }
     // "other" = idle, complete, block_complete, transition, quit
     // We do NOT pause music for these — let it keep playing
