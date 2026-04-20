@@ -31,7 +31,7 @@ const BTN_COLORS = [
   { active: "oklch(0.82 0.06 355)", idle: "oklch(0.93 0.025 355)", text: "oklch(0.50 0.08 355)" }, // AI: dusty rose
   { active: "oklch(0.80 0.06 315)", idle: "oklch(0.92 0.022 315)", text: "oklch(0.48 0.07 315)" }, // Coach: dusty mauve
   { active: "oklch(0.78 0.06 275)", idle: "oklch(0.91 0.020 275)", text: "oklch(0.46 0.07 275)" }, // Timer: dusty lavender
-  { active: "oklch(0.76 0.05 245)", idle: "oklch(0.90 0.018 245)", text: "oklch(0.44 0.06 245)" }, // Routine: dusty periwinkle
+  { active: "oklch(0.84 0.04 220)", idle: "oklch(0.93 0.018 220)", text: "oklch(0.46 0.06 220)" }, // Routine: timer sky-blue
 ];
 
 const BTN_STYLE = (active: boolean, idx: number = 0, hovered = false): React.CSSProperties => {
