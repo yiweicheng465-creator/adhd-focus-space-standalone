@@ -584,7 +584,7 @@ export default function StorageBackup() {
             <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0", flexWrap: "wrap" }}>
               <CheckCircle2 size={11} style={{ color: M.coral, flexShrink: 0 }} />
               <p style={{ fontSize: 10, color: M.coral, fontFamily: "'DM Sans', sans-serif", margin: 0 }}>
-                <strong>Google Drive connected</strong> — auto-backup every hour.
+                <strong>Google Drive connected</strong> — auto-backup 30s after changes.
               </p>
               <button
                 onClick={async () => {
