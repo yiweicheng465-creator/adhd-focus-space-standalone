@@ -661,7 +661,7 @@ export default function Home() {
                     { label: "tasks left today", value: tasks.filter((t) => !t.done && (!t.dueDate || t.dueDate === todayKey2)).length, section: "tasks" as Section },
                     { label: "wins",  value: wins.filter((w) => new Date(w.createdAt).toDateString() === today).length, section: "wins" as Section },
                     { label: "agents live", value: agents.filter((a) => a.status === "running").length, section: "agents" as Section },
-                    ...(routineLabel ? [{ label: "routine", value: routineDone === routineTotal && routineTotal > 0 ? "✓" : `${routineDone}/${routineTotal}`, section: "dashboard" as Section }] : []),
+                    ...(routineLabel ? [{ label: "routine", value: `${routineDone}/${routineTotal}`, section: "dashboard" as Section }] : []),
                   ];
                   return stats;
                 })().map(({ label, value, section }, i, arr) => {
