@@ -84,13 +84,13 @@ const WIN_CATS = [
   { idx: 7, label: "Nutrition", color: "oklch(0.52 0.10 130)", emoji: "🍎" },
 ];
 
-/* ── Korean aesthetic blob mood faces (matching Home.tsx) ── */
+/* ── Mood faces ── */
 const MOODS = [
-  { value: 1, label: "Drained", labelKr: "피곤해", fill: "#B8CEE8", stroke: "#3A5878", shadow: "rgba(184,206,232,0.35)" },
-  { value: 2, label: "Low",     labelKr: "별로야", fill: "#C4BAE4", stroke: "#4A3A80", shadow: "rgba(196,186,228,0.35)" },
-  { value: 3, label: "Okay",    labelKr: "괜찮아", fill: "#D4C8E8", stroke: "#5A4878", shadow: "rgba(212,200,232,0.35)" },
-  { value: 4, label: "Good",    labelKr: "좋아!",  fill: "#DEC8E8", stroke: "#6A4880", shadow: "rgba(222,200,232,0.35)" },
-  { value: 5, label: "Glowing", labelKr: "최고!",  fill: "#E8C8E4", stroke: "#784870", shadow: "rgba(232,200,228,0.35)" },
+  { value: 1, label: "Drained", fill: "#B8CEE8", stroke: "#3A5878", shadow: "rgba(184,206,232,0.35)" },
+  { value: 2, label: "Low",     fill: "#C4BAE4", stroke: "#4A3A80", shadow: "rgba(196,186,228,0.35)" },
+  { value: 3, label: "Okay",    fill: "#D4C8E8", stroke: "#5A4878", shadow: "rgba(212,200,232,0.35)" },
+  { value: 4, label: "Good",    fill: "#DEC8E8", stroke: "#6A4880", shadow: "rgba(222,200,232,0.35)" },
+  { value: 5, label: "Glowing", fill: "#E8C8E4", stroke: "#784870", shadow: "rgba(232,200,228,0.35)" },
 ];
 function FaceDrained({ active }: { active: boolean }) {
   const bg = active ? "#B8CEE8" : "#CCE0F0";
@@ -523,11 +523,6 @@ Be direct, warm, specific. No bullet points. Occasionally (not every day) weave 
                         style={{ color: isSelected ? M.ink : M.muted, fontFamily: "'DM Sans', sans-serif" }}
                       >
                         {m.label}
-                      </span>
-                      <span
-                        style={{ fontSize: "0.58rem", color: isSelected ? M.accent : M.muted, fontFamily: "'Space Mono', monospace", letterSpacing: "0.02em", opacity: isSelected ? 1 : 0.65 }}
-                      >
-                        {m.labelKr}
                       </span>
                     </button>
                   );
