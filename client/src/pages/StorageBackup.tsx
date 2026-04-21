@@ -235,33 +235,45 @@ export default function StorageBackup() {
   const [gdClientId, setGdClientId] = useState("");
   // Fetch Google Client ID from server on mount
   useEffect(() => { fetch("/api/config").then(r=>r.json()).then(d=>{ if(d.googleClientId) setGdClientId(d.googleClientId); }).catch(()=>{}); }, []);
-  // Auto-backup to Google Drive every 1 hour if token exists.
-  // Uses a browser-side setInterval so it runs as long as the tab is open,
-  // completely independent of the Manus sandbox scheduler.
-  // Uses read-merge-write: fetches the Drive file first, merges with local data,
-  // then uploads the merged result — so two browsers never overwrite each other.
+  // ── Debounced auto-backup ──────────────────────────────────────────────────
+  // Strategy (like Notion / Google Docs):
+  //   • Listen for any app-data change via the "adhd-storage-update" event
+  //   • After the LAST change, wait DEBOUNCE_MS (30 s) before uploading
+  //   • If the user keeps editing, the timer resets — no wasted API calls
+  //   • A 1-hour fallback interval ensures a backup even if edits never stop
+  //   • All logic runs in the browser — completely independent of Manus
+  //   • Uses read-merge-write so two devices never overwrite each other
   useEffect(() => {
     if (!gdClientId) return;
 
+    const DEBOUNCE_MS   = 30 * 1000;           // 30 seconds after last change
+    const FALLBACK_MS   = 60 * 60 * 1000;      // 1 hour max gap
     const AUTO_BACKUP_KEY = "adhd-gdrive-auto-backup-ts";
-    const AUTO_INTERVAL = 1 * 60 * 60 * 1000; // 1 hour
+
+    // Only back up keys that are part of the app data set
+    const BACKUP_KEY_SET = new Set([
+      "adhd-tasks", "adhd-goals", "adhd-wins", "adhd-agents", "adhd-mood",
+      "adhd-daily-logs", "adhd-care-log", "adhd-focus-session-list",
+      "adhd_braindump_entries", "adhd-routines", "adhd-routine-done",
+      "adhd-quadrant-map", "adhd-goal-task-order", "adhd-deleted-categories",
+    ]);
+
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    let isBacking = false;
 
     const runAutoBackup = async () => {
-      if (!getPersistedToken()) return;
-      const last = Number(localStorage.getItem(AUTO_BACKUP_KEY) ?? 0);
-      if (Date.now() - last < AUTO_INTERVAL) return;
-      const token = await getServerDriveToken().catch(() => null);
-      if (!token) return;
+      if (isBacking || !getPersistedToken()) return;
+      isBacking = true;
       try {
+        const token = await getServerDriveToken().catch(() => null);
+        if (!token) return;
         const localBackup = exportAppData();
-        // Read existing Drive file and merge before uploading
         let toUpload = localBackup;
         try {
           const remoteBackup = await downloadFromDrive(token);
           toUpload = mergeAppData(localBackup, remoteBackup);
-          // Also apply merged data back to local storage so both sides stay in sync
           importAppData(toUpload);
-        } catch { /* no remote file yet — first backup, just upload local */ }
+        } catch { /* no remote file yet — first backup */ }
         await uploadToDrive(token, toUpload);
         const now = Date.now();
         localStorage.setItem(AUTO_BACKUP_KEY, String(now));
@@ -270,16 +282,36 @@ export default function StorageBackup() {
         localStorage.setItem("adhd-last-backup-info", info);
         setLastBackupTs(now);
         setLastBackupInfo(info);
-      } catch { /* silent fail */ }
+      } catch { /* silent fail */ } finally {
+        isBacking = false;
+      }
     };
 
-    // Run immediately on mount (in case an hour has already passed)
-    runAutoBackup();
+    // Debounced handler: reset 30-second timer on every relevant change
+    const onStorageChange = (e: Event) => {
+      const key = (e as CustomEvent<string>).detail;
+      if (!BACKUP_KEY_SET.has(key)) return; // ignore UI-only keys
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(runAutoBackup, DEBOUNCE_MS);
+    };
 
-    // Then repeat every hour while the tab is open — independent of Manus scheduler
-    const intervalId = setInterval(runAutoBackup, AUTO_INTERVAL);
+    window.addEventListener("adhd-storage-update", onStorageChange);
 
-    return () => clearInterval(intervalId);
+    // 1-hour fallback: run even if the user never stops editing
+    const fallbackId = setInterval(() => {
+      const last = Number(localStorage.getItem(AUTO_BACKUP_KEY) ?? 0);
+      if (Date.now() - last >= FALLBACK_MS) runAutoBackup();
+    }, FALLBACK_MS);
+
+    // Run once on mount in case a backup is overdue
+    const last = Number(localStorage.getItem(AUTO_BACKUP_KEY) ?? 0);
+    if (Date.now() - last >= FALLBACK_MS) runAutoBackup();
+
+    return () => {
+      window.removeEventListener("adhd-storage-update", onStorageChange);
+      clearInterval(fallbackId);
+      if (debounceTimer) clearTimeout(debounceTimer);
+    };
   }, [gdClientId]);
 
 

@@ -27,6 +27,8 @@ export function useLocalStorage<T>(
         storedRef.current = valueToStore;
         setStoredValue(valueToStore);
         window.localStorage.setItem(key, JSON.stringify(valueToStore));
+        // Notify debounced backup listener that app data has changed
+        window.dispatchEvent(new CustomEvent("adhd-storage-update", { detail: key }));
       } catch (error) {
         console.error("useLocalStorage error:", error);
       }
