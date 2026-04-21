@@ -670,13 +670,13 @@ export default function Home() {
                   <React.Fragment key={label}>
                     <button
                       onClick={() => setActiveSection(section)}
-                      className="flex items-baseline gap-1.5 transition-all cursor-pointer px-4 py-3"
+                      className="flex items-baseline gap-1 transition-all cursor-pointer px-3 py-2"
                       style={{ background: "transparent", border: "none" }}
                       onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(212,88,152,0.10)"; }}
                       onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
                     >
-                      <span style={{ fontSize: "0.85rem", fontWeight: 700, fontFamily: "'Space Mono', monospace", color: sc.num, letterSpacing: "0.02em" }}>{value}</span>
-                      <span style={{ fontSize: "0.65rem", fontWeight: 400, fontFamily: "'Space Mono', monospace", color: sc.lbl, letterSpacing: "0.10em", textTransform: "uppercase" }}>{label}</span>
+                      <span style={{ fontSize: "0.72rem", fontWeight: 400, fontFamily: "'Space Mono', monospace", color: sc.num, letterSpacing: "0.02em" }}>{value}</span>
+                      <span style={{ fontSize: "0.55rem", fontWeight: 400, fontFamily: "'Space Mono', monospace", color: sc.lbl, letterSpacing: "0.10em", textTransform: "uppercase" }}>{label}</span>
                     </button>
                     {i < arr.length - 1 && (
                       <div style={{ width: 1, height: 20, background: "#E8B8D0" }} />
