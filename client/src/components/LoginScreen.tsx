@@ -114,7 +114,7 @@ export function LoginScreen({ onLogin }: Props) {
               fontSize: "0.85rem", color: "oklch(0.55 0.040 330)",
               margin: 0, lineHeight: 1.5,
             }}>
-              Sign in to get started. Your data stays in your browser.
+              Sign in to get started. Your data stays on your device.
             </p>
           </div>
 
@@ -141,7 +141,7 @@ export function LoginScreen({ onLogin }: Props) {
             fontFamily: "'DM Sans', sans-serif", fontSize: "0.68rem",
             color: "oklch(0.65 0.030 330)", margin: 0, lineHeight: 1.5,
           }}>
-            Your OpenAI key is stored encrypted. Tasks, wins, and goals live in your browser only.
+            Your OpenAI key is stored encrypted. Your data is stored on your device — back up to Google Drive to sync across devices.
           </p>
           <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
             <a
