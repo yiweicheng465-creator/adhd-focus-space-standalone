@@ -23,7 +23,7 @@ interface ChatMessage { role: "user" | "assistant"; content: string; }
 interface Props {
   goals?: Goal[];
   onGoToSection?: (s: string) => void;
-  onLogWin?: (text: string, iconIdx: number) => void;
+  onLogWin?: (text: string, iconIdx: number, winId: string) => void;
   onUndoWin?: (winId: string) => void;
 }
 
@@ -506,7 +506,7 @@ const ROUTINE_KEY = "adhd-routines";
 
 type Routine = { id: string; name: string; days: string[]; iconIdx: number };
 
-function RoutinePopup({ onClose, onLogWin, onUndoWin }: { onClose: () => void; onLogWin?: (text: string, iconIdx: number) => void; onUndoWin?: (winId: string) => void }) {
+function RoutinePopup({ onClose, onLogWin, onUndoWin }: { onClose: () => void; onLogWin?: (text: string, iconIdx: number, winId: string) => void; onUndoWin?: (winId: string) => void }) {
   const [routines, setRoutines] = useState<Routine[]>(() => {
     try { return JSON.parse(localStorage.getItem(ROUTINE_KEY) ?? "[]"); } catch { return []; }
   });
@@ -563,10 +563,17 @@ function RoutinePopup({ onClose, onLogWin, onUndoWin }: { onClose: () => void; o
   };
   const todayRoutines = routines.filter(r => r.days.includes(today));
 
-  const undoMarkDone = (routineId: string, winId: string, prevDoneIds: Set<string>) => {
-    // Remove from done set and notify header to re-read the count
-    saveDoneToday(prevDoneIds);
-    window.dispatchEvent(new CustomEvent("adhd-storage-update", { detail: "adhd-routine-done" }));
+  const undoMarkDone = (routineId: string, winId: string) => {
+    // Re-read current localStorage value and remove this specific routineId
+    // (avoids stale closure issues with prevDoneIds snapshot)
+    try {
+      const saved = JSON.parse(localStorage.getItem("adhd-routine-done") ?? "{}");
+      const currentIds: string[] = saved.date === todayKey ? (saved.ids ?? []) : [];
+      const newIds = new Set<string>(currentIds.filter((id: string) => id !== routineId));
+      saveDoneToday(newIds);
+    } catch {
+      saveDoneToday(new Set<string>());
+    }
     // Remove the win entry from localStorage
     try {
       const wins = JSON.parse(localStorage.getItem("adhd-wins") ?? "[]");
@@ -582,18 +589,17 @@ function RoutinePopup({ onClose, onLogWin, onUndoWin }: { onClose: () => void; o
     const iconIdx = typeof r.iconIdx === "number" ? r.iconIdx % WIN_ICONS.length : 0;
     const winId = `routine-${Date.now()}`;
     const win = { id: winId, text: r.name, iconIdx };
-    const prevDoneIds = new Set(doneToday); // snapshot before change
     try {
       const wins = JSON.parse(localStorage.getItem("adhd-wins") ?? "[]");
       wins.unshift({ ...win, createdAt: new Date().toISOString() });
       localStorage.setItem("adhd-wins", JSON.stringify(wins));
     } catch {}
     saveDoneToday(new Set([...doneToday, r.id]));
-    onLogWin?.(win.text, win.iconIdx);
+    onLogWin?.(win.text, win.iconIdx, winId);
     toast.success(`✓ ${r.name} logged as win!`, {
       action: {
         label: "UNDO",
-        onClick: () => { undoMarkDone(r.id, winId, prevDoneIds); },
+        onClick: () => { undoMarkDone(r.id, winId); },
       },
     });
   };

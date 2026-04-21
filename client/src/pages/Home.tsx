@@ -1026,7 +1026,7 @@ export default function Home() {
       </main>
 
       {/* ── Global overlays ── */}
-      <GlobalRightPanel goals={goals} onLogWin={(text, iconIdx) => setWins((prev: any) => [{ id: `routine-${Date.now()}`, text, iconIdx, createdAt: new Date() }, ...prev])} onUndoWin={(winId) => setWins((prev: any) => prev.filter((w: any) => w.id !== winId))} />
+      <GlobalRightPanel goals={goals} onLogWin={(text, iconIdx, winId) => setWins((prev: any) => [{ id: winId, text, iconIdx, createdAt: new Date() }, ...prev])} onUndoWin={(winId) => setWins((prev: any) => prev.filter((w: any) => w.id !== winId))} />
       <GlobalQuickAdd
         onAddTask={(t) => setTasks((p) => [t, ...p])}
         onAddGoal={(text, context) => {
