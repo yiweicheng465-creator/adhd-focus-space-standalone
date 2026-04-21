@@ -107,7 +107,7 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
   const [newTaskPriority, setNewTaskPriority] = useState<TaskPriority>("focus");
   const [newTaskContext,  setNewTaskContext]  = useState<ItemContext>("work");
   const [newTaskGoalId,   setNewTaskGoalId]   = useState<string | null>(null);
-  const [newTaskDueDate,  setNewTaskDueDate]  = useState<string>("");
+  const [newTaskDueDate,  setNewTaskDueDate]  = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [completingId,    setCompletingId]    = useState<string | null>(null);
   const [activeContext,   setActiveContext]   = useState<ActiveContext>(defaultContext);
   const [filter,          setFilter]          = useState<"all" | "active" | "done">("active");
@@ -151,12 +151,12 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
       priority: newTaskPriority, context,
       done: false, createdAt: new Date(), updatedAt: now,
       ...(newTaskGoalId ? { goalId: newTaskGoalId } : {}),
-        ...(newTaskDueDate ? { dueDate: newTaskDueDate } : {}),
+      dueDate: newTaskDueDate || new Date().toISOString().slice(0, 10),
     };
     onTasksChange([task, ...tasks]);
     setNewTaskText("");
     setNewTaskGoalId(null);
-    setNewTaskDueDate("");
+    setNewTaskDueDate(new Date().toISOString().slice(0, 10));
   };
 
   const toggleTask = (id: string) => {

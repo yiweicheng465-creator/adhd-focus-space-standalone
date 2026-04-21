@@ -53,7 +53,7 @@ export function GlobalQuickAdd({ onAddTask, onAddGoal, onAddWin, onAddDump }: Gl
   const [aiMode, setAiMode] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
   const [goalId, setGoalId] = useState<string | null>(null);
-  const [dueDate, setDueDate] = useState<string>("");
+  const [dueDate, setDueDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [priority, setPriority]   = useState<Priority>("focus");
   const [newChip, setNewChip]     = useState("");
   const inputRef    = useRef<HTMLInputElement>(null);
@@ -147,15 +147,15 @@ Today is ${today} (${todayName}). Available goals: ${goalList || "none"}.`,
           const taskContext = (["work","personal"].includes(parsed.context ?? "") ? parsed.context : "personal") as "work" | "personal";
           let taskDue = parsed.dueDate ?? null;
           if (taskDue === "null" || taskDue === "undefined") taskDue = null;
-          if (taskDue === "today") taskDue = today;
+          if (!taskDue || taskDue === "today") taskDue = today;
           if (taskDue === "tomorrow") { const d = new Date(); d.setDate(d.getDate()+1); taskDue = d.toISOString().slice(0,10); }
           let taskGoalId: string | undefined;
           if (parsed.goalName) {
             const gMatch = goals.find(g => g.text.toLowerCase().includes(parsed.goalName!.toLowerCase()));
             if (gMatch) taskGoalId = gMatch.id;
           }
-          onAddTask({ id: nanoid(), text: cleanText, priority: taskPriority, context: taskContext, done: false, createdAt: new Date(), ...(taskDue ? { dueDate: taskDue } : {}), ...(taskGoalId ? { goalId: taskGoalId } : {}) });
-          toast.success(`✓ Task: ${cleanText} · ${taskPriority}${taskDue ? " · " + taskDue : ""}${taskGoalId ? " → goal" : ""}`);
+          onAddTask({ id: nanoid(), text: cleanText, priority: taskPriority, context: taskContext, done: false, createdAt: new Date(), dueDate: taskDue ?? today, ...(taskGoalId ? { goalId: taskGoalId } : {}) });
+          toast.success(`✓ Task: ${cleanText} · ${taskPriority}${taskGoalId ? " → goal" : ""}`);
         }
         setText(""); setAiMode(false); setOpen(false);
       }
@@ -182,13 +182,13 @@ Today is ${today} (${todayName}). Available goals: ${goalList || "none"}.`,
       context: (effectiveTag === "work" || effectiveTag === "personal" ? effectiveTag : "personal") as "work" | "personal",
       done: false,
       createdAt: new Date(),
-      ...(dueDate ? { dueDate } : {}),
+      dueDate: dueDate || new Date().toISOString().slice(0, 10),
       ...(goalId ? { goalId } : {}),
     });
-    toast.success(`Task added · ${priority}${effectiveTag !== "personal" ? ` · #${effectiveTag}` : ""}${dueDate ? " · " + dueDate : ""}${goalId ? " → goal" : ""}`);
+    toast.success(`Task added · ${priority}${effectiveTag !== "personal" ? ` · #${effectiveTag}` : ""}${goalId ? " → goal" : ""}`);
     setText("");
     setPriority("focus");
-    setDueDate("");
+    setDueDate(new Date().toISOString().slice(0, 10));
     setGoalId(null);
     setOpen(false);
   };
