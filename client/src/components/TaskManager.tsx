@@ -197,18 +197,20 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
   const _n = new Date();
   const todayYMD = `${_n.getFullYear()}-${String(_n.getMonth()+1).padStart(2,'0')}-${String(_n.getDate()).padStart(2,'0')}`;
   const sorted = [...contextFiltered].sort((a, b) => {
+    // Done tasks always go to the bottom
     if (a.done !== b.done) return a.done ? 1 : -1;
-    const aOverdue = !a.done && a.dueDate && a.dueDate < todayYMD;
-    const bOverdue = !b.done && b.dueDate && b.dueDate < todayYMD;
-    const aDueToday = !a.done && a.dueDate === todayYMD;
-    const bDueToday = !b.done && b.dueDate === todayYMD;
-    // Red (overdue) first, then yellow (due today), then priority
-    if (aOverdue && !bOverdue) return -1;
-    if (!aOverdue && bOverdue) return 1;
-    if (aDueToday && !bDueToday && !bOverdue) return -1;
-    if (!aDueToday && bDueToday && !aOverdue) return 1;
+    // 1. Priority first: urgent → focus → normal → someday
     const order: TaskPriority[] = ["urgent", "focus", "normal", "someday"];
-    return order.indexOf(a.priority) - order.indexOf(b.priority);
+    const pDiff = order.indexOf(a.priority) - order.indexOf(b.priority);
+    if (pDiff !== 0) return pDiff;
+    // 2. Within same priority: due date ascending (overdue first, then today, then future)
+    //    Tasks with no due date go last within their priority group
+    const aDate = a.dueDate || null;
+    const bDate = b.dueDate || null;
+    if (aDate && !bDate) return -1;
+    if (!aDate && bDate) return 1;
+    if (!aDate && !bDate) return 0;
+    return aDate < bDate ? -1 : aDate > bDate ? 1 : 0;
   });
   const filtered = sorted.filter((t) => {
     if (filter === "active") return !t.done;

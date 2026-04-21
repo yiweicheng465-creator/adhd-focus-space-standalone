@@ -617,15 +617,17 @@ ${routineContext}`;
             const n = new Date();
             const todayYMD = `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
             const sortFn = (a: typeof activeTasks[0], b: typeof activeTasks[0]) => {
-              const aOvr = a.dueDate && a.dueDate < todayYMD;
-              const bOvr = b.dueDate && b.dueDate < todayYMD;
-              const aTdy = a.dueDate === todayYMD;
-              const bTdy = b.dueDate === todayYMD;
-              if (aOvr && !bOvr) return -1;
-              if (!aOvr && bOvr) return 1;
-              if (aTdy && !bTdy && !bOvr) return -1;
-              if (!aTdy && bTdy && !aOvr) return 1;
-              return (PRIORITY_ORDER[a.priority] ?? 2) - (PRIORITY_ORDER[b.priority] ?? 2);
+              // 1. Priority first: urgent → focus → normal → someday
+              const pDiff = (PRIORITY_ORDER[a.priority] ?? 2) - (PRIORITY_ORDER[b.priority] ?? 2);
+              if (pDiff !== 0) return pDiff;
+              // 2. Within same priority: due date ascending (overdue first, then today, then future)
+              //    Tasks with no due date go last within their priority group
+              const aDate = a.dueDate || null;
+              const bDate = b.dueDate || null;
+              if (aDate && !bDate) return -1;  // a has date, b doesn't → a first
+              if (!aDate && bDate) return 1;   // b has date, a doesn't → b first
+              if (!aDate && !bDate) return 0;  // both no date → equal
+              return aDate < bDate ? -1 : aDate > bDate ? 1 : 0; // ascending date
             };
             // Sort FIRST, then filter/slice
             const sorted = [...activeTasks].sort(sortFn);
