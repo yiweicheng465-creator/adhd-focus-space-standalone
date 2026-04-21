@@ -538,11 +538,16 @@ function RoutinePopup({ onClose, onLogWin, onUndoWin }: { onClose: () => void; o
       const existing = logs[dailyLogsKey] ?? { dateKey: dailyLogsKey, wrapUpDone: false, dumpCount: 0, winsCount: 0, tasksCompleted: 0, mood: null, score: 0 };
       const routinesDone = ids.size;
       const routinesTotal = todayRoutines.length;
+      // Snapshot routine names keyed by id so past day detail can show correct
+      // missed names even after routines are later added/removed/renamed.
+      const routineNamesSnapshot: Record<string, string> = {};
+      todayRoutines.forEach(r => { routineNamesSnapshot[r.id] = r.name; });
       logs[dailyLogsKey] = {
         ...existing,
         routinesDone,
         routinesTotal,
         routinesDoneIds: [...ids],
+        routineNamesSnapshot,
         routinesDoneUpdatedAt: new Date().toISOString(), // timestamp for last-writer-wins merge
         score: Math.min(100, (existing.score ?? 0) - ((existing.routinesDone ?? 0) * 5) + routinesDone * 5),
       };
