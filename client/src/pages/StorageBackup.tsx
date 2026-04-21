@@ -235,14 +235,19 @@ export default function StorageBackup() {
   const [gdClientId, setGdClientId] = useState("");
   // Fetch Google Client ID from server on mount
   useEffect(() => { fetch("/api/config").then(r=>r.json()).then(d=>{ if(d.googleClientId) setGdClientId(d.googleClientId); }).catch(()=>{}); }, []);
-  // Auto-backup to Google Drive every 1 hour if token exists
+  // Auto-backup to Google Drive every 1 hour if token exists.
+  // Uses a browser-side setInterval so it runs as long as the tab is open,
+  // completely independent of the Manus sandbox scheduler.
   // Uses read-merge-write: fetches the Drive file first, merges with local data,
   // then uploads the merged result — so two browsers never overwrite each other.
   useEffect(() => {
-    const run = async () => {
-      const AUTO_BACKUP_KEY = "adhd-gdrive-auto-backup-ts";
-      const AUTO_INTERVAL = 1 * 60 * 60 * 1000; // 1 hour
-      if (!getPersistedToken() || !gdClientId) return;
+    if (!gdClientId) return;
+
+    const AUTO_BACKUP_KEY = "adhd-gdrive-auto-backup-ts";
+    const AUTO_INTERVAL = 1 * 60 * 60 * 1000; // 1 hour
+
+    const runAutoBackup = async () => {
+      if (!getPersistedToken()) return;
       const last = Number(localStorage.getItem(AUTO_BACKUP_KEY) ?? 0);
       if (Date.now() - last < AUTO_INTERVAL) return;
       const token = await getServerDriveToken().catch(() => null);
@@ -261,10 +266,20 @@ export default function StorageBackup() {
         const now = Date.now();
         localStorage.setItem(AUTO_BACKUP_KEY, String(now));
         localStorage.setItem("adhd-last-backup", String(now));
-        localStorage.setItem("adhd-last-backup-info", `Auto-backed up ${new Date(now).toLocaleString()} · ${Object.keys(toUpload.appData).length} data categories`);
+        const info = `Auto-backed up ${new Date(now).toLocaleString()} · ${Object.keys(toUpload.appData).length} data categories`;
+        localStorage.setItem("adhd-last-backup-info", info);
+        setLastBackupTs(now);
+        setLastBackupInfo(info);
       } catch { /* silent fail */ }
     };
-    run();
+
+    // Run immediately on mount (in case an hour has already passed)
+    runAutoBackup();
+
+    // Then repeat every hour while the tab is open — independent of Manus scheduler
+    const intervalId = setInterval(runAutoBackup, AUTO_INTERVAL);
+
+    return () => clearInterval(intervalId);
   }, [gdClientId]);
 
 
