@@ -24,6 +24,7 @@ import { recordWrapUp, recordDumpEntry, recordFocusSession, recordBlockComplete,
 import { DailyCheckIn, useDailyCheckIn, type CheckInResult } from "@/components/DailyCheckIn";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useBlockStreak } from "@/hooks/useBlockStreak";
+import { useAutoBackup } from "@/hooks/useAutoBackup";
 import { useOpenDayStreak } from "@/hooks/useOpenDayStreak";
 import { useTimer } from "@/contexts/TimerContext";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -382,6 +383,8 @@ export default function Home() {
 
   const { streak: blockStreak, history: blockHistory, recordBlock } = useBlockStreak();
   const { streak: openDayStreak } = useOpenDayStreak();
+  // Always-on debounced Google Drive auto-backup (active on every page)
+  useAutoBackup();
   const [timerQuitCount, setTimerQuitCount] = useState(0);
   const [confettiTrigger, setConfettiTrigger] = useState(false);
   const [wrapUpOpen, setWrapUpOpen] = useState(false);
