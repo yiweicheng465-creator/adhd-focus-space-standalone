@@ -152,6 +152,8 @@ export interface SoundContextValue {
   playFanfareSfx: () => void;
   /** Stop music when block completes (without changing musicEnabled state) */
   stopMusicForBlockComplete: () => void;
+  /** Stop music AND disable it (turn off the button) — used when timer completes or is reset */
+  stopMusicAndDisable: () => void;
 }
 
 const SoundContext = createContext<SoundContextValue | null>(null);
@@ -453,6 +455,15 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
       pendingAutoplayRef.current = false;
       pauseAudio();
       timerPausedRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pauseAudio]),
+    stopMusicAndDisable: useCallback(() => {
+      // Stop audio AND turn off musicEnabled — used when timer completes or is reset
+      pendingAutoplayRef.current = false;
+      pauseAudio();
+      timerPausedRef.current = false;
+      setMusicEnabled(false);
+      try { localStorage.setItem("adhd-music-enabled", "false"); } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pauseAudio]),
   };
