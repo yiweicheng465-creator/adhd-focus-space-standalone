@@ -187,9 +187,15 @@ export function mergeAppData(local: AppBackup, remote: AppBackup): AppBackup {
         const dateB = rb.date ?? "";
         merged[key] = dateA >= dateB ? ra : rb;
       }
+       // After picking the winner, if its date is not today, reset to today with empty ids
+      // so a stale backup never bleeds yesterday's completions into today's panel.
+      const todayISO2 = new Date().toISOString().slice(0, 10);
+      const winner = merged[key] as { date?: string; ids?: string[]; updatedAt?: string };
+      if (winner.date && winner.date !== todayISO2) {
+        merged[key] = { date: todayISO2, ids: [], updatedAt: new Date().toISOString() };
+      }
       continue;
     }
-
     // ── adhd-daily-logs: { [dateKey]: DailyLog } ──
     // Deep-merge per-day entries: take the max of numeric fields,
     // keep wrapUpDone=true if either side has it, union routinesDoneIds.
@@ -211,9 +217,17 @@ export function mergeAppData(local: AppBackup, remote: AppBackup): AppBackup {
         const tsB = db.routinesDoneUpdatedAt ? new Date(db.routinesDoneUpdatedAt).getTime() : 0;
         // Pick the side that wrote routine data most recently
         const routineSrc = tsA >= tsB ? da : db;
-        const doneIds: string[] = routineSrc.routinesDoneIds ?? [];
+        // Guard: if this is today's entry and the routine data was written on a
+        // different calendar day, treat routines as not yet done for today.
+        const todayISO3 = new Date().toISOString().slice(0, 10);
+        const isTodayEntry = day === new Date().toDateString();
+        const routineWrittenDate = routineSrc.routinesDoneUpdatedAt
+          ? new Date(routineSrc.routinesDoneUpdatedAt).toISOString().slice(0, 10)
+          : null;
+        const routineIsStale = isTodayEntry && routineWrittenDate && routineWrittenDate !== todayISO3;
+        const doneIds: string[] = routineIsStale ? [] : (routineSrc.routinesDoneIds ?? []);
         const routinesTotal = Math.max(da.routinesTotal ?? 0, db.routinesTotal ?? 0);
-        const routinesDone = routineSrc.routinesDone ?? doneIds.length;
+        const routinesDone = routineIsStale ? 0 : (routineSrc.routinesDone ?? doneIds.length);
         mergedLogs[day] = {
           ...da,
           wrapUpDone: da.wrapUpDone || db.wrapUpDone,
@@ -350,9 +364,41 @@ export function importAppData(backup: AppBackup): void {
   }
   // Migrate old backups forward instead of rejecting them
   const migrated = migrateBackup(backup);
-
+  const todayISO = new Date().toISOString().slice(0, 10);
   for (const [key, value] of Object.entries(migrated.appData)) {
     try {
+      // Guard: never restore a stale adhd-routine-done from a different day.
+      // If the backup's date doesn't match today, write an empty state for today
+      // so the routine panel starts fresh instead of showing yesterday's completions.
+      if (key === "adhd-routine-done") {
+        const rd = typeof value === "string" ? JSON.parse(value) : value;
+        if (rd && typeof rd === "object" && rd.date && rd.date !== todayISO) {
+          localStorage.setItem(key, JSON.stringify({ date: todayISO, ids: [], updatedAt: new Date().toISOString() }));
+          continue;
+        }
+      }
+      // Guard: if restoring adhd-daily-logs, reset today's routinesDone to 0
+      // if the routinesDoneUpdatedAt was written on a different calendar day.
+      if (key === "adhd-daily-logs") {
+        const logs = typeof value === "string" ? JSON.parse(value) : { ...value as object };
+        const todayDateStr = new Date().toDateString(); // e.g. "Tue Apr 21 2026"
+        if (logs && typeof logs === "object" && logs[todayDateStr]) {
+          const entry = logs[todayDateStr];
+          const writtenDate = entry.routinesDoneUpdatedAt
+            ? new Date(entry.routinesDoneUpdatedAt).toISOString().slice(0, 10)
+            : null;
+          if (writtenDate && writtenDate !== todayISO) {
+            logs[todayDateStr] = {
+              ...entry,
+              routinesDone: 0,
+              routinesDoneIds: [],
+              routinesTotal: entry.routinesTotal ?? 0,
+            };
+          }
+        }
+        localStorage.setItem(key, JSON.stringify(logs));
+        continue;
+      }
       localStorage.setItem(key, typeof value === "string" ? value : JSON.stringify(value));
     } catch {
       // ignore write errors for individual keys
