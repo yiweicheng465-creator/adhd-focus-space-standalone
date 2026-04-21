@@ -175,15 +175,14 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
     try { return localStorage.getItem("adhd-music-enabled") === "true"; } catch { return false; }
   });
   // Track if we're waiting for a user gesture to satisfy autoplay policy.
-  // Pre-set to true on init if the timer was running before the refresh AND
-  // music is enabled — so the retry listener can trigger playback on first gesture.
+  // Pre-set to true on init if music was enabled before the refresh — so the
+  // retry listener can trigger playback on first gesture on ANY page, not just
+  // the Focus page. The browser autoplay policy ensures no sound plays until
+  // the user interacts with the page.
   const pendingAutoplayRef = useRef(
     (() => {
       try {
-        return (
-          localStorage.getItem("adhd-timer-was-running") === "true" &&
-          localStorage.getItem("adhd-music-enabled") === "true"
-        );
+        return localStorage.getItem("adhd-music-enabled") === "true";
       } catch { return false; }
     })()
   );
@@ -280,15 +279,11 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Retry autoplay on first user gesture (handles browser autoplay policy).
-  // On page refresh, timerPhaseRef may still be "other" when the first gesture
-  // fires (before FocusTimer's useEffect has called onTimerPhaseChange). So we
-  // also accept timerStartedThisSessionRef as a fallback — it's pre-seeded from
-  // localStorage ("adhd-timer-was-running") if the timer was running before refresh.
+  // pendingAutoplayRef is pre-seeded to true if music was enabled before refresh,
+  // so music resumes on any page after the first user interaction.
   useEffect(() => {
     const retry = () => {
-      const timerIsOrWasRunning =
-        timerPhaseRef.current === "running" || timerStartedThisSessionRef.current;
-      if (pendingAutoplayRef.current && musicEnabled && timerIsOrWasRunning) {
+      if (pendingAutoplayRef.current && musicEnabled) {
         pendingAutoplayRef.current = false;
         playAudio();
       } else {
