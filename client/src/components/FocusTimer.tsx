@@ -645,6 +645,10 @@ export function FocusTimer({ onSessionComplete, onBlockComplete, onQuit, fillHei
       sound.stopMusicForBlockComplete();
       sound.playFanfareSfx();
     }
+    if ((phase === "complete" || phase === "quit") && prev !== phase) {
+      // Timer finished or was reset — stop music and disable the button
+      sound.stopMusicAndDisable();
+    }
     // Notify global sound context so music pauses/resumes with timer
     if (phase === "running") sound.onTimerPhaseChange("running");
     else if (phase === "paused") sound.onTimerPhaseChange("paused");
