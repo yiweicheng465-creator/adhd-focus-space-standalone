@@ -22,9 +22,6 @@ const M = {
   bg:      "oklch(0.965 0.025 355)",
 };
 
-/** Strip < and > from display text (task names may contain angle brackets) */
-const stripAngle = (s: string) => s.replace(/[<>]/g, "");
-
 const PRIORITY_COLOR: Record<string, string> = {
   urgent: "oklch(0.52 0.10 32)",
   focus:  "oklch(0.52 0.14 290)",
@@ -196,7 +193,7 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle, doneFilter = 
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
             flex: 1,
           }}>
-            {stripAngle(task.text)}
+            {task.text}
           </span>
         </div>
         {isOver && dragOverTask?.pos === "after" && (
@@ -418,7 +415,7 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle, doneFilter = 
                       opacity: dragId === t.id ? 0.4 : 1,
                     }}
                   >
-                    {stripAngle(t.text)}
+                    {t.text}
                   </div>
                 ))}
                 {dayTasks.length > 5 && (
@@ -610,7 +607,7 @@ function DayDetailModal({ selectedDay, onClose, getTasksForDay, dayOrder, saveDa
                     style={{ flex: 1, minWidth: 0, fontFamily: "'DM Sans', sans-serif", fontSize: "0.88rem", color: M.ink, lineHeight: 1.5, cursor: "pointer", textDecoration: task.done ? "line-through" : "none", opacity: task.done ? 0.5 : 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
                     title={task.text}
                   >
-                    {stripAngle(task.text)}
+                    {task.text}
                   </span>
                 </div>
 
