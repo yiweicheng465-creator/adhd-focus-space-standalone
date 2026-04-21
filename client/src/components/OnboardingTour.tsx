@@ -217,17 +217,22 @@ export const TOUR_STEPS: TourStep[] = [
     icon: "🤖",
     placement: "right",
   },
-  // ── 14. Quick Add FAB ────────────────────────────────────────────────────────────
+  // ── 14. Quick Add FAB ────────────────────────────────────────────────────────────────────────────────────
   {
     section: "dashboard",
-    targetId: "tour-quick-add",
-    label: "QUICK ADD",
-    title: "Quick Add — Press + Anywhere",
-    description:
-      "The + button in the bottom-right corner (or press the + key) opens a quick-capture modal. Add a task, goal, win, or brain dump entry without navigating away. Perfect for capturing thoughts the moment they appear.",
+    targetId: "tour-quickadd-modal",
+    label: "QUICK CAPTURE",
+    title: "➕ Quick Capture — Three Ways In",
+    description: "The + button (bottom-right, or press +) opens Quick Capture. Three things to know:",
+    descriptionItems: [
+      "📝 Manual — type a task with priority, due date, and goal link",
+      "✨ AI mode — describe anything in plain English and AI creates the right item (task, goal, win, or dump)",
+      "⚙️ Quick chips — tap the settings icon to configure reusable one-tap shortcuts",
+    ],
     icon: "➕",
-    placement: "top",  // button is bottom-right — tooltip goes above it
-  },
+    placement: "top",
+    openAction: "quickadd",
+  } as TourStep & { openAction?: string },
   // ── 15. Daily Check-In card ─────────────────────────────────────────────────────
   {
     section: "dashboard",
@@ -536,6 +541,50 @@ function computeCardPosition(
   // Horizontal safety clamp
   if (left !== undefined && (left < 0 || left + CARD_W > vw)) {
     left = Math.max(12, (vw - CARD_W) / 2);
+  }
+
+  // ── Overlap-avoidance: push card away from the spotlight rect ────────────────────────────
+  // Compute the bounding box of the spotlight (same as Spotlight component uses)
+  const spotPad = 14;
+  let spotLeft = rect.left - spotPad;
+  let spotTop = rect.top - spotPad;
+  let spotRight = rect.right + spotPad;
+  let spotBottom = rect.bottom + spotPad;
+  if (secondaryRect) {
+    spotLeft = Math.min(spotLeft, secondaryRect.left - spotPad);
+    spotTop = Math.min(spotTop, secondaryRect.top - spotPad);
+    spotRight = Math.max(spotRight, secondaryRect.right + spotPad);
+    spotBottom = Math.max(spotBottom, secondaryRect.bottom + spotPad);
+  }
+  if (left !== undefined && top !== undefined) {
+    const cardRight = left + CARD_W;
+    const cardBottom = top + CARD_H_APPROX;
+    const overlapsH = cardRight > spotLeft && left < spotRight;
+    const overlapsV = cardBottom > spotTop && top < spotBottom;
+    if (overlapsH && overlapsV) {
+      // Try placing card to the right of the spotlight
+      const rightCandidate = spotRight + GAP;
+      if (rightCandidate + CARD_W + 12 <= vw) {
+        left = rightCandidate;
+      } else {
+        // Try placing card to the left of the spotlight
+        const leftCandidate = spotLeft - CARD_W - GAP;
+        if (leftCandidate >= 12) {
+          left = leftCandidate;
+        } else {
+          // Try placing card above the spotlight
+          const topCandidate = spotTop - CARD_H_APPROX - GAP;
+          if (topCandidate >= 12) {
+            top = topCandidate;
+            left = Math.max(12, Math.min(left, vw - CARD_W - 12));
+          } else {
+            // Place card below the spotlight
+            top = Math.min(spotBottom + GAP, safeBottom - CARD_H_APPROX);
+            left = Math.max(12, Math.min(left, vw - CARD_W - 12));
+          }
+        }
+      }
+    }
   }
 
   return { position: "fixed", left, top, width: CARD_W, zIndex: 9999 };
@@ -1150,6 +1199,17 @@ export function OnboardingTour({ onClose, onNavigate, onOpenWrapUp, onCloseWrapU
     } else {
       // If we're leaving the wrapup step, close the modal
       onCloseWrapUp?.();
+    }
+
+    // Fire quick-add open for quickadd openAction
+    if (openAction === "quickadd") {
+      window.dispatchEvent(new CustomEvent("tour-open-quickadd"));
+      setSectionReady(false);
+      const t = setTimeout(() => setSectionReady(true), 500);
+      return () => clearTimeout(t);
+    } else if (prevSectionRef.current !== undefined) {
+      // Leaving quickadd step — close the modal
+      window.dispatchEvent(new CustomEvent("tour-close-quickadd"));
     }
 
     // Fire right-panel open/close for panel:* openActions

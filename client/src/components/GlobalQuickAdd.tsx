@@ -74,6 +74,18 @@ export function GlobalQuickAdd({ onAddTask, onAddGoal, onAddWin, onAddDump }: Gl
   // Use custom chips if any, otherwise use defaults
   const chips: string[] = customChips.length > 0 ? customChips : DEFAULT_CHIPS;
 
+  // ── Tour: open/close modal on events ─────────────────────────────────────────
+  useEffect(() => {
+    const openHandler = () => setOpen(true);
+    const closeHandler = () => { setOpen(false); setConfigMode(false); };
+    window.addEventListener("tour-open-quickadd", openHandler);
+    window.addEventListener("tour-close-quickadd", closeHandler);
+    return () => {
+      window.removeEventListener("tour-open-quickadd", openHandler);
+      window.removeEventListener("tour-close-quickadd", closeHandler);
+    };
+  }, []);
+
   // ── Keyboard shortcuts ────────────────────────────────────────────────────
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -235,6 +247,7 @@ Today is ${today} (${todayName}). Available goals: ${goalList || "none"}.`,
           onClick={closeModal}
         >
           <div
+            data-tour-id="tour-quickadd-modal"
             className="w-full max-w-lg overflow-hidden shadow-2xl"
             style={{ background: M.card, border: `1px solid ${M.border}` }}
             onClick={(e) => e.stopPropagation()}
