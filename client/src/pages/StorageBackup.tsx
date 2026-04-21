@@ -534,9 +534,9 @@ export default function StorageBackup() {
         <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 4 }}>
           {/* Auto-backup notice — shown once user has a valid token */}
           {getPersistedToken() && gdClientId && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0", flexWrap: "wrap" }}>
               <CheckCircle2 size={11} style={{ color: M.coral, flexShrink: 0 }} />
-              <p style={{ fontSize: 10, color: M.coral, fontFamily: "'DM Sans', sans-serif", margin: 0, flex: 1 }}>
+              <p style={{ fontSize: 10, color: M.coral, fontFamily: "'DM Sans', sans-serif", margin: 0 }}>
                 <strong>Google Drive connected</strong> — auto-backup every hour.
               </p>
               <button
@@ -547,7 +547,7 @@ export default function StorageBackup() {
                   toast.success("Google Drive disconnected.");
                   window.location.reload();
                 }}
-                style={{ flexShrink: 0, fontSize: 10, fontFamily: "'DM Sans', sans-serif", background: "none", border: "none", padding: 0, color: M.muted, cursor: "pointer", textDecoration: "underline" }}
+                style={{ fontSize: 10, fontFamily: "'DM Sans', sans-serif", background: "none", border: "none", padding: 0, color: M.coral, cursor: "pointer", textDecoration: "underline", opacity: 0.7 }}
               >
                 Disconnect
               </button>
@@ -584,7 +584,7 @@ export default function StorageBackup() {
           </div>
         ))}
         <p style={{ fontSize: 10, color: M.muted, fontFamily: "'DM Sans', sans-serif", marginTop: 6, borderTop: `1px solid ${M.border}`, paddingTop: 8 }}>
-          Not backed up: browser session state, sidebar width, name-skip flag, backup timestamps, today's focus session count (resets daily).
+          Not backed up: today's focus session count (resets daily), backup timestamps.
         </p>
       </Section>
     </div>
@@ -627,14 +627,15 @@ function ActionButton({
       style={{
         display: "flex", alignItems: "center", gap: 6,
         padding: "8px 14px",
-        background: primary ? M.coral : "transparent",
-        border: primary ? `1px solid ${M.coral}` : "none",
-        color: primary ? "white" : M.ink,
+        background: primary ? M.coral : "oklch(0.92 0.04 340)",
+        border: primary ? `1px solid ${M.coral}` : `1px solid oklch(0.82 0.08 340)`,
+        color: primary ? "white" : M.coral,
         fontFamily: "'JetBrains Mono', monospace",
         fontSize: 10, letterSpacing: "0.08em",
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.5 : 1,
-        boxShadow: primary ? `2px 2px 0 oklch(0.40 0.15 340)` : "none",
+        boxShadow: primary ? `2px 2px 0 oklch(0.40 0.15 340)` : `2px 2px 0 oklch(0.78 0.06 340)`,
+        fontWeight: primary ? 700 : 600,
         transition: "opacity 0.15s",
       }}
     >
