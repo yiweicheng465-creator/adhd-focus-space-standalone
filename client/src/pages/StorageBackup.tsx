@@ -620,6 +620,8 @@ function ActionButton({
   primary?: boolean;
   disabled?: boolean;
 }) {
+  // Restore buttons (non-primary): light pink background, medium pink border, pink text
+  const isRestore = !primary;
   return (
     <button
       onClick={onClick}
@@ -627,14 +629,14 @@ function ActionButton({
       style={{
         display: "flex", alignItems: "center", gap: 6,
         padding: "8px 14px",
-        background: primary ? M.coral : "oklch(0.92 0.04 340)",
-        border: primary ? `1px solid ${M.coral}` : `1px solid oklch(0.82 0.08 340)`,
-        color: primary ? "white" : M.coral,
+        background: primary ? M.coral : "oklch(0.95 0.04 355)",
+        border: primary ? `1px solid ${M.coral}` : `1px solid oklch(0.80 0.10 355)`,
+        color: primary ? "white" : "oklch(0.52 0.14 355)",
         fontFamily: "'JetBrains Mono', monospace",
         fontSize: 10, letterSpacing: "0.08em",
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.5 : 1,
-        boxShadow: primary ? `2px 2px 0 oklch(0.40 0.15 340)` : `2px 2px 0 oklch(0.78 0.06 340)`,
+        boxShadow: primary ? `2px 2px 0 oklch(0.40 0.15 340)` : `2px 2px 0 oklch(0.82 0.08 355)`,
         fontWeight: primary ? 700 : 600,
         transition: "opacity 0.15s",
       }}
