@@ -649,7 +649,9 @@ export default function Home() {
                     try { return JSON.parse(localStorage.getItem("adhd-routine-done") ?? "{}"); } catch { return {}; }
                   })();
                   const routineDoneIds: string[] = routineDoneData.date === todayKey2 ? (routineDoneData.ids ?? []) : [];
-                  const routineDone = routineDoneIds.length;
+                  // Only count IDs that belong to today's active routines (exclude stale deleted-routine IDs)
+                  const todayRoutineIds = new Set(todayRoutines.map((r: any) => r.id));
+                  const routineDone = routineDoneIds.filter((id: string) => todayRoutineIds.has(id)).length;
                   const routineTotal = todayRoutines.length;
                   const routineLabel = routineTotal > 0 ? `${routineDone}/${routineTotal} routine` : null;
 

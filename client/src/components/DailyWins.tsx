@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Plus, Archive, Trash2, ArchiveRestore, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { nanoid } from "nanoid";
+import { recordDeletion } from "@/lib/appStorage";
 
 export interface Win {
   id: string;
@@ -475,6 +476,7 @@ export function DailyWins({ wins, onWinsChange }: DailyWinsProps) {
 
   const deleteWin = (winId: string) => {
     const deleted = wins.find(w => w.id === winId);
+    recordDeletion(winId);
     onWinsChange(wins.filter((w) => w.id !== winId));
     if (deleted) toast("Win deleted", {
       duration: 5000,
