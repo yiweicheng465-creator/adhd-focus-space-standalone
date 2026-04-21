@@ -168,8 +168,19 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
   const [musicEnabled, setMusicEnabled] = useState(() => {
     try { return localStorage.getItem("adhd-music-enabled") === "true"; } catch { return false; }
   });
-  // Track if we're waiting for a user gesture to satisfy autoplay policy
-  const pendingAutoplayRef = useRef(false);
+  // Track if we're waiting for a user gesture to satisfy autoplay policy.
+  // Pre-set to true on init if the timer was running before the refresh AND
+  // music is enabled — so the retry listener can trigger playback on first gesture.
+  const pendingAutoplayRef = useRef(
+    (() => {
+      try {
+        return (
+          localStorage.getItem("adhd-timer-was-running") === "true" &&
+          localStorage.getItem("adhd-music-enabled") === "true"
+        );
+      } catch { return false; }
+    })()
+  );
   const [musicVolume, setMusicVolumeState] = useState(() => {
     try { return parseFloat(localStorage.getItem("adhd-music-vol") ?? "0.25"); } catch { return 0.25; }
   });
@@ -184,9 +195,13 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
 
   // Timer phase: "running" | "paused" | "other"
   const timerPhaseRef = useRef<"running" | "paused" | "other">("other");
-  // Whether the timer has been started at least once this session (not persisted)
-  // Music should NOT auto-play on page load — only when the timer is running.
-  const timerStartedThisSessionRef = useRef(false);
+  // Whether the timer has been started at least once this session.
+  // We persist this to localStorage so that after a page refresh, if the timer
+  // was running before the refresh, music can auto-resume when the timer phase
+  // is restored as "running" by FocusTimer.
+  const timerStartedThisSessionRef = useRef(
+    (() => { try { return localStorage.getItem("adhd-timer-was-running") === "true"; } catch { return false; } })()
+  );
 
   const ctxRef = useRef<AudioContext | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -258,11 +273,16 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
     setMusicLoading(false);
   }, []);
 
-  // Retry autoplay on first user gesture (handles browser autoplay policy)
-  // Only retry if the timer is actually running — not after block complete
+  // Retry autoplay on first user gesture (handles browser autoplay policy).
+  // On page refresh, timerPhaseRef may still be "other" when the first gesture
+  // fires (before FocusTimer's useEffect has called onTimerPhaseChange). So we
+  // also accept timerStartedThisSessionRef as a fallback — it's pre-seeded from
+  // localStorage ("adhd-timer-was-running") if the timer was running before refresh.
   useEffect(() => {
     const retry = () => {
-      if (pendingAutoplayRef.current && musicEnabled && timerPhaseRef.current === "running") {
+      const timerIsOrWasRunning =
+        timerPhaseRef.current === "running" || timerStartedThisSessionRef.current;
+      if (pendingAutoplayRef.current && musicEnabled && timerIsOrWasRunning) {
         pendingAutoplayRef.current = false;
         playAudio();
       } else {
@@ -361,6 +381,10 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
     // Mark that the timer has been started at least once this session
     if (phase === "running") {
       timerStartedThisSessionRef.current = true;
+      try { localStorage.setItem("adhd-timer-was-running", "true"); } catch {}
+    } else if (phase === "paused") {
+      // Clear the flag when paused so a refresh while paused doesn't auto-play
+      try { localStorage.setItem("adhd-timer-was-running", "false"); } catch {}
     }
 
     if (!musicEnabled) return;

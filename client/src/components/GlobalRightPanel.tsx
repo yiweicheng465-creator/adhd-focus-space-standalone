@@ -586,17 +586,12 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
     } catch {}
     saveDoneToday(new Set([...doneToday, r.id]));
     onLogWin?.(win.text, win.iconIdx);
-    toast.success(
-      <span style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "'DM Sans', sans-serif" }}>
-        <span>✓ {r.name} logged as win!</span>
-        <button
-          onClick={() => { undoMarkDone(r.id, winId, prevDoneIds); toast.dismiss(); }}
-          style={{ marginLeft: 4, padding: "2px 8px", fontSize: 11, fontFamily: "'Space Mono', monospace", background: "white", border: "1px solid oklch(0.78 0.10 285)", borderRadius: 4, color: "oklch(0.45 0.12 285)", cursor: "pointer", letterSpacing: "0.03em" }}
-        >
-          Undo
-        </button>
-      </span>
-    );
+    toast.success(`✓ ${r.name} logged as win!`, {
+      action: {
+        label: "UNDO",
+        onClick: () => { undoMarkDone(r.id, winId, prevDoneIds); },
+      },
+    });
   };
 
   return (
