@@ -199,18 +199,22 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
   const sorted = [...contextFiltered].sort((a, b) => {
     // Done tasks always go to the bottom
     if (a.done !== b.done) return a.done ? 1 : -1;
-    // 1. Priority first: urgent → focus → normal → someday
     const order: TaskPriority[] = ["urgent", "focus", "normal", "someday"];
-    const pDiff = order.indexOf(a.priority) - order.indexOf(b.priority);
-    if (pDiff !== 0) return pDiff;
-    // 2. Within same priority: due date ascending (overdue first, then today, then future)
-    //    Tasks with no due date go last within their priority group
     const aDate = a.dueDate || null;
     const bDate = b.dueDate || null;
-    if (aDate && !bDate) return -1;
-    if (!aDate && bDate) return 1;
-    if (!aDate && !bDate) return 0;
-    return aDate < bDate ? -1 : aDate > bDate ? 1 : 0;
+    const aOverdue = aDate && aDate < todayYMD;
+    const bOverdue = bDate && bDate < todayYMD;
+    const aToday   = aDate === todayYMD;
+    const bToday   = bDate === todayYMD;
+    // Bucket: overdue=0, today=1, future=2, no-date=3
+    const bucket = (d: string | null, ovr: boolean | string, tdy: boolean) =>
+      ovr ? 0 : tdy ? 1 : d ? 2 : 3;
+    const aBucket = bucket(aDate, aOverdue, aToday);
+    const bBucket = bucket(bDate, bOverdue, bToday);
+    if (aBucket !== bBucket) return aBucket - bBucket;
+    // Within same bucket: sort by due date ascending first, then priority
+    if (aDate && bDate && aDate !== bDate) return aDate < bDate ? -1 : 1;
+    return order.indexOf(a.priority) - order.indexOf(b.priority);
   });
   const filtered = sorted.filter((t) => {
     if (filter === "active") return !t.done;
