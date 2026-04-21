@@ -17,6 +17,7 @@ import {
   type ItemContext, type ActiveContext,
 } from "./ContextSwitcher";
 import type { Goal } from "./Goals";
+import { recordDeletion } from "@/lib/appStorage";
 
 export type TaskPriority = "focus" | "urgent" | "normal";
 
@@ -178,6 +179,7 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
 
   const deleteTask = (id: string) => {
     const deleted = tasks.find(t => t.id === id);
+    recordDeletion(id);
     onTasksChange(tasks.filter((t) => t.id !== id));
     if (deleted) toast("Task deleted", {
       duration: 5000,

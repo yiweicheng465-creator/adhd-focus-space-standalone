@@ -15,6 +15,7 @@ import { useSoundContext } from "@/contexts/SoundContext";
 import { Streamdown } from "streamdown";
 import type { Goal } from "./Goals";
 import { WIN_ICONS } from "./DailyWins";
+import { recordDeletion } from "@/lib/appStorage";
 
 const CHAT_KEY = "adhd-ai-chat-history"; // same key as Dashboard
 const MAX = 10;
@@ -557,7 +558,7 @@ function RoutinePopup({ onClose, onLogWin, onUndoWin }: { onClose: () => void; o
     saveRoutines([...routines, { id: `r-${Date.now()}`, name: newName.trim(), days: newDays, iconIdx: newIconIdx }]);
     setNewName(""); setNewIconIdx(0); setAdding(false);
   };
-  const deleteRoutine = (id: string) => saveRoutines(routines.filter(r => r.id !== id));
+  const deleteRoutine = (id: string) => { recordDeletion(id); saveRoutines(routines.filter(r => r.id !== id)); };
   const changeIcon = (id: string, idx: number) => {
     saveRoutines(routines.map(r => r.id === id ? { ...r, iconIdx: idx } : r));
     setPickerOpenId(null);
@@ -578,6 +579,7 @@ function RoutinePopup({ onClose, onLogWin, onUndoWin }: { onClose: () => void; o
     // Remove the win entry from localStorage
     try {
       const wins = JSON.parse(localStorage.getItem("adhd-wins") ?? "[]");
+      recordDeletion(winId);
       localStorage.setItem("adhd-wins", JSON.stringify(wins.filter((w: any) => w.id !== winId)));
       window.dispatchEvent(new CustomEvent("adhd-storage-update", { detail: "adhd-wins" }));
     } catch {}

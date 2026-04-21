@@ -10,6 +10,7 @@ import { Plus, Sparkles, Trash2, TrendingUp, CheckCircle2, Circle } from "lucide
 import { callAIStream, callAI } from "@/lib/ai";
 import { toast } from "sonner";
 import { nanoid } from "nanoid";
+import { recordDeletion } from "@/lib/appStorage";
 import {
   ContextSwitcher, ContextBadge, ClickableContextBadge, getContextConfig,
   type ItemContext, type ActiveContext,
@@ -133,6 +134,7 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
 
   const deleteGoal = (id: string) => {
     const deleted = goals.find(g => g.id === id);
+    recordDeletion(id);
     onGoalsChange(goals.filter((g) => g.id !== id));
     if (deleted) toast("Goal deleted", {
       duration: 5000,

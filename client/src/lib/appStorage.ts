@@ -22,6 +22,9 @@ export const APP_STORAGE_KEYS = [
   "adhd-routines",
   "adhd-routine-done",          // today's completion state
 
+  // ── Deletion tombstones ──
+  "adhd-deleted-ids",           // { [id]: deletedAt ISO string }
+
   // ── AI / Coach ──
   "adhd-ai-chat-history",
   "adhd-life-coach-chat",
@@ -138,12 +141,24 @@ export function mergeAppData(local: AppBackup, remote: AppBackup): AppBackup {
   const merged: Record<string, unknown> = {};
 
   // Collect all keys from both backups
+  // Merge tombstone maps first so we can filter deleted items from arrays
+  const tombstonesA: Record<string, string> = (() => {
+    try { return (newerFirst.appData["adhd-deleted-ids"] as Record<string, string>) ?? {}; } catch { return {}; }
+  })();
+  const tombstonesB: Record<string, string> = (() => {
+    try { return (olderSecond.appData["adhd-deleted-ids"] as Record<string, string>) ?? {}; } catch { return {}; }
+  })();
+  const mergedTombstones = mergeTombstones(tombstonesA, tombstonesB);
+
   const allKeys = new Set([
     ...Object.keys(newerFirst.appData),
     ...Object.keys(olderSecond.appData),
   ]);
 
   for (const key of allKeys) {
+    // Tombstone map is handled separately above
+    if (key === "adhd-deleted-ids") { merged[key] = mergedTombstones; continue; }
+
     const a = newerFirst.appData[key];   // value from newer backup
     const b = olderSecond.appData[key];  // value from older backup
 
@@ -159,6 +174,18 @@ export function mergeAppData(local: AppBackup, remote: AppBackup): AppBackup {
       for (const item of [...(b as any[]), ...(a as any[])]) {
         if (item && typeof item === "object" && "id" in (item as object)) {
           const id = (item as any).id;
+          // Skip items that have been tombstoned (deleted on either device)
+          if (id in mergedTombstones) {
+            const deletedAt = new Date(mergedTombstones[id]).getTime();
+            const tsOf = (x: any): number => {
+              const s = x.updatedAt ?? x.createdAt;
+              if (!s) return 0;
+              const t = new Date(s).getTime();
+              return isNaN(t) ? 0 : t;
+            };
+            // Only resurrect if the item was updated AFTER it was deleted
+            if (tsOf(item) <= deletedAt) continue;
+          }
           const existing = byId.get(id) as any;
           if (existing) {
             // Pick whichever version was modified more recently
@@ -258,4 +285,53 @@ export function getBackupSummary(backup: AppBackup): string {
   const keys = Object.keys(backup.appData);
   const date = new Date(backup.exportedAt).toLocaleString();
   return `Exported ${date} · ${keys.length} data categories`;
+}
+
+// ── Tombstone (soft-delete) helpers ──────────────────────────────────────────
+// When an item is deleted, record its ID + deletion timestamp so the merge
+// logic can prevent it from being resurrected from the other device's backup.
+
+const DELETED_IDS_KEY = "adhd-deleted-ids";
+
+/**
+ * Record a deletion tombstone for the given ID.
+ * Call this whenever a task, goal, win, routine, or agent is deleted.
+ */
+export function recordDeletion(id: string): void {
+  try {
+    const existing: Record<string, string> = JSON.parse(
+      localStorage.getItem(DELETED_IDS_KEY) ?? "{}"
+    );
+    existing[id] = new Date().toISOString();
+    localStorage.setItem(DELETED_IDS_KEY, JSON.stringify(existing));
+  } catch { /* ignore */ }
+}
+
+/**
+ * Check if an ID has been tombstoned (deleted).
+ */
+export function isDeleted(id: string): boolean {
+  try {
+    const existing: Record<string, string> = JSON.parse(
+      localStorage.getItem(DELETED_IDS_KEY) ?? "{}"
+    );
+    return id in existing;
+  } catch { return false; }
+}
+
+/**
+ * Merge two tombstone maps: keep the earliest deletion timestamp for each ID
+ * (once deleted, always deleted — we never un-delete via merge).
+ */
+export function mergeTombstones(
+  a: Record<string, string>,
+  b: Record<string, string>
+): Record<string, string> {
+  const result = { ...a };
+  for (const [id, ts] of Object.entries(b)) {
+    if (!(id in result) || ts < result[id]) {
+      result[id] = ts;
+    }
+  }
+  return result;
 }

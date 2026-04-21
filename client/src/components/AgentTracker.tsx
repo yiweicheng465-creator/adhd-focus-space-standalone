@@ -13,6 +13,7 @@ import {
   Link2, Pause, Play, Plus, RefreshCw, Sparkles, Trash2, X, XCircle,
 } from "lucide-react";
 import { PixelAgents } from "@/components/PixelIcons";
+import { recordDeletion } from "@/lib/appStorage";
 import { toast } from "sonner";
 import { callAI } from "@/lib/ai";
 import { nanoid } from "nanoid";
@@ -276,7 +277,7 @@ export function AgentTracker({ agents, onAgentsChange, tasks, defaultContext = "
     }));
   };
 
-  const deleteAgent = (id: string) => onAgentsChange(agents.filter((a) => a.id !== id));
+  const deleteAgent = (id: string) => { recordDeletion(id); onAgentsChange(agents.filter((a) => a.id !== id)); };
 
   const saveNote = () => {
     if (!noteEditing) return;
