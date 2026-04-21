@@ -564,8 +564,9 @@ function RoutinePopup({ onClose, onLogWin, onUndoWin }: { onClose: () => void; o
   const todayRoutines = routines.filter(r => r.days.includes(today));
 
   const undoMarkDone = (routineId: string, winId: string, prevDoneIds: Set<string>) => {
-    // Remove from done set
+    // Remove from done set and notify header to re-read the count
     saveDoneToday(prevDoneIds);
+    window.dispatchEvent(new CustomEvent("adhd-storage-update", { detail: "adhd-routine-done" }));
     // Remove the win entry from localStorage
     try {
       const wins = JSON.parse(localStorage.getItem("adhd-wins") ?? "[]");
@@ -598,7 +599,7 @@ function RoutinePopup({ onClose, onLogWin, onUndoWin }: { onClose: () => void; o
   };
 
   return (
-    <PopupShell onClose={onClose} title="💫 Daily Routine" width={300} headerColor={BTN_COLORS[3].active} bodyBg="oklch(0.97 0.014 220)">
+    <PopupShell onClose={onClose} title="💫 Daily Routine" width={300} headerColor={BTN_COLORS[3].active} bodyBg="oklch(0.988 0.005 220)">
       <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
         {/* Today's routines */}
         {todayRoutines.length > 0 && (
