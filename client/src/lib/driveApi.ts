@@ -6,7 +6,7 @@
 
 import { type AppBackup } from "./appStorage";
 
-const BACKUP_FILENAME = "adhd-focus-backup.json";
+export const BACKUP_FILENAME = "adhd-focus-backup.json";
 const BACKUP_MIME = "application/json";
 
 // ── Token cache (module-level singleton) ─────────────────────────────────────
