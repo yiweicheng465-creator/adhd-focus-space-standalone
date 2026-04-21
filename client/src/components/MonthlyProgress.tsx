@@ -348,15 +348,27 @@ function DayDetail({ log, dateStr, dateKey: dk, onClose, isPast }: { log?: Daily
   })();
   // Fallback: use count from log if no detailed entries
   const focusCount = dayFocusSessions.length > 0 ? dayFocusSessions.length : (log?.focusSessions ?? 0);
-  // Compute missed routine names for this day
+  // Compute missed routine names for this day.
+  // Use the stored routineNamesSnapshot (keyed by id) if available — this
+  // reflects the routines that actually existed on that day, not today's list.
+  // Fall back to the current routine list only for today.
   const missedRoutineNames = (() => {
     try {
       const routinesTotal = log?.routinesTotal ?? 0;
       const routinesDone = log?.routinesDone ?? 0;
       if (routinesTotal === 0 || routinesDone === routinesTotal) return [] as string[];
-      const allRoutines: { id: string; name: string; days: string[] }[] = JSON.parse(localStorage.getItem("adhd-routines") ?? "[]");
       const doneIds: string[] = log?.routinesDoneIds ?? [];
-      // Figure out which day-of-week this dateKey corresponds to
+      const snapshot: Record<string, string> | undefined = (log as any)?.routineNamesSnapshot;
+      if (snapshot && Object.keys(snapshot).length > 0) {
+        // Use the snapshot: show names of routines that were scheduled but not done
+        return Object.entries(snapshot)
+          .filter(([id]) => !doneIds.includes(id))
+          .map(([, name]) => name);
+      }
+      // No snapshot — only show missed names for today (current routine list is accurate)
+      const todayKey = new Date().toDateString();
+      if (dk !== todayKey) return [] as string[]; // don't guess for past days without snapshot
+      const allRoutines: { id: string; name: string; days: string[] }[] = JSON.parse(localStorage.getItem("adhd-routines") ?? "[]");
       const DAYS_MON = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
       const dayOfWeek = DAYS_MON[(new Date(dk).getDay() + 6) % 7];
       const scheduledThatDay = allRoutines.filter(r => r.days.includes(dayOfWeek));

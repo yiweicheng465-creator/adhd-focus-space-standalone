@@ -225,6 +225,9 @@ export function mergeAppData(local: AppBackup, remote: AppBackup): AppBackup {
           routinesDone,
           routinesTotal,
           routinesDoneIds: doneIds,
+          // Preserve the routine names snapshot from the side that wrote it most
+          // recently (same source as the routine ids — routineSrc)
+          routineNamesSnapshot: routineSrc.routineNamesSnapshot ?? da.routineNamesSnapshot ?? db.routineNamesSnapshot,
           score: Math.max(da.score ?? 0, db.score ?? 0),
           // Keep mood from the newer backup's entry (prefer non-null)
           mood: da.mood ?? db.mood,
