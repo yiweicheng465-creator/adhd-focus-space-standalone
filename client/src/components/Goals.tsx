@@ -259,7 +259,7 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
                 if (!taskId || !onTasksChange) return;
                 const task = tasks.find(t => t.id === taskId);
                 if (!task || task.goalId === goal.id) return;
-                onTasksChange(tasks.map(t => t.id === taskId ? { ...t, goalId: goal.id } : t));
+                onTasksChange(tasks.map(t => t.id === taskId ? { ...t, goalId: goal.id, updatedAt: new Date().toISOString() } : t));
                 setDraggingTaskId(null);
               }}
               onMouseEnter={(e) => {
@@ -412,7 +412,7 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
                               newOrder.splice(targetIdx, 0, taskId);
                               saveGoalTaskOrder({ ...goalTaskOrder, [goal.id]: newOrder });
                             } else {
-                              onTasksChange(tasks.map(tk => tk.id === taskId ? { ...tk, goalId: goal.id } : tk));
+                              onTasksChange(tasks.map(tk => tk.id === taskId ? { ...tk, goalId: goal.id, updatedAt: new Date().toISOString() } : tk));
                               setDraggingTaskId(null);
                             }
                           }}
@@ -432,7 +432,7 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
                             onClick={() => {
                               if (!onTasksChange) return;
                               const updated = tasks.map((task) =>
-                                task.id === t.id ? { ...task, done: !task.done } : task
+                                task.id === t.id ? { ...task, done: !task.done, updatedAt: new Date().toISOString() } : task
                               );
                               onTasksChange(updated);
                             }}

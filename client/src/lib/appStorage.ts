@@ -152,12 +152,27 @@ export function mergeAppData(local: AppBackup, remote: AppBackup): AppBackup {
 
     // Both sides have a value — apply merge strategy
     if (Array.isArray(a) && Array.isArray(b)) {
-      // Merge arrays: deduplicate by `id`, prefer newer item when ids match
+      // Merge arrays: deduplicate by `id`, prefer the item with the latest
+      // `updatedAt` timestamp (falls back to `createdAt`, then the newer backup).
       const byId = new Map<string, unknown>();
-      // Insert older items first, then newer items overwrite
+      // Insert older-backup items first, then newer-backup items overwrite
       for (const item of [...(b as any[]), ...(a as any[])]) {
         if (item && typeof item === "object" && "id" in (item as object)) {
-          byId.set((item as any).id, item);
+          const id = (item as any).id;
+          const existing = byId.get(id) as any;
+          if (existing) {
+            // Pick whichever version was modified more recently
+            const tsOf = (x: any): number => {
+              const s = x.updatedAt ?? x.createdAt;
+              if (!s) return 0;
+              const t = new Date(s).getTime();
+              return isNaN(t) ? 0 : t;
+            };
+            if (tsOf(item) >= tsOf(existing)) byId.set(id, item);
+            // else keep existing (it's newer)
+          } else {
+            byId.set(id, item);
+          }
         } else {
           // No id — just keep it (use JSON as dedup key)
           byId.set(JSON.stringify(item), item);

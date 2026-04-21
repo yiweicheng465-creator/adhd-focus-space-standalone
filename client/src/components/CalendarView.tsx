@@ -121,7 +121,7 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle, doneFilter = 
       const finalYMD = targetYMD;
       if (sourceYMD !== finalYMD) {
         const newDue = (finalYMD === todayYMD && !task.dueDate) ? undefined : finalYMD;
-        onTasksChange(tasks.map(t => t.id === currentDragId ? { ...t, dueDate: newDue } : t));
+        onTasksChange(tasks.map(t => t.id === currentDragId ? { ...t, dueDate: newDue, updatedAt: new Date().toISOString() } : t));
       }
       // Merge with existing full order so unfiltered tasks keep their position
       const existingOrder = dayOrder[finalYMD] ?? [];
@@ -525,6 +525,7 @@ function DayDetailModal({ selectedDay, onClose, getTasksForDay, dayOrder, saveDa
     onTasksChange(tasks.map(t => t.id === editingId ? {
       ...t, text: editText, priority: editPriority as Task["priority"],
       dueDate: editDate || undefined, goalId: editGoalId || undefined,
+      updatedAt: new Date().toISOString(),
     } : t));
     setEditingId(null);
   };

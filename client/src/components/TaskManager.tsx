@@ -27,6 +27,8 @@ export interface Task {
   context: ItemContext;
   done: boolean;
   createdAt: Date;
+  /** ISO timestamp — set on every mutation so merge picks the latest version */
+  updatedAt?: string;
   /** Optional: ID of a Goal this task contributes to */
   goalId?: string;
   dueDate?: string; // ISO date string YYYY-MM-DD
@@ -142,10 +144,11 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
     // If a hashtag was typed, use it. Otherwise use the currently active tab
     // (unless it's "all", in which case fall back to the manual context selector).
     const context = tag ?? (activeContext !== "all" ? (activeContext as ItemContext) : newTaskContext);
+    const now = new Date().toISOString();
     const task: Task = {
       id: nanoid(), text: cleanText || newTaskText.trim(),
       priority: newTaskPriority, context,
-      done: false, createdAt: new Date(),
+      done: false, createdAt: new Date(), updatedAt: now,
       ...(newTaskGoalId ? { goalId: newTaskGoalId } : {}),
         ...(newTaskDueDate ? { dueDate: newTaskDueDate } : {}),
     };
@@ -161,15 +164,15 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
     if (!task.done) {
       setCompletingId(id);
       setTimeout(() => {
-        onTasksChange(tasks.map((t) => t.id === id ? { ...t, done: true } : t));
+        onTasksChange(tasks.map((t) => t.id === id ? { ...t, done: true, updatedAt: new Date().toISOString() } : t));
         setCompletingId(null);
         toast("Task completed", {
           duration: 5000,
-          action: { label: "Undo", onClick: () => onTasksChange(tasks.map((t) => t.id === id ? { ...t, done: false } : t)) },
+          action: { label: "Undo", onClick: () => onTasksChange(tasks.map((t) => t.id === id ? { ...t, done: false, updatedAt: new Date().toISOString() } : t)) },
         });
       }, 400);
     } else {
-      onTasksChange(tasks.map((t) => t.id === id ? { ...t, done: false } : t));
+      onTasksChange(tasks.map((t) => t.id === id ? { ...t, done: false, updatedAt: new Date().toISOString() } : t));
     }
   };
 
@@ -524,7 +527,7 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
                 <ClickableContextBadge
                   context={task.context}
                   allContexts={allContexts}
-                  onChange={(ctx) => onTasksChange(tasks.map(t => t.id === task.id ? { ...t, context: ctx as import("./ContextSwitcher").ItemContext } : t))}
+                  onChange={(ctx) => onTasksChange(tasks.map(t => t.id === task.id ? { ...t, context: ctx as import("./ContextSwitcher").ItemContext, updatedAt: new Date().toISOString() } : t))}
                 />
                 {/* Checkbox */}
                 <button
