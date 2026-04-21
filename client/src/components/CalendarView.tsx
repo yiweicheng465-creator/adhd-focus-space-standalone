@@ -265,6 +265,8 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle, doneFilter = 
   const [hoverZone, setHoverZone] = useState<"left" | "right" | null>(null);
 
   function startAdvance(dir: -1 | 1) {
+    // Only activate if a task drag is actually in progress
+    if (!dragIdRef.current) return;
     setHoverZone(dir === -1 ? "left" : "right");
     if (advanceTimerRef.current) return;
     advanceTimerRef.current = setTimeout(() => {
@@ -306,8 +308,8 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle, doneFilter = 
                 : "transparent",
               borderLeft: hoverZone === "left" ? `2.5px dashed ${M.coral}` : "2px dashed transparent",
               borderRadius: "6px 0 0 6px",
-              // Only intercept pointer events during an active drag — prevents cursor bleed-through
-              pointerEvents: dragId ? "auto" : "none",
+              // Always intercept drag events; only show resize cursor during active drag
+              pointerEvents: "auto",
               cursor: dragId ? "w-resize" : "default",
               transition: "all 0.15s",
             }}
@@ -325,8 +327,8 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle, doneFilter = 
                 : "transparent",
               borderRight: hoverZone === "right" ? `2.5px dashed ${M.coral}` : "2px dashed transparent",
               borderRadius: "0 6px 6px 0",
-              // Only intercept pointer events during an active drag — prevents cursor bleed-through
-              pointerEvents: dragId ? "auto" : "none",
+              // Always intercept drag events; only show resize cursor during active drag
+              pointerEvents: "auto",
               cursor: dragId ? "e-resize" : "default",
               transition: "all 0.15s",
             }}
