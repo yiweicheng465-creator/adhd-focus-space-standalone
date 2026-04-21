@@ -5,6 +5,7 @@
    ============================================================ */
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { nanoid } from "nanoid";
 import { toast } from "sonner";
 import { Bot, Loader2 } from "lucide-react";
 import { callAIStream, callAI } from "@/lib/ai";
@@ -587,7 +588,7 @@ function RoutinePopup({ onClose, onLogWin, onUndoWin }: { onClose: () => void; o
   const markDone = (r: Routine) => {
     if (doneToday.has(r.id)) return;
     const iconIdx = typeof r.iconIdx === "number" ? r.iconIdx % WIN_ICONS.length : 0;
-    const winId = `routine-${Date.now()}`;
+    const winId = nanoid();
     const win = { id: winId, text: r.name, iconIdx };
     try {
       const wins = JSON.parse(localStorage.getItem("adhd-wins") ?? "[]");

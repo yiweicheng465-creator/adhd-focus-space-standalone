@@ -471,7 +471,7 @@ export default function Home() {
     setConfettiTrigger(true);
     setFocusSessions((s) => s + 1);
     // Add focus session win to total count (special iconIdx 97)
-    setWins((prev: any) => [{ id: `fs-${Date.now()}`, text: `${durations.focus}min focus session`, iconIdx: 97, createdAt: new Date() }, ...prev]);
+    setWins((prev: any) => [{ id: nanoid(), text: `${durations.focus}min focus session`, iconIdx: 97, createdAt: new Date() }, ...prev]);
     // Accumulate focusMins in daily-logs for Monthly stats
     try {
       const dk = new Date().toDateString();
@@ -489,7 +489,7 @@ export default function Home() {
       ? `${Math.floor(totalMins / 60)}h${totalMins % 60 > 0 ? ` ${totalMins % 60}min` : ""}`
       : `${totalMins}min`;
     const blockWin: Win = {
-      id: `block-${Date.now()}`,
+      id: nanoid(),
       text: `${focusLabel} deep focus block complete`,
       iconIdx: 99,
       createdAt: new Date(),
@@ -1033,7 +1033,7 @@ export default function Home() {
           setGoals((prev: any) => [{ id: `g-${Date.now()}`, text, progress: 0, context: context ?? "personal", createdAt: new Date() }, ...prev]);
         }}
         onAddWin={(text, iconIdx) => {
-          setWins((prev: any) => [{ id: `w-${Date.now()}`, text, iconIdx: iconIdx ?? 4, createdAt: new Date() }, ...prev]);
+          setWins((prev: any) => [{ id: nanoid(), text, iconIdx: iconIdx ?? 4, createdAt: new Date() }, ...prev]);
         }}
         onAddDump={(text) => {
           setPendingDump(text);
