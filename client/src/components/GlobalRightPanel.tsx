@@ -24,6 +24,7 @@ interface Props {
   goals?: Goal[];
   onGoToSection?: (s: string) => void;
   onLogWin?: (text: string, iconIdx: number) => void;
+  onUndoWin?: (winId: string) => void;
 }
 
 // Dusty pastel gradient — retro lo-fi washed-out feel
@@ -56,7 +57,7 @@ const BTN_STYLE = (active: boolean, idx: number = 0, hovered = false): React.CSS
   };
 };
 
-export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin }: Props) {
+export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin, onUndoWin }: Props) {
   const [panel, setPanel] = useState<"ai" | "coach" | "timer" | "routine" | null>(null);
   const toggle = (p: "ai" | "coach" | "timer" | "routine") => setPanel(v => v === p ? null : p);
   const [hoveredBtn, setHoveredBtn] = useState<"ai" | "coach" | "timer" | "routine" | null>(null);
@@ -162,7 +163,7 @@ export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin }: Props)
       {panel === "ai" && <AIChatPopup onClose={() => setPanel(null)} goals={goals} />}
       {panel === "coach" && <CoachPopup onClose={() => setPanel(null)} goals={goals} />}
       {panel === "timer" && <TimerPopup onClose={() => setPanel(null)} />}
-      {panel === "routine" && <RoutinePopup onClose={() => setPanel(null)} onLogWin={onLogWin} />}
+      {panel === "routine" && <RoutinePopup onClose={() => setPanel(null)} onLogWin={onLogWin} onUndoWin={onUndoWin} />}
     </>
   );
 }
@@ -505,7 +506,7 @@ const ROUTINE_KEY = "adhd-routines";
 
 type Routine = { id: string; name: string; days: string[]; iconIdx: number };
 
-function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (text: string, iconIdx: number) => void }) {
+function RoutinePopup({ onClose, onLogWin, onUndoWin }: { onClose: () => void; onLogWin?: (text: string, iconIdx: number) => void; onUndoWin?: (winId: string) => void }) {
   const [routines, setRoutines] = useState<Routine[]>(() => {
     try { return JSON.parse(localStorage.getItem(ROUTINE_KEY) ?? "[]"); } catch { return []; }
   });
@@ -565,12 +566,14 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
   const undoMarkDone = (routineId: string, winId: string, prevDoneIds: Set<string>) => {
     // Remove from done set
     saveDoneToday(prevDoneIds);
-    // Remove the win entry that was added
+    // Remove the win entry from localStorage
     try {
       const wins = JSON.parse(localStorage.getItem("adhd-wins") ?? "[]");
       localStorage.setItem("adhd-wins", JSON.stringify(wins.filter((w: any) => w.id !== winId)));
       window.dispatchEvent(new CustomEvent("adhd-storage-update", { detail: "adhd-wins" }));
     } catch {}
+    // Also remove from React state so UI updates immediately without a page refresh
+    onUndoWin?.(winId);
   };
 
   const markDone = (r: Routine) => {
@@ -595,31 +598,31 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
   };
 
   return (
-    <PopupShell onClose={onClose} title="💫 Daily Routine" width={300} headerColor={BTN_COLORS[3].active}>
+    <PopupShell onClose={onClose} title="💫 Daily Routine" width={300} headerColor={BTN_COLORS[3].active} bodyBg="oklch(0.97 0.014 220)">
       <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
         {/* Today's routines */}
         {todayRoutines.length > 0 && (
           <div>
-            <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.48rem", letterSpacing: "0.10em", color: "oklch(0.55 0.12 285)", textTransform: "uppercase", marginBottom: 6 }}>Today ({today})</p>
+            <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.48rem", letterSpacing: "0.10em", color: "oklch(0.50 0.10 220)", textTransform: "uppercase", marginBottom: 6 }}>Today ({today})</p>
             {todayRoutines.map(r => {
                 const done = doneToday.has(r.id);
                 const iconDef = WIN_ICONS[(r.iconIdx ?? 0) % WIN_ICONS.length];
                 const isPickerOpen = pickerOpenId === r.id;
                 return (
                   <div key={r.id} style={{ position: "relative", marginBottom: 4 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", background: done ? "oklch(0.96 0.012 285)" : "white", borderRadius: 8, border: `1px solid ${done ? "oklch(0.78 0.10 285)" : "oklch(0.86 0.030 300)"}`, transition: "all 0.2s" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", background: done ? "oklch(0.94 0.018 220)" : "white", borderRadius: 8, border: `1px solid ${done ? "oklch(0.76 0.08 220)" : "oklch(0.86 0.030 300)"}`, transition: "all 0.2s" }}>
                     {/* Category SVG icon — click to change */}
                     <button onClick={() => !done && setPickerOpenId(isPickerOpen ? null : r.id)} title={iconDef.label}
                       style={{ width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", background: isPickerOpen ? `${iconDef.color}15` : "none", border: isPickerOpen ? `1px solid ${iconDef.color}` : "1px solid transparent", borderRadius: 5, cursor: done ? "default" : "pointer", padding: 0, flexShrink: 0 }}>
-                      <iconDef.Component size={14} color={done ? "oklch(0.65 0.05 285)" : iconDef.color} />
+                      <iconDef.Component size={14} color={done ? "oklch(0.62 0.08 220)" : iconDef.color} />
                     </button>
-                    <span style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", color: done ? "oklch(0.55 0.10 285)" : "oklch(0.28 0.040 320)", textDecoration: done ? "line-through" : "none", opacity: done ? 0.7 : 1 }}>{r.name}</span>
+                    <span style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", color: done ? "oklch(0.50 0.10 220)" : "oklch(0.28 0.040 320)", textDecoration: done ? "line-through" : "none", opacity: done ? 0.7 : 1 }}>{r.name}</span>
                     <button
                       onClick={() => markDone(r)}
                       disabled={done}
                       title={done ? "Done today!" : "Mark done"}
-                      style={{ width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${done ? "oklch(0.55 0.14 285)" : "oklch(0.72 0.10 285)"}`, background: done ? "oklch(0.55 0.14 285)" : "transparent", cursor: done ? "default" : "pointer", flexShrink: 0, transition: "all 0.15s", padding: 0 }}
-                      onMouseEnter={e => { if (!done) { (e.currentTarget as HTMLButtonElement).style.background = "oklch(0.80 0.10 285)"; } }}
+                      style={{ width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${done ? "oklch(0.62 0.12 220)" : "oklch(0.72 0.08 220)"}`, background: done ? "oklch(0.62 0.12 220)" : "transparent", cursor: done ? "default" : "pointer", flexShrink: 0, transition: "all 0.15s", padding: 0 }}
+                      onMouseEnter={e => { if (!done) { (e.currentTarget as HTMLButtonElement).style.background = "oklch(0.78 0.10 220)"; } }}
                       onMouseLeave={e => { if (!done) { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; } }}
                     />
                   </div>
@@ -651,10 +654,10 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
         <div style={{ borderTop: "1px solid oklch(0.86 0.030 300)", paddingTop: 8 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
             <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.46rem", letterSpacing: "0.10em", color: M_MUTED, textTransform: "uppercase", margin: 0 }}>All Routines</p>
-            <button onClick={() => setAdding(v => !v)} style={{ fontSize: "0.55rem", fontFamily: "'Space Mono', monospace", padding: "2px 8px", border: "1px solid oklch(0.55 0.14 230)", borderRadius: 4, background: "transparent", color: "oklch(0.55 0.14 230)", cursor: "pointer" }}>+ Add</button>
+            <button onClick={() => setAdding(v => !v)} style={{ fontSize: "0.55rem", fontFamily: "'Space Mono', monospace", padding: "2px 8px", border: "1px solid oklch(0.62 0.12 220)", borderRadius: 4, background: "transparent", color: "oklch(0.42 0.12 220)", cursor: "pointer" }}>+ Add</button>
           </div>
           {adding && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8, padding: "8px", background: "oklch(0.96 0.012 230)", borderRadius: 8 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8, padding: "8px", background: "oklch(0.95 0.018 220)", borderRadius: 8 }}>
               {/* Icon + input inline (like DailyWins) */}
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 {(() => { const ic = WIN_ICONS[newIconIdx]; return (
@@ -690,14 +693,14 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
                   const active = newDays.includes(d);
                   return (
                     <button key={d} onClick={() => setNewDays(p => p.includes(d) ? p.filter(x => x !== d) : [...p, d])}
-                      style={{ padding: "2px 7px", borderRadius: 10, fontSize: "0.55rem", fontFamily: "'Space Mono', monospace", border: `1px solid ${active ? "oklch(0.55 0.14 230)" : "oklch(0.82 0.050 340)"}`, background: active ? "oklch(0.55 0.14 230 / 0.15)" : "transparent", color: active ? "oklch(0.45 0.14 230)" : "oklch(0.60 0.040 330)", cursor: "pointer", fontWeight: active ? 700 : 400 }}>
+                      style={{ padding: "2px 7px", borderRadius: 10, fontSize: "0.55rem", fontFamily: "'Space Mono', monospace", border: `1px solid ${active ? "oklch(0.62 0.12 220)" : "oklch(0.82 0.050 340)"}`, background: active ? "oklch(0.62 0.12 220 / 0.15)" : "transparent", color: active ? "oklch(0.42 0.12 220)" : "oklch(0.60 0.040 330)", cursor: "pointer", fontWeight: active ? 700 : 400 }}>
                       {d}
                     </button>
                   );
                 })}
               </div>
               <div style={{ display: "flex", gap: 6 }}>
-                <button onClick={addRoutine} style={{ flex: 1, padding: "5px", borderRadius: 6, background: "oklch(0.55 0.14 230)", color: "white", border: "none", cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: "0.55rem"}}>Save</button>
+                <button onClick={addRoutine} style={{ flex: 1, padding: "5px", borderRadius: 6, background: "oklch(0.62 0.12 220)", color: "white", border: "none", cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: "0.55rem"}}>Save</button>
                 <button onClick={() => setAdding(false)} style={{ padding: "5px 10px", borderRadius: 6, background: "transparent", border: "1px solid oklch(0.82 0.050 340)", color: "oklch(0.60 0.040 330)", cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: "0.55rem" }}>Cancel</button>
               </div>
             </div>
@@ -721,8 +724,9 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
 const M_MUTED = "oklch(0.52 0.040 330)";
 
 /* ── Shared popup shell ──────────────────────────────────────── */
-function PopupShell({ onClose, title, width = 300, children, onClear, clearDisabled, headerColor }: { onClose: () => void; title: string; width?: number; children: React.ReactNode; onClear?: () => void; clearDisabled?: boolean; headerColor?: string; }) {
+function PopupShell({ onClose, title, width = 300, children, onClear, clearDisabled, headerColor, bodyBg }: { onClose: () => void; title: string; width?: number; children: React.ReactNode; onClear?: () => void; clearDisabled?: boolean; headerColor?: string; bodyBg?: string; }) {
   const hdr = headerColor ?? "oklch(0.93 0.025 355)";
+  const bg = bodyBg ?? "#fdf4f8";
   const [tourHighlight, setTourHighlight] = useState(false);
   useEffect(() => {
     const onHL = () => setTourHighlight(true);
@@ -737,7 +741,7 @@ function PopupShell({ onClose, title, width = 300, children, onClear, clearDisab
     };
   }, []);
   return (
-    <div data-tour-id="tour-panel-popup" style={{ position: "fixed", right: 19, top: "50%", transform: "translateY(-50%)", zIndex: 100, width, background: "#fdf4f8", borderRadius: 14, boxShadow: tourHighlight ? "0 0 0 3px oklch(0.58 0.18 340), 0 0 24px oklch(0.58 0.18 340 / 0.45), 0 20px 48px rgba(120,40,180,0.18)" : "0 20px 48px rgba(120,40,180,0.18), 0 4px 12px rgba(0,0,0,0.08)", display: "flex", flexDirection: "column", overflow: "hidden", border: tourHighlight ? "2px solid oklch(0.58 0.18 340)" : `1px solid ${hdr}`, transition: "box-shadow 0.3s ease, border 0.3s ease" }}>
+    <div data-tour-id="tour-panel-popup" style={{ position: "fixed", right: 19, top: "50%", transform: "translateY(-50%)", zIndex: 100, width, background: bg, borderRadius: 14, boxShadow: tourHighlight ? "0 0 0 3px oklch(0.58 0.18 340), 0 0 24px oklch(0.58 0.18 340 / 0.45), 0 20px 48px rgba(120,40,180,0.18)" : "0 20px 48px rgba(120,40,180,0.18), 0 4px 12px rgba(0,0,0,0.08)", display: "flex", flexDirection: "column", overflow: "hidden", border: tourHighlight ? "2px solid oklch(0.58 0.18 340)" : `1px solid ${hdr}`, transition: "box-shadow 0.3s ease, border 0.3s ease" }}>
       <div style={{ padding: "10px 14px", borderBottom: `1px solid ${hdr}`, background: hdr, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "0.90rem", fontWeight: 700, color: "oklch(0.28 0.040 320)", fontStyle: "italic" }}>{title}</span>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
