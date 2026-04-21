@@ -206,15 +206,26 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
     const bOverdue = bDate && bDate < todayYMD;
     const aToday   = aDate === todayYMD;
     const bToday   = bDate === todayYMD;
-    // Bucket: overdue=0, today=1, future=2, no-date=3
+    // Bucket: overdue=0, today/no-date=1, future=2
     const bucket = (d: string | null, ovr: boolean | string, tdy: boolean) =>
-      ovr ? 0 : tdy ? 1 : d ? 2 : 3;
+      ovr ? 0 : tdy ? 1 : d ? 2 : 1;
     const aBucket = bucket(aDate, aOverdue, aToday);
     const bBucket = bucket(bDate, bOverdue, bToday);
     if (aBucket !== bBucket) return aBucket - bBucket;
-    // Within same bucket: sort by due date ascending first, then priority
-    if (aDate && bDate && aDate !== bDate) return aDate < bDate ? -1 : 1;
-    return order.indexOf(a.priority) - order.indexOf(b.priority);
+    const pDiff = order.indexOf(a.priority) - order.indexOf(b.priority);
+    if (aBucket === 0) {
+      // overdue: oldest first, then priority
+      if (aDate && bDate && aDate !== bDate) return aDate < bDate ? -1 : 1;
+      return pDiff;
+    }
+    if (aBucket === 2) {
+      // future: priority first, then date ascending
+      if (pDiff !== 0) return pDiff;
+      if (aDate && bDate && aDate !== bDate) return aDate < bDate ? -1 : 1;
+      return 0;
+    }
+    // today / no-date: priority only
+    return pDiff;
   });
   const filtered = sorted.filter((t) => {
     if (filter === "active") return !t.done;
