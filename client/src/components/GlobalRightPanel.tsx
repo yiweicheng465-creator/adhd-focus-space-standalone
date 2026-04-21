@@ -656,10 +656,10 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
         <div style={{ borderTop: "1px solid oklch(0.86 0.030 300)", paddingTop: 8 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
             <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.46rem", letterSpacing: "0.10em", color: M_MUTED, textTransform: "uppercase", margin: 0 }}>All Routines</p>
-            <button onClick={() => setAdding(v => !v)} style={{ fontSize: "0.55rem", fontFamily: "'Space Mono', monospace", padding: "2px 8px", border: "1px solid oklch(0.55 0.14 285)", borderRadius: 4, background: "transparent", color: "oklch(0.55 0.14 285)", cursor: "pointer" }}>+ Add</button>
+            <button onClick={() => setAdding(v => !v)} style={{ fontSize: "0.55rem", fontFamily: "'Space Mono', monospace", padding: "2px 8px", border: "1px solid oklch(0.55 0.14 230)", borderRadius: 4, background: "transparent", color: "oklch(0.55 0.14 230)", cursor: "pointer" }}>+ Add</button>
           </div>
           {adding && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8, padding: "8px", background: "oklch(0.97 0.010 300)", borderRadius: 8 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8, padding: "8px", background: "oklch(0.96 0.012 230)", borderRadius: 8 }}>
               {/* Icon + input inline (like DailyWins) */}
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 {(() => { const ic = WIN_ICONS[newIconIdx]; return (
@@ -695,14 +695,14 @@ function RoutinePopup({ onClose, onLogWin }: { onClose: () => void; onLogWin?: (
                   const active = newDays.includes(d);
                   return (
                     <button key={d} onClick={() => setNewDays(p => p.includes(d) ? p.filter(x => x !== d) : [...p, d])}
-                      style={{ padding: "2px 7px", borderRadius: 10, fontSize: "0.55rem", fontFamily: "'Space Mono', monospace", border: `1px solid ${active ? "oklch(0.55 0.14 285)" : "oklch(0.82 0.050 340)"}`, background: active ? "oklch(0.55 0.14 285 / 0.15)" : "transparent", color: active ? "oklch(0.45 0.14 285)" : "oklch(0.60 0.040 330)", cursor: "pointer", fontWeight: active ? 700 : 400 }}>
+                      style={{ padding: "2px 7px", borderRadius: 10, fontSize: "0.55rem", fontFamily: "'Space Mono', monospace", border: `1px solid ${active ? "oklch(0.55 0.14 230)" : "oklch(0.82 0.050 340)"}`, background: active ? "oklch(0.55 0.14 230 / 0.15)" : "transparent", color: active ? "oklch(0.45 0.14 230)" : "oklch(0.60 0.040 330)", cursor: "pointer", fontWeight: active ? 700 : 400 }}>
                       {d}
                     </button>
                   );
                 })}
               </div>
               <div style={{ display: "flex", gap: 6 }}>
-                <button onClick={addRoutine} style={{ flex: 1, padding: "5px", borderRadius: 6, background: "oklch(0.55 0.14 285)", color: "white", border: "none", cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: "0.55rem" }}>Save</button>
+                <button onClick={addRoutine} style={{ flex: 1, padding: "5px", borderRadius: 6, background: "oklch(0.55 0.14 230)", color: "white", border: "none", cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: "0.55rem"}}>Save</button>
                 <button onClick={() => setAdding(false)} style={{ padding: "5px 10px", borderRadius: 6, background: "transparent", border: "1px solid oklch(0.82 0.050 340)", color: "oklch(0.60 0.040 330)", cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: "0.55rem" }}>Cancel</button>
               </div>
             </div>

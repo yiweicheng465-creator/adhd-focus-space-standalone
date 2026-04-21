@@ -22,11 +22,16 @@ const Toaster = ({ ...props }: ToasterProps) => {
           letter-spacing: 0.04em !important;
           padding: 10px 14px !important;
         }
+        /* Success — pink (was green hue 168) */
         [data-sonner-toast][data-type="success"] {
-          background: oklch(0.96 0.025 168) !important;
-          border-color: oklch(0.55 0.10 168) !important;
-          box-shadow: 3px 3px 0px oklch(0.30 0.060 168) !important;
-          color: oklch(0.28 0.060 168) !important;
+          background: oklch(0.97 0.022 355) !important;
+          border-color: oklch(0.58 0.14 340) !important;
+          box-shadow: 3px 3px 0px oklch(0.30 0.060 340) !important;
+          color: oklch(0.28 0.080 340) !important;
+        }
+        /* Hide the default green checkmark icon — text already has ✓ */
+        [data-sonner-toast][data-type="success"] [data-icon] {
+          display: none !important;
         }
         [data-sonner-toast][data-type="error"] {
           background: oklch(0.97 0.022 10) !important;
@@ -68,7 +73,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           border-radius: 2px !important;
           color: oklch(0.30 0.030 320) !important;
         }
-        /* Action button (e.g. "Backup now") — override the default black */
+        /* Action button (e.g. "Undo", "Backup now") */
         [data-sonner-toast] [data-button] {
           background: oklch(0.58 0.18 340) !important;
           border: 2px solid oklch(0.30 0.030 320) !important;
@@ -118,9 +123,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
             "--normal-bg": "oklch(0.975 0.018 355)",
             "--normal-text": "oklch(0.30 0.030 320)",
             "--normal-border": "oklch(0.58 0.12 340)",
-            "--success-bg": "oklch(0.96 0.025 168)",
-            "--success-text": "oklch(0.28 0.060 168)",
-            "--success-border": "oklch(0.55 0.10 168)",
+            "--success-bg": "oklch(0.97 0.022 355)",
+            "--success-text": "oklch(0.28 0.080 340)",
+            "--success-border": "oklch(0.58 0.14 340)",
             "--error-bg": "oklch(0.97 0.022 10)",
             "--error-text": "oklch(0.28 0.060 10)",
             "--error-border": "oklch(0.58 0.13 10)",
