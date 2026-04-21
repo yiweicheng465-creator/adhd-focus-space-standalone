@@ -596,6 +596,7 @@ function RoutinePopup({ onClose, onLogWin, onUndoWin }: { onClose: () => void; o
       const wins = JSON.parse(localStorage.getItem("adhd-wins") ?? "[]");
       wins.unshift({ ...win, createdAt: new Date().toISOString() });
       localStorage.setItem("adhd-wins", JSON.stringify(wins));
+      window.dispatchEvent(new CustomEvent("adhd-storage-update", { detail: "adhd-wins" }));
     } catch {}
     saveDoneToday(new Set([...doneToday, r.id]));
     onLogWin?.(win.text, win.iconIdx, winId);

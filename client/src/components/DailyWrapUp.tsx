@@ -327,6 +327,7 @@ export function DailyWrapUp({ tasks, wins, agents, quitCount = 0, onClose }: Dai
       const logs = JSON.parse(localStorage.getItem("adhd-daily-logs") ?? "{}");
       logs[today] = { ...(logs[today] ?? { dateKey: today }), journalNote: note };
       localStorage.setItem("adhd-daily-logs", JSON.stringify(logs));
+      window.dispatchEvent(new CustomEvent("adhd-storage-update", { detail: "adhd-daily-logs" }));
     } catch {}
   };
   const [aiLoading, setAiLoading] = useState(false);

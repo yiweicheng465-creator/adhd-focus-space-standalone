@@ -911,6 +911,7 @@ export function recordMood(mood: number) {
     const existing = logs[today] ?? { dateKey: today, wrapUpDone: false, dumpCount: 0, winsCount: 0, tasksCompleted: 0, mood: null, score: 0 };
     logs[today] = { ...existing, mood };
     localStorage.setItem("adhd-daily-logs", JSON.stringify(logs));
+    window.dispatchEvent(new CustomEvent("adhd-storage-update", { detail: "adhd-daily-logs" }));
   } catch {}
 }
 
@@ -922,6 +923,7 @@ export function recordWrapUp(mood?: number | null, score?: number) {
     const existing = logs[today] ?? { dateKey: today, wrapUpDone: false, dumpCount: 0, winsCount: 0, tasksCompleted: 0, mood: null, score: 0 };
     logs[today] = { ...existing, wrapUpDone: true, mood: mood ?? existing.mood, score: score ?? existing.score };
     localStorage.setItem("adhd-daily-logs", JSON.stringify(logs));
+    window.dispatchEvent(new CustomEvent("adhd-storage-update", { detail: "adhd-daily-logs" }));
   } catch {}
 }
 
@@ -934,6 +936,7 @@ export function recordDumpEntry() {
     const existing = logs[today] ?? { dateKey: today, wrapUpDone: false, dumpCount: 0, winsCount: 0, tasksCompleted: 0, mood: null, score: 0 };
     logs[today] = { ...existing, dumpCount: existing.dumpCount + 1 };
     localStorage.setItem("adhd-daily-logs", JSON.stringify(logs));
+    window.dispatchEvent(new CustomEvent("adhd-storage-update", { detail: "adhd-daily-logs" }));
   } catch {}
 }
 
@@ -970,7 +973,7 @@ export function recordFocusSession(durationMinutes = 25) {
     };
     list[today] = [...list[today], entry];
     localStorage.setItem("adhd-focus-session-list", JSON.stringify(list));
-
+    window.dispatchEvent(new CustomEvent("adhd-storage-update", { detail: "adhd-focus-session-list" }));
     window.dispatchEvent(new CustomEvent("adhd-storage-update", { detail: "adhd-daily-logs" }));
   } catch {}
 }

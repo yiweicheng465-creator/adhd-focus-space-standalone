@@ -79,6 +79,9 @@ export interface AppBackup {
   appData: Record<string, unknown>;
 }
 
+/** Current schema version — bump when the data shape changes */
+export const CURRENT_BACKUP_VERSION = 2;
+
 /**
  * Export all app data from localStorage into a single JSON-serialisable object.
  */
@@ -113,7 +116,7 @@ export function exportAppData(): AppBackup {
   }
 
   return {
-    version: 1,
+    version: CURRENT_BACKUP_VERSION,
     exportedAt: new Date().toISOString(),
     appData,
   };
@@ -216,10 +219,34 @@ export function mergeAppData(local: AppBackup, remote: AppBackup): AppBackup {
   }
 
   return {
-    version: 1,
+    version: CURRENT_BACKUP_VERSION,
     exportedAt: new Date().toISOString(),
     appData: merged,
   };
+}
+
+/**
+ * Migrate a backup from an older schema version to the current one.
+ * Add migration steps here whenever CURRENT_BACKUP_VERSION is bumped.
+ */
+export function migrateBackup(backup: AppBackup): AppBackup {
+  let b = { ...backup, appData: { ...backup.appData } };
+
+  // v1 → v2: ensure every task has updatedAt (fill from createdAt or exportedAt)
+  if (b.version < 2) {
+    const tasks = b.appData["adhd-tasks"];
+    if (Array.isArray(tasks)) {
+      b.appData["adhd-tasks"] = (tasks as any[]).map((t: any) => {
+        if (t && typeof t === "object" && !t.updatedAt) {
+          return { ...t, updatedAt: t.createdAt ?? b.exportedAt };
+        }
+        return t;
+      });
+    }
+    b.version = 2;
+  }
+
+  return b;
 }
 
 /**
@@ -230,11 +257,10 @@ export function importAppData(backup: AppBackup): void {
   if (!backup || typeof backup !== "object" || !backup.appData) {
     throw new Error("Invalid backup format: missing appData field.");
   }
-  if (backup.version !== 1) {
-    throw new Error(`Unsupported backup version: ${backup.version}`);
-  }
+  // Migrate old backups forward instead of rejecting them
+  const migrated = migrateBackup(backup);
 
-  for (const [key, value] of Object.entries(backup.appData)) {
+  for (const [key, value] of Object.entries(migrated.appData)) {
     try {
       localStorage.setItem(key, typeof value === "string" ? value : JSON.stringify(value));
     } catch {
@@ -334,4 +360,22 @@ export function mergeTombstones(
     }
   }
   return result;
+}
+
+/**
+ * Prune tombstones older than `daysToKeep` days.
+ * Call before exporting a backup to prevent the tombstone map growing unbounded.
+ */
+export function pruneTombstones(daysToKeep = 90): void {
+  try {
+    const existing: Record<string, string> = JSON.parse(
+      localStorage.getItem(DELETED_IDS_KEY) ?? "{}"
+    );
+    const cutoff = new Date(Date.now() - daysToKeep * 24 * 60 * 60 * 1000).toISOString();
+    const pruned: Record<string, string> = {};
+    for (const [id, ts] of Object.entries(existing)) {
+      if (ts >= cutoff) pruned[id] = ts;
+    }
+    localStorage.setItem(DELETED_IDS_KEY, JSON.stringify(pruned));
+  } catch { /* ignore */ }
 }
