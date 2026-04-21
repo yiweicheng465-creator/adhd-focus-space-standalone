@@ -232,7 +232,7 @@ function DayCell({
           {log?.wrapUpDone && <div style={{ width: 5, height: 5, borderRadius: "50%", background: M.sage }} />}
           {(log?.dumpCount ?? 0) > 0 && <div style={{ width: 5, height: 5, borderRadius: "50%", background: M.coral }} />}
           {((log?.winsCount ?? 0) > 0 || hasFocusWins) && <div style={{ width: 5, height: 5, borderRadius: "50%", background: M.gold }} />}
-          {hasRoutineDone && <div title={`${log?.routinesDone}/${log?.routinesTotal} routines`} style={{ width: 5, height: 5, borderRadius: "50%", background: "oklch(0.55 0.14 245)" }} />}
+          {hasRoutineDone && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "oklch(0.55 0.14 245)" }} />}
         </div>
       )}
       {moodColor && (
@@ -768,6 +768,7 @@ export function MonthlyProgress({ wins, tasks, blockHistory = {}, blockStreak = 
             { color: M.sage, label: "Wrap-up" },
             { color: M.coral, label: "Brain dump" },
             { color: M.gold, label: "Wins" },
+            { color: "oklch(0.55 0.14 245)", label: "Routines" },
           ].map(l => (
             <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <div style={{ width: 7, height: 7, borderRadius: "50%", background: l.color }} />

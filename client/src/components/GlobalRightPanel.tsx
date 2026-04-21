@@ -530,7 +530,7 @@ function RoutinePopup({ onClose, onLogWin, onUndoWin }: { onClose: () => void; o
 
   const saveDoneToday = (ids: Set<string>) => {
     setDoneToday(ids);
-    localStorage.setItem("adhd-routine-done", JSON.stringify({ date: todayKey, ids: [...ids] }));
+    localStorage.setItem("adhd-routine-done", JSON.stringify({ date: todayKey, ids: [...ids], updatedAt: new Date().toISOString() }));
     // Also persist routine counts to adhd-daily-logs so Monthly page shows accurate data
     try {
       const dailyLogsKey = new Date().toDateString(); // e.g. "Mon Apr 07 2026"
@@ -543,6 +543,7 @@ function RoutinePopup({ onClose, onLogWin, onUndoWin }: { onClose: () => void; o
         routinesDone,
         routinesTotal,
         routinesDoneIds: [...ids],
+        routinesDoneUpdatedAt: new Date().toISOString(), // timestamp for last-writer-wins merge
         score: Math.min(100, (existing.score ?? 0) - ((existing.routinesDone ?? 0) * 5) + routinesDone * 5),
       };
       localStorage.setItem("adhd-daily-logs", JSON.stringify(logs));

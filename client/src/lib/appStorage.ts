@@ -170,16 +170,17 @@ export function mergeAppData(local: AppBackup, remote: AppBackup): AppBackup {
 
     // Both sides have a value — apply merge strategy
 
-    // ── adhd-routine-done: { date: "YYYY-MM-DD", ids: string[] } ──
-    // Union the ids arrays when both sides have the same date; if dates differ
-    // keep the one that is for today (or the newer date).
+    // ── adhd-routine-done: { date: "YYYY-MM-DD", ids: string[], updatedAt?: string } ──
+    // Use last-writer-wins when both sides have the same date (so undos are
+    // respected). Fall back to the more recent date if dates differ.
     if (key === "adhd-routine-done") {
-      const ra = a as { date?: string; ids?: string[] };
-      const rb = b as { date?: string; ids?: string[] };
+      const ra = a as { date?: string; ids?: string[]; updatedAt?: string };
+      const rb = b as { date?: string; ids?: string[]; updatedAt?: string };
       if (ra.date && rb.date && ra.date === rb.date) {
-        // Same day — union the completed IDs so no completion is lost
-        const unionIds = Array.from(new Set([...(ra.ids ?? []), ...(rb.ids ?? [])]));
-        merged[key] = { date: ra.date, ids: unionIds };
+        // Same day — pick whichever was written most recently (respects undos)
+        const tsA = ra.updatedAt ? new Date(ra.updatedAt).getTime() : 0;
+        const tsB = rb.updatedAt ? new Date(rb.updatedAt).getTime() : 0;
+        merged[key] = tsA >= tsB ? ra : rb;
       } else {
         // Different dates — keep whichever is more recent
         const dateA = ra.date ?? "";
@@ -202,11 +203,17 @@ export function mergeAppData(local: AppBackup, remote: AppBackup): AppBackup {
         const db = logsB[day];
         if (!da) { mergedLogs[day] = db; continue; }
         if (!db) { mergedLogs[day] = da; continue; }
-        // Both sides have an entry for this day — merge field by field
-        const doneIds = Array.from(new Set([
-          ...(da.routinesDoneIds ?? []),
-          ...(db.routinesDoneIds ?? []),
-        ]));
+        // Both sides have an entry for this day — merge field by field.
+        // For routines: use last-writer-wins based on routinesDoneUpdatedAt so
+        // that explicit undos on one device are respected and not overwritten by
+        // a stale backup from the other device.
+        const tsA = da.routinesDoneUpdatedAt ? new Date(da.routinesDoneUpdatedAt).getTime() : 0;
+        const tsB = db.routinesDoneUpdatedAt ? new Date(db.routinesDoneUpdatedAt).getTime() : 0;
+        // Pick the side that wrote routine data most recently
+        const routineSrc = tsA >= tsB ? da : db;
+        const doneIds: string[] = routineSrc.routinesDoneIds ?? [];
+        const routinesTotal = Math.max(da.routinesTotal ?? 0, db.routinesTotal ?? 0);
+        const routinesDone = routineSrc.routinesDone ?? doneIds.length;
         mergedLogs[day] = {
           ...da,
           wrapUpDone: da.wrapUpDone || db.wrapUpDone,
@@ -215,8 +222,8 @@ export function mergeAppData(local: AppBackup, remote: AppBackup): AppBackup {
           tasksCompleted: Math.max(da.tasksCompleted ?? 0, db.tasksCompleted ?? 0),
           focusSessions: Math.max(da.focusSessions ?? 0, db.focusSessions ?? 0),
           blocksCompleted: Math.max(da.blocksCompleted ?? 0, db.blocksCompleted ?? 0),
-          routinesDone: Math.max(da.routinesDone ?? 0, db.routinesDone ?? 0),
-          routinesTotal: Math.max(da.routinesTotal ?? 0, db.routinesTotal ?? 0),
+          routinesDone,
+          routinesTotal,
           routinesDoneIds: doneIds,
           score: Math.max(da.score ?? 0, db.score ?? 0),
           // Keep mood from the newer backup's entry (prefer non-null)
