@@ -920,7 +920,7 @@ export function FocusTimer({ onSessionComplete, onBlockComplete, onQuit, fillHei
         </div>
         {/* Death counter + sound + settings */}
         <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "0 7px", borderLeft: `1px solid ${BORDER}50` }}>
-          <span title={`${deaths} quit${deaths !== 1 ? "s" : ""} total`} style={{ fontSize: 7, color: BORDER, letterSpacing: "0.08em", cursor: "default" }}>💀{deaths}</span>
+          <span title={`${deaths} quit${deaths !== 1 ? "s" : ""} lifetime\nLifetime total: ${deaths}`} style={{ fontSize: 7, color: BORDER, letterSpacing: "0.08em", cursor: "default" }}>💀{deaths}</span>
           <button
             onClick={() => { setShowSound(s => !s); setShowSettings(false); }}
             title="Sound & music"
