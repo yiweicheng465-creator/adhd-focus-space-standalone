@@ -104,20 +104,24 @@ function playTick(ctx: AudioContext, volume = 0.5) {
   osc.stop(ctx.currentTime + 0.08);
 }
 
-/** Block complete fanfare — soft 3-bell chime sequence */
+/** Block complete fanfare — 3-bell ascending chime sequence (ding... ding... ding) */
 function playFanfare(ctx: AudioContext, volume = 0.5) {
-  // Single soft ding — C5
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-  osc.type = "sine";
-  osc.frequency.setValueAtTime(523, ctx.currentTime);
-  gain.gain.setValueAtTime(0, ctx.currentTime);
-  gain.gain.linearRampToValueAtTime(volume * 0.18, ctx.currentTime + 0.02);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
-  osc.start(ctx.currentTime);
-  osc.stop(ctx.currentTime + 1.2);
+  // Three ascending bells: C5 → E5 → G5, spaced 0.45s apart
+  const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+  notes.forEach((freq, i) => {
+    const t = ctx.currentTime + i * 0.45;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(freq, t);
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(volume * 0.55, t + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 1.4);
+    osc.start(t);
+    osc.stop(t + 1.4);
+  });
 }
 
 // ── Context shape ─────────────────────────────────────────────────────────────
@@ -391,10 +395,9 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
 
     if (phase === "running" && prev !== "running") {
       // Timer just started or resumed — play music
-      if (!timerPausedRef.current || prev === "paused") {
-        timerPausedRef.current = false;
-        playAudio();
-      }
+      // Allow resume from: initial start, manual pause, or block_complete stop
+      timerPausedRef.current = false;
+      playAudio();
     } else if (phase === "paused" && prev === "running") {
       // Timer just paused — pause music and remember we did it
       timerPausedRef.current = true;
@@ -445,8 +448,9 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
     }, [sfxEnabled, sfxVolume]),
     stopMusicForBlockComplete: useCallback(() => {
       // Pause audio element without touching musicEnabled state
-      // so music resumes automatically when the next session starts (timer goes to "running")
-      // Set timerPausedRef = true so onTimerPhaseChange("running") will resume music
+      // Clear pendingAutoplayRef so the retry-on-gesture listener doesn't restart
+      // music after the block is complete (e.g. if page was refreshed mid-session)
+      pendingAutoplayRef.current = false;
       pauseAudio();
       timerPausedRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
