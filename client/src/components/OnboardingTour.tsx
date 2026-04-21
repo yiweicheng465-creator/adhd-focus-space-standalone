@@ -1269,9 +1269,11 @@ export function OnboardingTour({ onClose, onNavigate, onOpenWrapUp, onCloseWrapU
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key !== "ArrowRight") return;
-      // Don't fire if user is typing in an input/textarea
+      // On the Quick Capture step (index 13) the modal input has focus —
+      // allow → to advance the tour even from inside an input/textarea.
+      const isQuickCaptureStep = phase === "touring" && stepIndex === 13;
       const tag = (e.target as HTMLElement).tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement).isContentEditable) return;
+      if (!isQuickCaptureStep && (tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement).isContentEditable)) return;
       e.preventDefault();
       if (phase === "welcome") {
         setPhase("touring");
