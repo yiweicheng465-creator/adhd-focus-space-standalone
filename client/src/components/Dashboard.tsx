@@ -286,7 +286,8 @@ ${routineContext}`;
             const nn = new Date();
             let dueDate = action.dueDate as string | undefined;
             if (dueDate === "null" || dueDate === "undefined") dueDate = undefined;
-            if (dueDate === "today") dueDate = `${nn.getFullYear()}-${String(nn.getMonth()+1).padStart(2,'0')}-${String(nn.getDate()).padStart(2,'0')}`;
+            const todayStr = `${nn.getFullYear()}-${String(nn.getMonth()+1).padStart(2,'0')}-${String(nn.getDate()).padStart(2,'0')}`;
+            if (!dueDate || dueDate === "today") dueDate = todayStr;
             if (dueDate === "tomorrow") { const d = new Date(); d.setDate(d.getDate()+1); dueDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
             // Use direct goalId from AI, or fall back to name match
             let goalId = action.goalId && goals.find(g => g.id === action.goalId) ? action.goalId : undefined;
@@ -302,10 +303,10 @@ ${routineContext}`;
               context: (action.context as Task["context"]) ?? "work",
               done: false,
               createdAt: new Date(),
-              ...(dueDate ? { dueDate } : {}),
+              dueDate,
               ...(goalId ? { goalId } : {}),
             });
-            displayReply += `\n✓ Created task: "${action.text}"${dueDate ? ` (due ${dueDate})` : ""}${linkedGoal ? ` → linked to goal "${linkedGoal.text}"` : ""}`;
+            displayReply += `\n✓ Created task: "${action.text}"${linkedGoal ? ` → linked to goal "${linkedGoal.text}"` : ""}`;
           } else if (action.type === "create_dump" && action.text) {
             onDumpCreate?.(action.text);
             displayReply += `\n✓ Dumped to Brain Dump: "${action.text}"`;
