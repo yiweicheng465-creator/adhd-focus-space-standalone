@@ -694,6 +694,10 @@ export function FocusTimer({ onSessionComplete, onBlockComplete, onQuit, fillHei
   const [sessionsToday, setSessionsToday] = useState<number>(() => {
     try { return parseInt(localStorage.getItem(todaySessionsKey) ?? "0", 10) || 0; } catch { return 0; }
   });
+  // Lifetime total deep focus sessions (never resets, backed up)
+  const [lifetimeSessions, setLifetimeSessions] = useState<number>(() => {
+    try { return parseInt(localStorage.getItem("cyber-pet-total-sessions") ?? "0", 10) || 0; } catch { return 0; }
+  });
   const [blink, setBlink] = useState(false);
   const [bounce, setBounce] = useState(false);
   const [hearts, setHearts] = useState<HeartBubble[]>([]);
@@ -727,6 +731,10 @@ export function FocusTimer({ onSessionComplete, onBlockComplete, onQuit, fillHei
       const newCount = sessionsToday + 1;
       setSessionsToday(newCount);
       try { localStorage.setItem(todaySessionsKey, String(newCount)); } catch {}
+      // Increment lifetime total
+      const newLifetime = lifetimeSessions + 1;
+      setLifetimeSessions(newLifetime);
+      try { localStorage.setItem("cyber-pet-total-sessions", String(newLifetime)); } catch {}
       // Every 4 sessions completed today → restore 1 heart (up to max 5)
       if (newCount % 4 === 0 && hearts5 < 5) {
         saveHearts5(hearts5 + 1);
@@ -821,14 +829,14 @@ export function FocusTimer({ onSessionComplete, onBlockComplete, onQuit, fillHei
 
   const resetDeaths = () => { setDeaths(0); saveHearts5(5); };
 
-  // Single heart + today's deep focus session count (reuses sessionsToday which tracks the same key)
+  // Single heart + lifetime deep focus session count
   const renderHearts = () => (
     <span
-      title={`${sessionsToday} deep focus session${sessionsToday !== 1 ? "s" : ""} completed today`}
+      title={`${lifetimeSessions} deep focus session${lifetimeSessions !== 1 ? "s" : ""} completed (lifetime total)`}
       style={{ fontSize: 9, letterSpacing: 1, cursor: "default", display: "flex", alignItems: "center", gap: 2 }}
     >
       <span style={{ color: "#FAF6F1" }}>❤</span>
-      <span style={{ color: "#FAF6F1", fontFamily: "'JetBrains Mono', monospace", fontSize: 7, fontWeight: 700 }}>{sessionsToday}</span>
+      <span style={{ color: "#FAF6F1", fontFamily: "'JetBrains Mono', monospace", fontSize: 7, fontWeight: 700 }}>{lifetimeSessions}</span>
     </span>
   );
 

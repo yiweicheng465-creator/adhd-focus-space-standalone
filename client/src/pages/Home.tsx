@@ -653,7 +653,7 @@ export default function Home() {
                   // Retro lo-fi pastel palette — one per stat
                   const STAT_COLORS = [
                     { num: "#7A3060", lbl: "#C070A0" }, // tasks: dusty rose-plum
-                    { num: "#3A6840", lbl: "#70A878" }, // wins: sage green
+                    { num: "#7A3858", lbl: "#C07898" }, // wins: dusty mauve-rose
                     { num: "#3A4878", lbl: "#7080C8" }, // agents: dusty indigo
                     { num: "#7A5820", lbl: "#C09840" }, // routine: warm amber
                   ];
@@ -665,7 +665,7 @@ export default function Home() {
                   ];
                   return stats;
                 })().map(({ label, value, section }, i, arr) => {
-                  const sc = [{ num: "#7A3060", lbl: "#C070A0" }, { num: "#3A6840", lbl: "#70A878" }, { num: "#3A4878", lbl: "#7080C8" }, { num: "#7A5820", lbl: "#C09840" }][i] ?? { num: "#6A1840", lbl: "#C070A0" };
+                  const sc = [{ num: "#7A3060", lbl: "#C070A0" }, { num: "#7A3858", lbl: "#C07898" }, { num: "#3A4878", lbl: "#7080C8" }, { num: "#7A5820", lbl: "#C09840" }][i] ?? { num: "#6A1840", lbl: "#C070A0" };
                   return (
                   <React.Fragment key={label}>
                     <button
