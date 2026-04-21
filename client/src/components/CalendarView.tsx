@@ -306,7 +306,7 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle, doneFilter = 
               display: "flex", alignItems: "center", justifyContent: "center",
               background: hoverZone === "left"
                 ? "linear-gradient(to right, oklch(0.58 0.18 340 / 0.22), transparent)"
-                : "linear-gradient(to right, oklch(0.58 0.18 340 / 0.06), transparent)",
+                : "transparent",
               borderLeft: hoverZone === "left" ? `2.5px dashed ${M.coral}` : "2px dashed transparent",
               borderRadius: "6px 0 0 6px",
               cursor: "w-resize", transition: "all 0.15s",
@@ -322,7 +322,7 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle, doneFilter = 
               display: "flex", alignItems: "center", justifyContent: "center",
               background: hoverZone === "right"
                 ? "linear-gradient(to left, oklch(0.58 0.18 340 / 0.22), transparent)"
-                : "linear-gradient(to left, oklch(0.58 0.18 340 / 0.06), transparent)",
+                : "transparent",
               borderRight: hoverZone === "right" ? `2.5px dashed ${M.coral}` : "2px dashed transparent",
               borderRadius: "0 6px 6px 0",
               cursor: "e-resize", transition: "all 0.15s",
