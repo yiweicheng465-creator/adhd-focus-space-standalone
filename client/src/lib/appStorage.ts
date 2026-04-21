@@ -169,6 +169,87 @@ export function mergeAppData(local: AppBackup, remote: AppBackup): AppBackup {
     if (a === undefined) { merged[key] = b; continue; }
 
     // Both sides have a value — apply merge strategy
+
+    // ── adhd-routine-done: { date: "YYYY-MM-DD", ids: string[] } ──
+    // Union the ids arrays when both sides have the same date; if dates differ
+    // keep the one that is for today (or the newer date).
+    if (key === "adhd-routine-done") {
+      const ra = a as { date?: string; ids?: string[] };
+      const rb = b as { date?: string; ids?: string[] };
+      if (ra.date && rb.date && ra.date === rb.date) {
+        // Same day — union the completed IDs so no completion is lost
+        const unionIds = Array.from(new Set([...(ra.ids ?? []), ...(rb.ids ?? [])]));
+        merged[key] = { date: ra.date, ids: unionIds };
+      } else {
+        // Different dates — keep whichever is more recent
+        const dateA = ra.date ?? "";
+        const dateB = rb.date ?? "";
+        merged[key] = dateA >= dateB ? ra : rb;
+      }
+      continue;
+    }
+
+    // ── adhd-daily-logs: { [dateKey]: DailyLog } ──
+    // Deep-merge per-day entries: take the max of numeric fields,
+    // keep wrapUpDone=true if either side has it, union routinesDoneIds.
+    if (key === "adhd-daily-logs") {
+      const logsA = a as Record<string, any>;
+      const logsB = b as Record<string, any>;
+      const allDays = new Set([...Object.keys(logsA), ...Object.keys(logsB)]);
+      const mergedLogs: Record<string, any> = {};
+      for (const day of allDays) {
+        const da = logsA[day];
+        const db = logsB[day];
+        if (!da) { mergedLogs[day] = db; continue; }
+        if (!db) { mergedLogs[day] = da; continue; }
+        // Both sides have an entry for this day — merge field by field
+        const doneIds = Array.from(new Set([
+          ...(da.routinesDoneIds ?? []),
+          ...(db.routinesDoneIds ?? []),
+        ]));
+        mergedLogs[day] = {
+          ...da,
+          wrapUpDone: da.wrapUpDone || db.wrapUpDone,
+          dumpCount: Math.max(da.dumpCount ?? 0, db.dumpCount ?? 0),
+          winsCount: Math.max(da.winsCount ?? 0, db.winsCount ?? 0),
+          tasksCompleted: Math.max(da.tasksCompleted ?? 0, db.tasksCompleted ?? 0),
+          focusSessions: Math.max(da.focusSessions ?? 0, db.focusSessions ?? 0),
+          blocksCompleted: Math.max(da.blocksCompleted ?? 0, db.blocksCompleted ?? 0),
+          routinesDone: Math.max(da.routinesDone ?? 0, db.routinesDone ?? 0),
+          routinesTotal: Math.max(da.routinesTotal ?? 0, db.routinesTotal ?? 0),
+          routinesDoneIds: doneIds,
+          score: Math.max(da.score ?? 0, db.score ?? 0),
+          // Keep mood from the newer backup's entry (prefer non-null)
+          mood: da.mood ?? db.mood,
+          // Keep journalNote from whichever side has one (prefer newer)
+          journalNote: da.journalNote || db.journalNote,
+        };
+      }
+      merged[key] = mergedLogs;
+      continue;
+    }
+
+    // ── adhd-focus-session-list: { [dateKey]: FocusSessionEntry[] } ──
+    // Union session arrays per day (deduplicate by timestamp).
+    if (key === "adhd-focus-session-list") {
+      const fsA = a as Record<string, any[]>;
+      const fsB = b as Record<string, any[]>;
+      const allDays = new Set([...Object.keys(fsA), ...Object.keys(fsB)]);
+      const mergedFs: Record<string, any[]> = {};
+      for (const day of allDays) {
+        const sessA = fsA[day] ?? [];
+        const sessB = fsB[day] ?? [];
+        // Deduplicate by timestamp
+        const byTs = new Map<number, any>();
+        for (const s of [...sessB, ...sessA]) {
+          byTs.set(s.timestamp, s);
+        }
+        mergedFs[day] = Array.from(byTs.values()).sort((x, y) => x.timestamp - y.timestamp);
+      }
+      merged[key] = mergedFs;
+      continue;
+    }
+
     if (Array.isArray(a) && Array.isArray(b)) {
       // Merge arrays: deduplicate by `id`, prefer the item with the latest
       // `updatedAt` timestamp (falls back to `createdAt`, then the newer backup).

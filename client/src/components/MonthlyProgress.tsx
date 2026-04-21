@@ -629,18 +629,18 @@ export function MonthlyProgress({ wins, tasks, blockHistory = {}, blockStreak = 
 
   /* Stats for this month */
   const monthStats = useMemo(() => {
-    let activeDays = 0, wrapDays = 0, dumpDays = 0, totalWins = 0, totalTasks = 0;
+    let activeDays = 0, wrapDays = 0, totalDumps = 0, totalWins = 0, totalTasks = 0;
     for (let d = 1; d <= daysInMonth; d++) {
       const k = dateKey(new Date(viewYear, viewMonth, d));
       const log = logs[k];
       if (!log) continue;
       if (log.wrapUpDone || log.dumpCount > 0 || log.winsCount > 0) activeDays++;
       if (log.wrapUpDone) wrapDays++;
-      if (log.dumpCount > 0) dumpDays++;
+      totalDumps += log.dumpCount ?? 0;  // total entries, not just days-with-dumps
       totalWins += log.winsCount;
       totalTasks += log.tasksCompleted;
     }
-    return { activeDays, wrapDays, dumpDays, totalWins, totalTasks };
+    return { activeDays, wrapDays, totalDumps, totalWins, totalTasks };
   }, [logs, viewYear, viewMonth, daysInMonth]);
 
   const streak = useMemo(() => calcStreak(logs), [logs]);
@@ -673,7 +673,7 @@ export function MonthlyProgress({ wins, tasks, blockHistory = {}, blockStreak = 
           { label: "Streak", value: streak, icon: <Flame size={14} />, color: M.coral },
           { label: "Active days", value: monthStats.activeDays, icon: <CheckCircle2 size={14} />, color: M.sage },
           { label: "Wrap-ups", value: monthStats.wrapDays, icon: <CheckCircle2 size={14} />, color: M.gold },
-          { label: "Dumps", value: monthStats.dumpDays, icon: <Brain size={14} />, color: M.pink },
+          { label: "Dumps", value: monthStats.totalDumps, icon: <Brain size={14} />, color: M.pink },
           { label: "Wins", value: monthStats.totalWins, icon: <Sparkles size={14} />, color: M.gold },
         ].map(s => (
           <div key={s.label} style={{
@@ -811,7 +811,7 @@ function MonthlyAIReview({ viewYear, viewMonth, logs, daysInMonth, streak, month
   viewYear: number; viewMonth: number;
   logs: Record<string, DailyLog>; daysInMonth: number;
   streak: number;
-  monthStats: { activeDays: number; wrapDays: number; dumpDays: number; totalWins: number; totalTasks: number };
+  monthStats: { activeDays: number; wrapDays: number; totalDumps: number; totalWins: number; totalTasks: number };
 }) {
   const [review, setReview] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -831,7 +831,7 @@ function MonthlyAIReview({ viewYear, viewMonth, logs, daysInMonth, streak, month
         `Month: ${MONTHS[viewMonth]} ${viewYear}
 Active days: ${monthStats.activeDays}/${daysInMonth}
 Wrap-up days: ${monthStats.wrapDays}
-Brain dump days: ${monthStats.dumpDays}
+Brain dump entries: ${monthStats.totalDumps}
 Wins logged: ${monthStats.totalWins}
 Tasks completed: ${monthStats.totalTasks}
 Streak: ${streak} days
