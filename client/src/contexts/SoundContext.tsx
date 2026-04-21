@@ -259,11 +259,15 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Retry autoplay on first user gesture (handles browser autoplay policy)
+  // Only retry if the timer is actually running — not after block complete
   useEffect(() => {
     const retry = () => {
-      if (pendingAutoplayRef.current && musicEnabled) {
+      if (pendingAutoplayRef.current && musicEnabled && timerPhaseRef.current === "running") {
         pendingAutoplayRef.current = false;
         playAudio();
+      } else {
+        // Clear the pending flag even if we don't play, so it doesn't fire later
+        pendingAutoplayRef.current = false;
       }
     };
     window.addEventListener("click", retry, { once: true, capture: true });
@@ -417,9 +421,10 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
     }, [sfxEnabled, sfxVolume]),
     stopMusicForBlockComplete: useCallback(() => {
       // Pause audio element without touching musicEnabled state
-      // so music resumes automatically on next session start
+      // so music resumes automatically when the next session starts (timer goes to "running")
+      // Set timerPausedRef = true so onTimerPhaseChange("running") will resume music
       pauseAudio();
-      timerPausedRef.current = false;
+      timerPausedRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pauseAudio]),
   };
