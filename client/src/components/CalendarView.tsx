@@ -293,7 +293,7 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle, doneFilter = 
           </button>
         </div>
         <div style={{ display: "flex", gap: 4, flex: 1, minHeight: 0, position: "relative" }}>
-          {/* Drag-to-advance zones: dashed border + glow when hovering during drag */}
+          {/* Drag-to-advance zones: only active during drag, fully invisible otherwise */}
           <div
             onDragEnter={() => startAdvance(-1)}
             onDragLeave={cancelAdvance}
@@ -306,7 +306,10 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle, doneFilter = 
                 : "transparent",
               borderLeft: hoverZone === "left" ? `2.5px dashed ${M.coral}` : "2px dashed transparent",
               borderRadius: "6px 0 0 6px",
-              cursor: "w-resize", transition: "all 0.15s",
+              // Only intercept pointer events during an active drag — prevents cursor bleed-through
+              pointerEvents: dragId ? "auto" : "none",
+              cursor: dragId ? "w-resize" : "default",
+              transition: "all 0.15s",
             }}
           >
           </div>
@@ -322,7 +325,10 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle, doneFilter = 
                 : "transparent",
               borderRight: hoverZone === "right" ? `2.5px dashed ${M.coral}` : "2px dashed transparent",
               borderRadius: "0 6px 6px 0",
-              cursor: "e-resize", transition: "all 0.15s",
+              // Only intercept pointer events during an active drag — prevents cursor bleed-through
+              pointerEvents: dragId ? "auto" : "none",
+              cursor: dragId ? "e-resize" : "default",
+              transition: "all 0.15s",
             }}
           >
           </div>
