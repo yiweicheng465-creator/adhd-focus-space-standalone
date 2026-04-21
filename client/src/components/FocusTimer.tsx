@@ -821,30 +821,14 @@ export function FocusTimer({ onSessionComplete, onBlockComplete, onQuit, fillHei
 
   const resetDeaths = () => { setDeaths(0); saveHearts5(5); };
 
-  // ── Cumulative all-time sessions (never resets) ──────────────────────────
-  const TOTAL_SESSIONS_KEY = "cyber-pet-total-sessions";
-  const [totalSessCount, setTotalSessCount] = useLocalStorage<number>(TOTAL_SESSIONS_KEY, 0);
-  // Increment when a session completes
-  const prevPhaseForSess = useRef(phase);
-  useEffect(() => {
-    if (
-      (phase === "complete" || phase === "block_complete") &&
-      prevPhaseForSess.current !== "complete" &&
-      prevPhaseForSess.current !== "block_complete"
-    ) {
-      setTotalSessCount((n: number) => n + 1);
-    }
-    prevPhaseForSess.current = phase;
-  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Single heart + cumulative session count
+  // Single heart + today's deep focus session count (reuses sessionsToday which tracks the same key)
   const renderHearts = () => (
     <span
-      title={`${totalSessCount} session${totalSessCount !== 1 ? "s" : ""} completed`}
+      title={`${sessionsToday} deep focus session${sessionsToday !== 1 ? "s" : ""} completed today`}
       style={{ fontSize: 9, letterSpacing: 1, cursor: "default", display: "flex", alignItems: "center", gap: 2 }}
     >
       <span style={{ color: "#FAF6F1" }}>❤</span>
-      <span style={{ color: "#FAF6F1", fontFamily: "'JetBrains Mono', monospace", fontSize: 7, fontWeight: 700 }}>{totalSessCount}</span>
+      <span style={{ color: "#FAF6F1", fontFamily: "'JetBrains Mono', monospace", fontSize: 7, fontWeight: 700 }}>{sessionsToday}</span>
     </span>
   );
 

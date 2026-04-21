@@ -212,7 +212,6 @@ export default function StorageBackup() {
   const { user } = useAuth();
 
   // All state declared first to avoid TDZ errors with useEffects below
-  const [showDriveSetup, setShowDriveSetup] = useState(false);
   const [gdStatus, setGdStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [gdMessage, setGdMessage] = useState("");
   const [lastBackupInfo, setLastBackupInfo] = useState<string | null>(() => localStorage.getItem("adhd-last-backup-info"));
@@ -419,29 +418,48 @@ export default function StorageBackup() {
 
       {/* Current mode card */}
       <Section title="Current Mode">
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <HardDrive size={16} style={{ color: M.coral, flexShrink: 0 }} />
-          <div>
-            <p style={{ fontSize: 13, fontWeight: 600, color: M.ink, fontFamily: "'DM Sans', sans-serif" }}>
-              Local Storage (default)
-            </p>
-            <p style={{ fontSize: 11, color: M.muted, fontFamily: "'DM Sans', sans-serif" }}>
-              All data is stored in your browser. No account required.
-            </p>
+        {getPersistedToken() && gdClientId ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, color: M.sage }}>
+              <path d="M22 16.74V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-3.26A2 2 0 0 1 3.26 15H20.74A2 2 0 0 1 22 16.74z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M6.36 15a6 6 0 0 1 11.28 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
+            </svg>
+            <div>
+              <p style={{ fontSize: 13, fontWeight: 600, color: M.sage, fontFamily: "'DM Sans', sans-serif" }}>
+                Google Drive Backup Active
+              </p>
+              <p style={{ fontSize: 11, color: M.muted, fontFamily: "'DM Sans', sans-serif" }}>
+                Data is backed up to your Google Drive automatically every hour.
+              </p>
+            </div>
           </div>
-        </div>
-
-        {/* Warning */}
-        <div style={{
-          display: "flex", gap: 8, alignItems: "flex-start",
-          background: M.warnBg, border: `1px solid ${M.warnBdr}`,
-          padding: "10px 12px", marginTop: 12,
-        }}>
-          <AlertTriangle size={14} style={{ color: M.warn, flexShrink: 0, marginTop: 1 }} />
-          <p style={{ fontSize: 11, color: M.warn, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>
-            Your data is stored locally. If you clear browser data, it will be lost unless backed up.
-          </p>
-        </div>
+        ) : (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <HardDrive size={16} style={{ color: M.coral, flexShrink: 0 }} />
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 600, color: M.ink, fontFamily: "'DM Sans', sans-serif" }}>
+                  Local Storage (default)
+                </p>
+                <p style={{ fontSize: 11, color: M.muted, fontFamily: "'DM Sans', sans-serif" }}>
+                  All data is stored in your browser. No account required.
+                </p>
+              </div>
+            </div>
+            {/* Warning */}
+            <div style={{
+              display: "flex", gap: 8, alignItems: "flex-start",
+              background: M.warnBg, border: `1px solid ${M.warnBdr}`,
+              padding: "10px 12px", marginTop: 12,
+            }}>
+              <AlertTriangle size={14} style={{ color: M.warn, flexShrink: 0, marginTop: 1 }} />
+              <p style={{ fontSize: 11, color: M.warn, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>
+                Your data is stored locally. If you clear browser data, it will be lost unless backed up.
+              </p>
+            </div>
+          </>
+        )}
 
         {/* Last backed up badge — always visible */}
         <div style={{
@@ -485,59 +503,7 @@ export default function StorageBackup() {
       </Section>
 
       {/* Google Drive backup */}
-      <Section title='Google Drive Backup' subtitle="" badge="Beta">
-
-        {/* Collapsible setup guide */}
-        <div style={{ marginBottom: 14 }}>
-          <button
-            onClick={() => setShowDriveSetup(v => !v)}
-            style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: 0, marginBottom: showDriveSetup ? 10 : 0 }}
-          >
-            <span style={{ fontSize: 10, color: "oklch(0.55 0.14 340)", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
-              {showDriveSetup ? "▾" : "▸"} This is a beta feature — want to give it a try? Follow the setup guide here
-            </span>
-          </button>
-
-          {showDriveSetup && (
-            <>
-              <div style={{ marginBottom: 12, padding: "10px 14px", background: "oklch(0.97 0.025 60)", border: "1px solid oklch(0.82 0.07 60)", borderRadius: 4, display: "flex", gap: 10 }}>
-                <AlertTriangle size={14} style={{ color: "oklch(0.55 0.15 60)", flexShrink: 0, marginTop: 1 }} />
-                <div>
-                  <p style={{ fontSize: 11, fontWeight: 600, color: "oklch(0.40 0.10 60)", fontFamily: "'DM Sans', sans-serif", marginBottom: 3 }}>
-                    You need to be added as a test user first.
-                  </p>
-                  <p style={{ fontSize: 11, color: "oklch(0.48 0.08 60)", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6, margin: 0 }}>
-                    This app is in testing mode. Send your Gmail to the app owner and ask to be added.
-                  </p>
-                  {user?.id && (
-                    <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
-                      <code style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, background: "oklch(0.93 0.025 60)", padding: "3px 8px", borderRadius: 3, color: "oklch(0.35 0.10 60)" }}>
-                        {user.id}
-                      </code>
-                      <button onClick={() => { navigator.clipboard.writeText(user.id); toast.success("Gmail copied!"); }}
-                        style={{ fontSize: 10, color: M.coral, background: "none", border: "none", cursor: "pointer", textDecoration: "underline", fontFamily: "'DM Sans', sans-serif" }}>
-                        Copy
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div style={{ marginBottom: 4, display: "flex", flexDirection: "column", gap: 8 }}>
-                {[
-                  { n: "1", label: "Copy your Gmail above and send it to the app owner to get added" },
-                  { n: "2", label: "Once added, click 'Backup to Google Drive' — a Google permission popup will appear" },
-                  { n: "3", label: "Approve access — your backup saves to your own Google Drive automatically" },
-                ].map(({ n, label }) => (
-                  <div key={n} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                    <div style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, background: M.coral, color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Space Mono', monospace", fontSize: 8, fontWeight: 700 }}>{n}</div>
-                    <p style={{ fontSize: 11, color: M.ink, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6, margin: 0, paddingTop: 1 }}>{label}</p>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
+      <Section title='Google Drive Backup' subtitle="">
 
         {/* Buttons */}
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -568,9 +534,9 @@ export default function StorageBackup() {
         <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 4 }}>
           {/* Auto-backup notice — shown once user has a valid token */}
           {getPersistedToken() && gdClientId && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", background: "oklch(0.97 0.018 340)", border: "1px solid oklch(0.82 0.08 340)", borderRadius: 4 }}>
-              <CheckCircle2 size={11} style={{ color: "oklch(0.50 0.14 168)", flexShrink: 0 }} />
-              <p style={{ fontSize: 10, color: "oklch(0.40 0.12 168)", fontFamily: "'DM Sans', sans-serif", margin: 0, flex: 1 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0" }}>
+              <CheckCircle2 size={11} style={{ color: M.coral, flexShrink: 0 }} />
+              <p style={{ fontSize: 10, color: M.coral, fontFamily: "'DM Sans', sans-serif", margin: 0, flex: 1 }}>
                 <strong>Google Drive connected</strong> — auto-backup every hour.
               </p>
               <button
@@ -581,7 +547,7 @@ export default function StorageBackup() {
                   toast.success("Google Drive disconnected.");
                   window.location.reload();
                 }}
-                style={{ flexShrink: 0, fontSize: 9, fontFamily: "'Space Mono', monospace", letterSpacing: "0.06em", padding: "2px 7px", borderRadius: 3, border: "1px solid oklch(0.72 0.08 340)", background: "transparent", color: "oklch(0.50 0.08 340)", cursor: "pointer" }}
+                style={{ flexShrink: 0, fontSize: 10, fontFamily: "'DM Sans', sans-serif", background: "none", border: "none", padding: 0, color: M.muted, cursor: "pointer", textDecoration: "underline" }}
               >
                 Disconnect
               </button>
@@ -597,12 +563,13 @@ export default function StorageBackup() {
       {/* What's backed up */}
       <Section title="What Gets Backed Up">
         {[
-          { label: "Core data", items: ["Tasks (due dates, goal links, tags)", "Goals (progress, archive)", "Wins", "Agents + prompts", "Brain Dump entries", "Daily logs + My Diary", "Focus sessions", "Mood history"] },
+          { label: "Core data", items: ["Tasks (due dates, goal links, tags)", "Goals (progress, archive)", "Wins", "Agents + prompts", "Brain Dump entries", "Daily logs", "Care log", "Focus sessions (daily list)", "Mood history"] },
           { label: "Routines", items: ["Daily routines (name, days, category)", "Today's routine completion state"] },
           { label: "AI & Coach", items: ["AI chat history", "Life Coach conversation", "Life Coach insights", "Life Dashboard (direction & goals)"] },
-          { label: "Layout & order", items: ["Calendar day order", "Priority matrix order", "Goal task order", "Deleted custom tags", "AI panel preference"] },
+          { label: "Layout & order", items: ["Calendar day order", "Priority matrix (quadrant map + task order)", "Goal task order", "Deleted custom tags", "AI panel preference"] },
+          { label: "Streaks & stats", items: ["Block streak data", "Open-day streak", "Total AI calls", "Daily check-in history"] },
           { label: "Sound & music", items: ["Sound effects on/off", "SFX volume", "Music on/off", "Music volume", "Music track"] },
-          { label: "Appearance", items: ["Display name", "Theme hue", "Theme hue presets (6 slots)", "Film grain intensity/speed", "Work mode", "Custom quick chips", "Block streak data", "Open-day streak", "Pixel pet deaths"] },
+          { label: "Appearance", items: ["Display name", "Theme hue", "Theme hue presets (6 slots)", "Film grain intensity/speed", "Work mode", "Custom quick chips", "Pixel pet deaths", "All-time focus session count"] },
         ].map(({ label, items }) => (
           <div key={label} style={{ marginBottom: 10 }}>
             <p style={{ fontSize: 9, fontFamily: "'Space Mono', monospace", letterSpacing: "0.10em", textTransform: "uppercase", color: M.coral, marginBottom: 4 }}>{label}</p>
@@ -617,7 +584,7 @@ export default function StorageBackup() {
           </div>
         ))}
         <p style={{ fontSize: 10, color: M.muted, fontFamily: "'DM Sans', sans-serif", marginTop: 6, borderTop: `1px solid ${M.border}`, paddingTop: 8 }}>
-          Not backed up: browser session state, one-time skip flags, backup timestamps.
+          Not backed up: browser session state, sidebar width, name-skip flag, backup timestamps, today's focus session count (resets daily).
         </p>
       </Section>
     </div>
@@ -661,13 +628,13 @@ function ActionButton({
         display: "flex", alignItems: "center", gap: 6,
         padding: "8px 14px",
         background: primary ? M.coral : "transparent",
-        border: `1px solid ${primary ? M.coral : M.border}`,
+        border: primary ? `1px solid ${M.coral}` : "none",
         color: primary ? "white" : M.ink,
         fontFamily: "'JetBrains Mono', monospace",
         fontSize: 10, letterSpacing: "0.08em",
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.5 : 1,
-        boxShadow: primary ? `2px 2px 0 oklch(0.40 0.15 340)` : `1px 1px 0 ${M.border}`,
+        boxShadow: primary ? `2px 2px 0 oklch(0.40 0.15 340)` : "none",
         transition: "opacity 0.15s",
       }}
     >
