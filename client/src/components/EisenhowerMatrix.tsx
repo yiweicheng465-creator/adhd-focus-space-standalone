@@ -165,7 +165,7 @@ export function EisenhowerMatrix({
     onQuadrantMapChange(newMap);
     const newPriority = quadrantToPriority(qId);
     const updated = tasks.map((t) =>
-      t.id === id ? { ...t, priority: newPriority } : t
+      t.id === id ? { ...t, priority: newPriority, updatedAt: new Date().toISOString() } : t
     );
     onTasksChange(updated);
     setDragOverQ(null);
@@ -192,7 +192,7 @@ export function EisenhowerMatrix({
       const newMap = { ...quadrantMap, [draggedId]: qId };
       onQuadrantMapChange(newMap);
       const newPriority = quadrantToPriority(qId);
-      onTasksChange(tasks.map(t => t.id === draggedId ? { ...t, priority: newPriority } : t));
+      onTasksChange(tasks.map(t => t.id === draggedId ? { ...t, priority: newPriority, updatedAt: new Date().toISOString() } : t));
     }
 
     // Reorder within the quadrant
