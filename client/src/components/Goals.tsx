@@ -181,7 +181,7 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
       {/* Hidden trigger for external Life Coach button */}
       <button data-life-coach-trigger onClick={() => setShowLifeCoach(true)} style={{ display: "none" }} />
       {/* Cat sticker: salmon sitting cat — bottom-right corner */}
-      <img src={CAT_SALMON} alt="" aria-hidden="true" style={{ position: "absolute", bottom: 0, right: 0, width: 70, opacity: 0.38, pointerEvents: "none", zIndex: 5 }} />
+      <img src={CAT_SALMON} alt="" aria-hidden="true" style={{ position: "absolute", bottom: 0, right: 0, width: 70, opacity: 0.18, pointerEvents: "none", zIndex: 0 }} />
       {showLifeCoach && <LifeCoachModal onClose={() => setShowLifeCoach(false)} onClear={() => setInsightKey(k => k + 1)} onDashboardUpdate={() => { setInsightKey(k => k + 1); onDashboardUpdate?.(); }} goals={goals} />}
       {/* Add goal */}
       <div className="flex flex-col gap-2">
@@ -281,6 +281,8 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
                 boxShadow: done
                   ? "none"
                   : "0 2px 16px oklch(0.55 0.10 290 / 0.07), 0 1px 4px oklch(0.28 0.04 320 / 0.05)",
+                position: "relative",
+                zIndex: 1,
               }}
               onDragOver={(e) => { e.preventDefault(); setDragOverGoalId(goal.id); }}
               onDragLeave={(e) => {
