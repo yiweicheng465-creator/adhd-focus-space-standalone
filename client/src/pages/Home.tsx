@@ -424,25 +424,36 @@ export default function Home() {
 
   /* ── Task completion with confetti + goal auto-nudge ── */
   const handleTasksChange = (newTasks: Task[]) => {
+    // Detect newly completed tasks (just marked done)
     const newlyDone = newTasks.filter(
       (t) => t.done && !tasks.find((old) => old.id === t.id)?.done
     );
+    // Detect tasks that were undone (done → not done)
+    const newlyUndone = newTasks.filter(
+      (t) => !t.done && tasks.find((old) => old.id === t.id)?.done
+    );
+    // Detect deleted tasks (in old list but not in new list)
+    const deletedTasks = tasks.filter((old) => !newTasks.find((t) => t.id === old.id));
+
     if (newlyDone.length > 0) {
       setConfettiTrigger(true);
-      const win: Win = {
-        id: `task-${Date.now()}`,
-        text: newlyDone[0].text.length > 40 ? newlyDone[0].text.slice(0, 40) + "…" : newlyDone[0].text,
-        iconIdx: (() => {
-          const ctx = newlyDone[0]?.context ?? "work";
-          const map: Record<string, number> = {
-            work: 2, personal: 5, health: 0, fitness: 6,
-            study: 1, creative: 4, social: 3, nutrition: 7,
-          };
-          return map[ctx] ?? 2; // default to work
-        })(),
-        createdAt: new Date(),
-      };
-      setWins((prev) => [win, ...prev]);
+      // Use a stable win ID tied to the task so we can remove it on undo/delete
+      newlyDone.forEach((task) => {
+        const winId = `task-win-${task.id}`;
+        const ctx = task.context ?? "work";
+        const iconMap: Record<string, number> = {
+          work: 2, personal: 5, health: 0, fitness: 6,
+          study: 1, creative: 4, social: 3, nutrition: 7,
+        };
+        const win: Win = {
+          id: winId,
+          text: task.text.length > 40 ? task.text.slice(0, 40) + "…" : task.text,
+          iconIdx: iconMap[ctx] ?? 2,
+          createdAt: new Date(),
+        };
+        // Only add if not already present (prevent duplicate on re-complete)
+        setWins((prev) => prev.find((w) => w.id === winId) ? prev : [win, ...prev]);
+      });
 
       // Auto-nudge linked goals
       const goalNudges: Record<string, number> = {};
@@ -466,6 +477,54 @@ export default function Home() {
         );
       }
     }
+
+    // Bug fix 1: Undo task — remove its win entry and revert goal progress
+    if (newlyUndone.length > 0) {
+      const undoneWinIds = newlyUndone.map((t) => `task-win-${t.id}`);
+      setWins((prev) => prev.filter((w) => !undoneWinIds.includes(w.id)));
+
+      const goalReductions: Record<string, number> = {};
+      newlyUndone.forEach((t) => {
+        if (t.goalId) {
+          const totalLinked = newTasks.filter((task) => task.goalId === t.goalId).length;
+          const decrement = totalLinked > 0 ? Math.round(100 / totalLinked) : 10;
+          goalReductions[t.goalId] = (goalReductions[t.goalId] ?? 0) + decrement;
+        }
+      });
+      if (Object.keys(goalReductions).length > 0) {
+        setGoals((prev) =>
+          prev.map((g) => {
+            if (!goalReductions[g.id]) return g;
+            return { ...g, progress: Math.max(0, g.progress - goalReductions[g.id]) };
+          })
+        );
+      }
+    }
+
+    // Bug fix 2: Deleted task — remove its win entry; if it was done, also revert goal progress
+    if (deletedTasks.length > 0) {
+      const deletedWinIds = deletedTasks.map((t) => `task-win-${t.id}`);
+      setWins((prev) => prev.filter((w) => !deletedWinIds.includes(w.id)));
+
+      const deletedDone = deletedTasks.filter((t) => t.done);
+      const goalReductions: Record<string, number> = {};
+      deletedDone.forEach((t) => {
+        if (t.goalId) {
+          const totalLinked = tasks.filter((task) => task.goalId === t.goalId).length;
+          const decrement = totalLinked > 0 ? Math.round(100 / totalLinked) : 10;
+          goalReductions[t.goalId] = (goalReductions[t.goalId] ?? 0) + decrement;
+        }
+      });
+      if (Object.keys(goalReductions).length > 0) {
+        setGoals((prev) =>
+          prev.map((g) => {
+            if (!goalReductions[g.id]) return g;
+            return { ...g, progress: Math.max(0, g.progress - goalReductions[g.id]) };
+          })
+        );
+      }
+    }
+
     setTasks(newTasks);
   };
 

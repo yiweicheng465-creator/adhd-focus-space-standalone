@@ -235,20 +235,29 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
 
         {visibleGoals.map((goal) => {
           const done = goal.progress === 100;
+          const linkedTasks = tasks.filter((t) => t.goalId === goal.id);
+          const doneTasks = linkedTasks.filter((t) => t.done).length;
+          const totalTasks = linkedTasks.length;
+          // Progress ring SVG values
+          const RING_R = 18;
+          const RING_CIRC = 2 * Math.PI * RING_R;
+          const ringOffset = RING_CIRC * (1 - goal.progress / 100);
           return (
             <div
               key={goal.id}
-              className="group p-4 transition-all relative overflow-hidden"
+              className="group transition-all relative overflow-hidden"
               style={{
-                background: done
-                  ? "oklch(0.960 0.006 280)"
-                  : `oklch(${0.968 - goal.progress * 0.00013} ${0.018 + goal.progress * 0.00017} ${340 - goal.progress * 0.4})`,
-                border: dragOverGoalId === goal.id ? `2px dashed oklch(0.58 0.18 340)` : `1px solid ${done ? "oklch(0.87 0.015 280)" : M.border}`,
-                borderRadius: 14,
-                opacity: done ? 0.72 : 1,
+                background: done ? "oklch(0.962 0.006 280)" : "oklch(0.985 0.007 310)",
+                border: dragOverGoalId === goal.id
+                  ? `2px dashed oklch(0.58 0.18 340)`
+                  : done
+                    ? `1px solid oklch(0.87 0.015 280)`
+                    : `1px solid oklch(0.88 0.025 300)`,
+                borderRadius: 16,
+                opacity: done ? 0.78 : 1,
                 boxShadow: done
                   ? "none"
-                  : "0 2px 12px oklch(0.55 0.12 285 / 0.06), 0 1px 3px oklch(0.28 0.04 320 / 0.04)",
+                  : "0 2px 16px oklch(0.55 0.10 290 / 0.07), 0 1px 4px oklch(0.28 0.04 320 / 0.05)",
               }}
               onDragOver={(e) => { e.preventDefault(); setDragOverGoalId(goal.id); }}
               onDragLeave={(e) => {
@@ -264,114 +273,154 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
                 onTasksChange(tasks.map(t => t.id === taskId ? { ...t, goalId: goal.id, updatedAt: new Date().toISOString() } : t));
                 setDraggingTaskId(null);
               }}
-              onMouseEnter={(e) => {
-                if (!done && dragOverGoalId !== goal.id) (e.currentTarget as HTMLDivElement).style.borderColor = M.coralBdr;
-              }}
-              onMouseLeave={(e) => {
-                if (dragOverGoalId !== goal.id) (e.currentTarget as HTMLDivElement).style.borderColor = done ? M.sageBdr : M.border;
-              }}
             >
+              {/* Coloured left accent bar */}
+              <div style={{
+                position: "absolute", left: 0, top: 0, bottom: 0, width: 4, borderRadius: "16px 0 0 16px",
+                background: done
+                  ? "oklch(0.60 0.08 285)"
+                  : PROGRESS_GRADIENT(false),
+              }} />
 
+              <div className="pl-4 pr-4 pt-3.5 pb-3">
+                {/* Top row: icon + title + badges + actions */}
+                <div className="flex items-start justify-between gap-2 mb-2.5">
+                  <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                    {/* Progress ring icon */}
+                    <div className="shrink-0 mt-0.5" style={{ position: "relative", width: 40, height: 40 }}>
+                      <svg width="40" height="40" viewBox="0 0 40 40" style={{ transform: "rotate(-90deg)" }}>
+                        <circle cx="20" cy="20" r={RING_R} fill="none" stroke="oklch(0.90 0.015 300)" strokeWidth="3.5" />
+                        <circle
+                          cx="20" cy="20" r={RING_R} fill="none"
+                          stroke={done ? "oklch(0.60 0.08 285)" : "oklch(0.60 0.14 290)"}
+                          strokeWidth="3.5"
+                          strokeDasharray={RING_CIRC}
+                          strokeDashoffset={ringOffset}
+                          strokeLinecap="round"
+                          style={{ transition: "stroke-dashoffset 0.5s ease" }}
+                        />
+                      </svg>
+                      {/* Percentage in the middle of the ring */}
+                      <span style={{
+                        position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: "0.58rem", fontWeight: 700, fontFamily: "'DM Sans', sans-serif",
+                        color: done ? "oklch(0.55 0.08 285)" : "oklch(0.42 0.08 290)",
+                      }}>
+                        {done ? "✓" : `${goal.progress}%`}
+                      </span>
+                    </div>
 
-              <div className="flex items-start justify-between gap-2 mb-3">
-                <div className="flex items-start gap-2 flex-1 min-w-0">
-                  {/* Simple flag icon */}
-                  <svg width="14" height="14" viewBox="0 0 20 20" fill="none" className="mt-0.5 shrink-0">
-                    <line x1="5" y1="2" x2="5" y2="18" stroke={done ? M.sage : M.coral} strokeWidth="1.8" strokeLinecap="round" />
-                    <path d="M5 2 L15 5.5 L5 9 Z" fill={done ? M.sage : M.coral} opacity="0.85" />
-                  </svg>
-                  <p
-                    className={cn("text-sm font-medium leading-snug", done && "line-through")}
-                    style={{ color: done ? M.muted : M.ink, fontFamily: "'DM Sans', sans-serif" }}
-                  >
-                    {goal.text}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-<ClickableContextBadge
-                    context={goal.context}
-                    allContexts={knownCategories}
-                    onChange={(ctx) => onGoalsChange(goals.map(g => g.id === goal.id ? { ...g, context: ctx as import("./ContextSwitcher").ItemContext } : g))}
-                  />
-                  {!goal.archived ? (
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className={cn("text-sm font-semibold leading-snug", done && "line-through")}
+                        style={{ color: done ? M.muted : M.ink, fontFamily: "'DM Sans', sans-serif", marginBottom: 4 }}
+                      >
+                        {goal.text}
+                      </p>
+                      {/* Meta row: context badge + task count */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <ClickableContextBadge
+                          context={goal.context}
+                          allContexts={knownCategories}
+                          onChange={(ctx) => onGoalsChange(goals.map(g => g.id === goal.id ? { ...g, context: ctx as import("./ContextSwitcher").ItemContext } : g))}
+                        />
+                        {totalTasks > 0 && (
+                          <span style={{
+                            fontSize: "0.60rem", fontFamily: "'DM Sans', sans-serif",
+                            color: doneTasks === totalTasks ? "oklch(0.52 0.10 145)" : M.muted,
+                            background: doneTasks === totalTasks ? "oklch(0.52 0.10 145 / 0.10)" : "oklch(0.92 0.010 300)",
+                            border: `1px solid ${doneTasks === totalTasks ? "oklch(0.52 0.10 145 / 0.25)" : "oklch(0.86 0.020 300)"}`,
+                            borderRadius: 99, padding: "1px 7px", letterSpacing: "0.04em",
+                          }}>
+                            {doneTasks}/{totalTasks} tasks
+                          </span>
+                        )}
+                        {done && (
+                          <span style={{
+                            fontSize: "0.58rem", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase",
+                            color: "oklch(0.55 0.08 285)", fontFamily: "'DM Sans', sans-serif",
+                            background: "oklch(0.55 0.08 285 / 0.10)",
+                            border: "1px solid oklch(0.55 0.08 285 / 0.25)",
+                            borderRadius: 99, padding: "1px 8px",
+                          }}>✦ Achieved</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {!goal.archived ? (
+                      <button
+                        onClick={() => archiveGoal(goal.id)}
+                        title="Archive goal"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded"
+                        style={{ color: M.muted }}
+                      >
+                        <svg width="13" height="13" viewBox="0 0 20 20" fill="none"><rect x="2" y="5" width="16" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><path d="M2 8h16M7 11h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => { onGoalsChange(goals.map(g => g.id === goal.id ? { ...g, archived: false, archivedAt: undefined } : g)); setShowArchived(false); }}
+                        title="Unarchive"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        style={{ color: M.sage, fontSize: "0.55rem", fontFamily: "'Space Mono', monospace" }}
+                      >
+                        Restore
+                      </button>
+                    )}
                     <button
-                      onClick={() => archiveGoal(goal.id)}
-                      title="Archive goal"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => deleteGoal(goal.id)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded"
                       style={{ color: M.muted }}
                     >
-                      <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><rect x="2" y="5" width="16" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><path d="M2 8h16M7 11h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
-                  ) : (
-                    <button
-                      onClick={() => { onGoalsChange(goals.map(g => g.id === goal.id ? { ...g, archived: false, archivedAt: undefined } : g)); setShowArchived(false); }}
-                      title="Unarchive"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      style={{ color: M.sage, fontSize: "0.55rem", fontFamily: "'Space Mono', monospace" }}
-                    >
-                      Restore
-                    </button>
-                  )}
-                  <button
-                    onClick={() => deleteGoal(goal.id)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{ color: M.muted }}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Progress bar — thick pill with gradient */}
-              <div className="flex items-center gap-3 mt-2 mb-1">
-                <div className="flex-1" style={{ height: 8, borderRadius: 99, background: "oklch(0.90 0.015 300)", overflow: "hidden" }}>
-                  <div
-                    className="h-full transition-all duration-500"
-                    style={{ width: `${goal.progress}%`, background: PROGRESS_GRADIENT(done), borderRadius: 99 }}
-                  />
-                </div>
-                {/* Right side: show ACHIEVED stamp when done, otherwise show % */}
-                {done ? (
-                  <div
-                    className="flex items-center gap-1 px-2 py-0.5 shrink-0"
-                    style={{
-                      background: M.sageBg,
-                      border: `1px solid ${M.sageBdr}`,
-                      borderRadius: 0,
-                      transform: "rotate(-1deg)",
-                    }}
-                  >
-                    <svg width="9" height="9" viewBox="0 0 12 12" fill="none">
-                      <path d="M2 6l3 3 5-5" stroke={M.sage} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    <span style={{ fontSize: "0.58rem", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: M.sage, fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap" }}>Achieved</span>
                   </div>
-                ) : (
-                  <span className="text-xs font-medium w-8 text-right shrink-0" style={{ color: M.muted, fontFamily: "'DM Sans', sans-serif" }}>
+                </div>
+
+                {/* Progress bar — thinner, cleaner */}
+                <div className="flex items-center gap-2.5 mb-2.5">
+                  <div className="flex-1" style={{ height: 6, borderRadius: 99, background: "oklch(0.90 0.015 300)", overflow: "hidden" }}>
+                    <div
+                      className="h-full transition-all duration-500"
+                      style={{ width: `${goal.progress}%`, background: PROGRESS_GRADIENT(done), borderRadius: 99 }}
+                    />
+                  </div>
+                  <span style={{ fontSize: "0.62rem", fontFamily: "'DM Sans', sans-serif", color: M.muted, minWidth: 28, textAlign: "right" }}>
                     {goal.progress}%
                   </span>
-                )}
-              </div>
+                </div>
 
-              {/* Progress buttons */}
-              <div className="flex items-center gap-2 mt-2">
-                {[10, 25, 50].map((delta) => (
+                {/* Progress buttons */}
+                <div className="flex items-center gap-1.5">
+                  {[10, 25, 50].map((delta) => (
+                    <button
+                      key={delta}
+                      onClick={() => updateProgress(goal.id, delta)}
+                      disabled={done}
+                      className="m-chip disabled:opacity-30 disabled:cursor-not-allowed"
+                      style={{ fontSize: "0.62rem", padding: "2px 8px" }}
+                    >
+                      +{delta}%
+                    </button>
+                  ))}
                   <button
-                    key={delta}
-                    onClick={() => updateProgress(goal.id, delta)}
-                    disabled={done}
+                    onClick={() => updateProgress(goal.id, -10)}
+                    disabled={goal.progress <= 0}
                     className="m-chip disabled:opacity-30 disabled:cursor-not-allowed"
+                    style={{ fontSize: "0.62rem", padding: "2px 8px" }}
                   >
-                    +{delta}%
+                    −10%
                   </button>
-                ))}
-                <button
-                  onClick={() => updateProgress(goal.id, -10)}
-                  disabled={goal.progress <= 0}
-                  className="m-chip disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  −10%
-                </button>
+                  <span style={{ flex: 1 }} />
+                  {/* Drag-to-link hint */}
+                  {!done && (
+                    <span style={{ fontSize: "0.55rem", color: M.muted, fontFamily: "'DM Sans', sans-serif", opacity: 0.7 }}>
+                      ↓ drag tasks here
+                    </span>
+                  )}
+                </div>
               </div>
 
 
