@@ -94,6 +94,10 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
   const [newGoal,       setNewGoal]       = useState("");
   const [newGoalCtx,    setNewGoalCtx]    = useState<ItemContext>("work");
   const [activeContext, setActiveContext] = useState<ActiveContext>(defaultContext);
+  // Inline task creation per goal
+  const [inlineTaskGoalId, setInlineTaskGoalId] = useState<string | null>(null);
+  const [inlineTaskText,   setInlineTaskText]   = useState("");
+  const [inlineTaskPriority, setInlineTaskPriority] = useState<"focus" | "normal" | "urgent">("normal");
 
   // Unified categories: use shared list if provided, else derive from own goals
   const knownCategories = allCategories ?? Array.from(new Set(["work", "personal", ...goals.map((g) => g.context)]));
@@ -108,6 +112,25 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
       if (a.progress < 100 && b.progress === 100) return -1;
       return 0;
     });
+
+  const addInlineTask = (goalId: string) => {
+    if (!inlineTaskText.trim() || !onTasksChange) return;
+    const newTask: Task = {
+      id: nanoid(),
+      text: inlineTaskText.trim(),
+      done: false,
+      priority: inlineTaskPriority,
+      context: goals.find(g => g.id === goalId)?.context ?? "work",
+      goalId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    onTasksChange([...tasks, newTask]);
+    setInlineTaskText("");
+    setInlineTaskGoalId(null);
+    setInlineTaskPriority("normal");
+    toast.success("Task added to goal!", { duration: 2000 });
+  };
 
   const addGoal = () => {
     if (!newGoal.trim()) return;
@@ -379,19 +402,6 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
                   </div>
                 </div>
 
-                {/* Progress bar — thinner, cleaner */}
-                <div className="flex items-center gap-2.5 mb-2.5">
-                  <div className="flex-1" style={{ height: 6, borderRadius: 99, background: "oklch(0.90 0.015 300)", overflow: "hidden" }}>
-                    <div
-                      className="h-full transition-all duration-500"
-                      style={{ width: `${goal.progress}%`, background: PROGRESS_GRADIENT(done), borderRadius: 99 }}
-                    />
-                  </div>
-                  <span style={{ fontSize: "0.62rem", fontFamily: "'DM Sans', sans-serif", color: M.muted, minWidth: 28, textAlign: "right" }}>
-                    {goal.progress}%
-                  </span>
-                </div>
-
                 {/* Progress buttons */}
                 <div className="flex items-center gap-1.5">
                   {[10, 25, 50].map((delta) => (
@@ -420,7 +430,89 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
                       ↓ drag tasks here
                     </span>
                   )}
+                  {/* Add task inline button */}
+                  {!done && onTasksChange && (
+                    <button
+                      onClick={() => { setInlineTaskGoalId(inlineTaskGoalId === goal.id ? null : goal.id); setInlineTaskText(""); setInlineTaskPriority("normal"); }}
+                      style={{
+                        fontSize: "0.60rem", fontFamily: "'DM Sans', sans-serif",
+                        color: inlineTaskGoalId === goal.id ? M.coral : M.muted,
+                        background: inlineTaskGoalId === goal.id ? M.coralBg : "transparent",
+                        border: `1px solid ${inlineTaskGoalId === goal.id ? M.coralBdr : "transparent"}`,
+                        borderRadius: 99, padding: "2px 8px", cursor: "pointer",
+                        display: "flex", alignItems: "center", gap: 3,
+                      }}
+                    >
+                      <Plus style={{ width: 10, height: 10 }} />
+                      add task
+                    </button>
+                  )}
                 </div>
+
+                {/* Inline task creation form */}
+                {inlineTaskGoalId === goal.id && (
+                  <div
+                    style={{
+                      marginTop: 8, padding: "10px 12px",
+                      background: M.coralBg,
+                      border: `1px solid ${M.coralBdr}`,
+                      borderRadius: 10,
+                    }}
+                  >
+                    <input
+                      autoFocus
+                      value={inlineTaskText}
+                      onChange={e => setInlineTaskText(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === "Enter") addInlineTask(goal.id);
+                        if (e.key === "Escape") { setInlineTaskGoalId(null); setInlineTaskText(""); }
+                      }}
+                      placeholder="New task for this goal…"
+                      style={{
+                        width: "100%", border: "none", outline: "none",
+                        background: "transparent",
+                        fontSize: "0.78rem", fontFamily: "'DM Sans', sans-serif",
+                        color: M.ink, marginBottom: 8,
+                      }}
+                    />
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      {/* Priority selector */}
+                      {(["focus", "normal", "urgent"] as const).map(p => (
+                        <button
+                          key={p}
+                          onClick={() => setInlineTaskPriority(p)}
+                          style={{
+                            fontSize: "0.58rem", fontFamily: "'DM Sans', sans-serif",
+                            padding: "2px 8px", borderRadius: 99, cursor: "pointer",
+                            fontWeight: inlineTaskPriority === p ? 700 : 400,
+                            background: inlineTaskPriority === p
+                              ? p === "urgent" ? "oklch(0.60 0.18 25)" : p === "focus" ? "oklch(0.55 0.14 290)" : M.coral
+                              : "oklch(0.94 0.010 300)",
+                            color: inlineTaskPriority === p ? "white" : M.muted,
+                            border: "none",
+                            textTransform: "capitalize",
+                          }}
+                        >{p}</button>
+                      ))}
+                      <span style={{ flex: 1 }} />
+                      <button
+                        onClick={() => { setInlineTaskGoalId(null); setInlineTaskText(""); }}
+                        style={{ fontSize: "0.68rem", color: M.muted, background: "none", border: "none", cursor: "pointer" }}
+                      >cancel</button>
+                      <button
+                        onClick={() => addInlineTask(goal.id)}
+                        disabled={!inlineTaskText.trim()}
+                        style={{
+                          fontSize: "0.68rem", fontFamily: "'DM Sans', sans-serif",
+                          padding: "3px 12px", borderRadius: 99, cursor: "pointer",
+                          background: inlineTaskText.trim() ? M.coral : "oklch(0.90 0.010 300)",
+                          color: inlineTaskText.trim() ? "white" : M.muted,
+                          border: "none", fontWeight: 600,
+                        }}
+                      >Add</button>
+                    </div>
+                  </div>
+                )}
               </div>
 
 
