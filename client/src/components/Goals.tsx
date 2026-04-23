@@ -98,6 +98,8 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
   const [inlineTaskGoalId, setInlineTaskGoalId] = useState<string | null>(null);
   const [inlineTaskText,   setInlineTaskText]   = useState("");
   const [inlineTaskPriority, setInlineTaskPriority] = useState<"focus" | "normal" | "urgent">("normal");
+  const todayStr = () => new Date().toISOString().split("T")[0];
+  const [inlineTaskDate, setInlineTaskDate] = useState<string>(todayStr());
 
   // Unified categories: use shared list if provided, else derive from own goals
   const knownCategories = allCategories ?? Array.from(new Set(["work", "personal", ...goals.map((g) => g.context)]));
@@ -115,6 +117,7 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
 
   const addInlineTask = (goalId: string) => {
     if (!inlineTaskText.trim() || !onTasksChange) return;
+    const dueDate = inlineTaskDate || todayStr();
     const newTask: Task = {
       id: nanoid(),
       text: inlineTaskText.trim(),
@@ -122,6 +125,7 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
       priority: inlineTaskPriority,
       context: goals.find(g => g.id === goalId)?.context ?? "work",
       goalId,
+      dueDate,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -129,6 +133,7 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
     setInlineTaskText("");
     setInlineTaskGoalId(null);
     setInlineTaskPriority("normal");
+    setInlineTaskDate(todayStr());
     toast.success("Task added to goal!", { duration: 2000 });
   };
 
@@ -426,12 +431,7 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
                     −10%
                   </button>
                   <span style={{ flex: 1 }} />
-                  {/* Drag-to-link hint */}
-                  {!done && (
-                    <span style={{ fontSize: "0.55rem", color: M.muted, fontFamily: "'DM Sans', sans-serif", opacity: 0.7 }}>
-                      ↓ drag tasks here
-                    </span>
-                  )}
+
                   {/* Add task inline button */}
                   {!done && onTasksChange && (
                     <button
@@ -477,6 +477,27 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
                         color: M.ink, marginBottom: 8,
                       }}
                     />
+                    {/* Date picker row */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                      <span style={{ fontSize: "0.60rem", color: M.muted, fontFamily: "'DM Sans', sans-serif" }}>Due:</span>
+                      <input
+                        type="date"
+                        value={inlineTaskDate}
+                        onChange={e => setInlineTaskDate(e.target.value)}
+                        style={{
+                          fontSize: "0.68rem", fontFamily: "'DM Sans', sans-serif",
+                          border: `1px solid ${M.coralBdr}`, borderRadius: 6,
+                          padding: "2px 6px", background: "white", color: M.ink,
+                          outline: "none", cursor: "pointer",
+                        }}
+                      />
+                      {inlineTaskDate !== todayStr() && (
+                        <button
+                          onClick={() => setInlineTaskDate(todayStr())}
+                          style={{ fontSize: "0.58rem", color: M.muted, background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}
+                        >today</button>
+                      )}
+                    </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       {/* Priority selector */}
                       {(["focus", "normal", "urgent"] as const).map(p => (
@@ -518,7 +539,7 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
               </div>
 
 
-              {/* Linked tasks */}
+                {/* Linked tasks */}
               {(() => {
                 const linkedRaw = tasks.filter((t) => t.goalId === goal.id);
                 if (linkedRaw.length === 0) return null;
@@ -529,7 +550,7 @@ export function Goals({ goals, onGoalsChange, defaultContext = "all", allCategor
                   : linkedRaw;
                 return (
                   <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${M.border}` }}>
-                    <p style={{ fontSize: "0.58rem", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.10em", textTransform: "uppercase", color: M.muted, marginBottom: 6 }}>Contributing tasks</p>
+                    <p style={{ fontSize: "0.58rem", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.10em", textTransform: "uppercase", color: M.muted, marginBottom: 6, paddingLeft: 0 }}>Contributing tasks</p>
                     <div className="flex flex-col gap-1">
                       {linked.map((t) => (
                         <div
