@@ -96,6 +96,27 @@ export function EffectsPanel() {
   const { hue, setHue, reset: resetHue, presets, setPresetHue } = useHue();
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
 
+  // ── Font size ──
+  const FONT_SIZES = [
+    { label: "S", title: "Small", scale: 0.88 },
+    { label: "M", title: "Normal", scale: 1.0 },
+    { label: "L", title: "Large", scale: 1.14 },
+    { label: "XL", title: "X-Large", scale: 1.28 },
+  ];
+  const [fontScale, setFontScaleState] = useState<number>(() => {
+    const saved = parseFloat(localStorage.getItem("adhd-font-scale") ?? "1");
+    return isNaN(saved) ? 1 : saved;
+  });
+  const applyFontScale = (scale: number) => {
+    document.documentElement.style.fontSize = `${scale * 16}px`;
+  };
+  useEffect(() => { applyFontScale(fontScale); }, [fontScale]);
+  const setFontScale = (scale: number) => {
+    setFontScaleState(scale);
+    localStorage.setItem("adhd-font-scale", String(scale));
+    applyFontScale(scale);
+  };
+
   // Listen for openSettingsApiKey event — opens panel directly on API Key tab
   useEffect(() => {
     const handler = () => { setOpen(true); setActiveTab("apikey"); };
@@ -356,6 +377,49 @@ export function EffectsPanel() {
                       <span style={{ fontSize: "0.48rem", color: "oklch(0.50 0.14 295)", letterSpacing: "0.06em" }}>{speed === 0 ? "FROZEN" : `${speed}%`}</span>
                     </div>
                     <HSlider value={speed} onChange={setSpeed} accentColor="oklch(0.55 0.14 295)" disabled={!grainOn} />
+                  </div>
+                </div>
+
+                 {/* Divider */}
+                <div style={{ height: 1, background: "oklch(0.88 0.06 340)", margin: "0 -2px" }} />
+
+                {/* ── Text Size section ── */}
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                    <span style={{ fontSize: "0.55rem", color: "oklch(0.45 0.12 340)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                      ▤ Text Size
+                    </span>
+                    <span style={{ fontSize: "0.44rem", color: "oklch(0.58 0.10 340)", letterSpacing: "0.06em" }}>
+                      {FONT_SIZES.find(f => f.scale === fontScale)?.title ?? "Custom"}
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", gap: 5 }}>
+                    {FONT_SIZES.map(({ label, title, scale }) => {
+                      const active = Math.abs(fontScale - scale) < 0.01;
+                      return (
+                        <button
+                          key={label}
+                          title={title}
+                          onClick={() => setFontScale(scale)}
+                          style={{
+                            flex: 1,
+                            padding: "4px 0",
+                            fontSize: "0.50rem",
+                            fontFamily: "'Space Mono', monospace",
+                            letterSpacing: "0.06em",
+                            borderRadius: 4,
+                            border: `1px solid ${active ? "oklch(0.55 0.18 340)" : "oklch(0.80 0.06 340)"}`,
+                            background: active ? "oklch(0.55 0.18 340)" : "transparent",
+                            color: active ? "white" : "oklch(0.55 0.08 340)",
+                            cursor: "pointer",
+                            transition: "all 0.15s",
+                            fontWeight: active ? 700 : 400,
+                          }}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 

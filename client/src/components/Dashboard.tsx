@@ -15,6 +15,38 @@ import { useState, useEffect, useRef } from "react";
 
 // ── Inject sticker peel keyframes once ───────────────────────────────────────
 const STICKER_STYLE_ID = "adhd-sticker-peel-kf";
+const DUMP_FLY_STYLE_ID = "adhd-dump-fly-kf";
+if (typeof document !== "undefined" && !document.getElementById(DUMP_FLY_STYLE_ID)) {
+  const s = document.createElement("style");
+  s.id = DUMP_FLY_STYLE_ID;
+  s.textContent = `
+    @keyframes dumpFlyArc {
+      0%   { transform: translate(0, 0) scale(1) rotate(0deg);   opacity: 1; }
+      30%  { transform: translate(calc(var(--fly-dx)*0.3), calc(var(--fly-dy)*0.3 - 40px)) scale(1.3) rotate(-15deg); opacity: 1; }
+      70%  { transform: translate(calc(var(--fly-dx)*0.75), calc(var(--fly-dy)*0.75 - 20px)) scale(0.9) rotate(10deg); opacity: 0.85; }
+      100% { transform: translate(var(--fly-dx), var(--fly-dy)) scale(0.4) rotate(20deg); opacity: 0; }
+    }
+    @keyframes dumpNavBounce {
+      0%   { transform: scale(1); }
+      30%  { transform: scale(1.45); }
+      60%  { transform: scale(0.88); }
+      80%  { transform: scale(1.18); }
+      100% { transform: scale(1); }
+    }
+    .dump-fly-particle {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      font-size: 20px;
+      line-height: 1;
+      animation: dumpFlyArc 0.75s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+    }
+    .dump-nav-bounce {
+      animation: dumpNavBounce 0.5s ease forwards;
+    }
+  `;
+  document.head.appendChild(s);
+}
 if (typeof document !== "undefined" && !document.getElementById(STICKER_STYLE_ID)) {
   const s = document.createElement("style");
   s.id = STICKER_STYLE_ID;
@@ -168,6 +200,38 @@ export function Dashboard({
   const [quickCapture, setQuickCapture] = useState("");
   const [completing, setCompleting] = useState<string | null>(null);
   const dumpInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Flying brain dump animation ──────────────────────────────────────────────
+  const fireDumpAnimation = (inputEl: HTMLElement) => {
+    const dumpBtn = document.querySelector('[data-nav-id="dump"]') as HTMLElement | null;
+    if (!dumpBtn) return;
+    const from = inputEl.getBoundingClientRect();
+    const to = dumpBtn.getBoundingClientRect();
+    const startX = from.left + from.width / 2;
+    const startY = from.top + from.height / 2;
+    const endX = to.left + to.width / 2;
+    const endY = to.top + to.height / 2;
+    const dx = endX - startX;
+    const dy = endY - startY;
+    // Create flying particle
+    const particle = document.createElement("div");
+    particle.className = "dump-fly-particle";
+    particle.textContent = "💭";
+    particle.style.left = `${startX - 10}px`;
+    particle.style.top = `${startY - 10}px`;
+    particle.style.setProperty("--fly-dx", `${dx}px`);
+    particle.style.setProperty("--fly-dy", `${dy}px`);
+    document.body.appendChild(particle);
+    // Bounce the DUMP nav icon when particle arrives
+    setTimeout(() => {
+      dumpBtn.classList.remove("dump-nav-bounce");
+      void dumpBtn.offsetWidth; // force reflow
+      dumpBtn.classList.add("dump-nav-bounce");
+      setTimeout(() => dumpBtn.classList.remove("dump-nav-bounce"), 500);
+    }, 600);
+    // Remove particle after animation
+    setTimeout(() => particle.remove(), 800);
+  };
   const [quadrantMap, setQuadrantMap] = useState<Record<string, string>>(() => {
     try { return JSON.parse(localStorage.getItem("adhd-quadrant-map") ?? "{}"); } catch { return {}; }
   });
@@ -534,6 +598,7 @@ ${routineContext}`;
                       if (quickCapture.trim()) {
                         const text = quickCapture.trim();
                         setQuickCapture("");
+                        fireDumpAnimation(e.target as HTMLInputElement);
                         (e.target as HTMLInputElement).blur();
                         onQuickDump?.(text);
                       }

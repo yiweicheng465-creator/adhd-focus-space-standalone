@@ -474,6 +474,7 @@ export function Sidebar({ activeSection, onSectionChange, onClearData }: Sidebar
           return (
             <button
               key={id}
+              data-nav-id={id}
               onClick={() => onSectionChange(id)}
               title={title}
               className="relative w-full flex flex-col items-center justify-center py-2 transition-all duration-150"
