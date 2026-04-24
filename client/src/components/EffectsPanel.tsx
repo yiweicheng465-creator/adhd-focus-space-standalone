@@ -8,6 +8,16 @@ import { useFilmGrain } from "@/components/FilmGrain";
 import { useWorkMode } from "@/components/WorkModeToggle";
 import { useHue } from "@/components/HueShift";
 import { toast } from "sonner";
+import {
+  ALL_MODES,
+  DailyMode,
+  getModeConfig,
+  getTodayMode,
+  setTodayMode,
+  updateModeConfig,
+  resetModeConfig,
+} from "@/lib/modeConfig";
+import { useTimer } from "@/contexts/TimerContext";
 
 /* ─── Horizontal range slider ─────────────────────────────── */
 function HSlider({
@@ -594,7 +604,14 @@ export function EffectsPanel() {
                   </div>
                 </div>
 
-              </>}
+                {/* Divider */}
+                <div style={{ height: 1, background: "oklch(0.88 0.06 340)", margin: "0 -2px" }} />
+
+                {/* ── Mode Settings section ── */}
+                <ModeSettingsSection />
+
+              </>
+            }
 
               {/* ── API KEY TAB ── */}
               {activeTab === "apikey" && <div>
@@ -774,6 +791,225 @@ export function EffectsPanel() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ─── Mode Settings Section ─────────────────────────────────── */
+function ModeSettingsSection() {
+  const { applyDuration } = useTimer();
+  const [expandedMode, setExpandedMode] = useState<DailyMode | null>(null);
+  const [todayMode, setTodayModeState] = useState<DailyMode | null>(() => getTodayMode());
+
+  // Re-read today's mode when the adhd-mode-changed event fires
+  useEffect(() => {
+    const handler = () => setTodayModeState(getTodayMode());
+    window.addEventListener("adhd-mode-changed", handler);
+    return () => window.removeEventListener("adhd-mode-changed", handler);
+  }, []);
+
+  const handleSwitchMode = (mode: DailyMode) => {
+    const cfg = getModeConfig(mode);
+    setTodayMode(mode);
+    applyDuration("focus", cfg.timerFocus);
+    applyDuration("short", cfg.timerShort);
+    applyDuration("long", cfg.timerLong);
+    setTodayModeState(mode);
+    toast.success(`Switched to ${cfg.icon} ${cfg.label}`);
+  };
+
+  return (
+    <div>
+      {/* Section header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+        <span style={{ fontSize: "0.55rem", color: "oklch(0.45 0.12 340)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+          ◎ Daily Mode
+        </span>
+        {todayMode && (
+          <span style={{
+            fontSize: "0.42rem",
+            fontFamily: "'Space Mono', monospace",
+            letterSpacing: "0.06em",
+            padding: "2px 6px",
+            borderRadius: 10,
+            border: `1px solid ${getModeConfig(todayMode).color}50`,
+            background: `${getModeConfig(todayMode).color}12`,
+            color: getModeConfig(todayMode).color,
+          }}>
+            {getModeConfig(todayMode).icon} {getModeConfig(todayMode).label}
+          </span>
+        )}
+      </div>
+
+      {/* Mode rows */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+        {ALL_MODES.map((mode) => {
+          const cfg = getModeConfig(mode);
+          const isToday = todayMode === mode;
+          const isExpanded = expandedMode === mode;
+
+          return (
+            <div key={mode}>
+              {/* Mode row header */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "5px 7px",
+                  borderRadius: 6,
+                  border: `1px solid ${isToday ? cfg.color + "55" : "oklch(0.86 0.04 340)"}`,
+                  background: isToday ? `${cfg.color}0e` : "transparent",
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                }}
+                onClick={() => setExpandedMode(isExpanded ? null : mode)}
+              >
+                <span style={{ fontSize: "0.80rem", lineHeight: 1 }}>{cfg.icon}</span>
+                <span style={{
+                  flex: 1,
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: "0.62rem",
+                  fontWeight: isToday ? 700 : 400,
+                  color: isToday ? cfg.color : "oklch(0.38 0.06 340)",
+                }}>
+                  {cfg.label}
+                </span>
+                {/* Switch button */}
+                {!isToday && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleSwitchMode(mode); }}
+                    style={{
+                      fontSize: "0.40rem",
+                      fontFamily: "'Space Mono', monospace",
+                      letterSpacing: "0.06em",
+                      padding: "2px 6px",
+                      borderRadius: 8,
+                      border: `1px solid ${cfg.color}60`,
+                      background: "transparent",
+                      color: cfg.color,
+                      cursor: "pointer",
+                      transition: "all 0.12s",
+                    }}
+                  >
+                    USE
+                  </button>
+                )}
+                {isToday && (
+                  <span style={{ fontSize: "0.40rem", fontFamily: "'Space Mono', monospace", color: cfg.color, letterSpacing: "0.06em" }}>TODAY</span>
+                )}
+                <span style={{ fontSize: "0.50rem", color: "oklch(0.65 0.04 340)", marginLeft: 2 }}>
+                  {isExpanded ? "▲" : "▼"}
+                </span>
+              </div>
+
+              {/* Expanded settings */}
+              {isExpanded && (
+                <div style={{
+                  padding: "8px 10px 10px",
+                  background: "oklch(0.975 0.010 355)",
+                  border: `1px solid ${cfg.color}30`,
+                  borderTop: "none",
+                  borderRadius: "0 0 6px 6px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                }}>
+                  {/* Timer durations */}
+                  <div>
+                    <span style={{ fontSize: "0.46rem", fontFamily: "'Space Mono', monospace", letterSpacing: "0.08em", color: "oklch(0.55 0.08 340)", textTransform: "uppercase", display: "block", marginBottom: 5 }}>
+                      Timer
+                    </span>
+                    <div style={{ display: "flex", gap: 5 }}>
+                      {(["timerFocus", "timerShort", "timerLong"] as const).map((field) => {
+                        const labels: Record<string, string> = { timerFocus: "Focus", timerShort: "Break", timerLong: "Long" };
+                        const val = cfg[field] as number;
+                        return (
+                          <div key={field} style={{ flex: 1, display: "flex", flexDirection: "column", gap: 3 }}>
+                            <span style={{ fontSize: "0.40rem", fontFamily: "'Space Mono', monospace", color: "oklch(0.60 0.06 340)", letterSpacing: "0.06em", textAlign: "center" }}>
+                              {labels[field]}
+                            </span>
+                            <input
+                              type="number"
+                              min={1}
+                              max={120}
+                              value={val}
+                              onChange={(e) => {
+                                const n = Math.max(1, Math.min(120, Number(e.target.value)));
+                                updateModeConfig(mode, field, n);
+                                if (isToday) applyDuration(field === "timerFocus" ? "focus" : field === "timerShort" ? "short" : "long", n);
+                              }}
+                              style={{
+                                width: "100%",
+                                padding: "3px 4px",
+                                textAlign: "center",
+                                fontSize: "0.58rem",
+                                fontFamily: "'Space Mono', monospace",
+                                border: `1px solid ${cfg.color}40`,
+                                borderRadius: 4,
+                                background: "white",
+                                color: "oklch(0.28 0.04 320)",
+                                outline: "none",
+                                boxSizing: "border-box",
+                              }}
+                            />
+                            <span style={{ fontSize: "0.38rem", fontFamily: "'Space Mono', monospace", color: "oklch(0.65 0.04 340)", textAlign: "center" }}>min</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* AI opener */}
+                  <div>
+                    <span style={{ fontSize: "0.46rem", fontFamily: "'Space Mono', monospace", letterSpacing: "0.08em", color: "oklch(0.55 0.08 340)", textTransform: "uppercase", display: "block", marginBottom: 4 }}>
+                      AI Opener
+                    </span>
+                    <textarea
+                      value={cfg.aiOpener}
+                      rows={2}
+                      onChange={(e) => updateModeConfig(mode, "aiOpener", e.target.value)}
+                      style={{
+                        width: "100%",
+                        padding: "4px 6px",
+                        fontSize: "0.58rem",
+                        fontFamily: "'DM Sans', sans-serif",
+                        border: `1px solid ${cfg.color}40`,
+                        borderRadius: 4,
+                        background: "white",
+                        color: "oklch(0.28 0.04 320)",
+                        outline: "none",
+                        resize: "vertical",
+                        lineHeight: 1.5,
+                        boxSizing: "border-box",
+                      }}
+                    />
+                  </div>
+
+                  {/* Reset to defaults */}
+                  <button
+                    onClick={() => { resetModeConfig(mode); toast.success(`${cfg.icon} ${cfg.label} reset to defaults`); }}
+                    style={{
+                      fontSize: "0.42rem",
+                      fontFamily: "'Space Mono', monospace",
+                      letterSpacing: "0.06em",
+                      padding: "3px 8px",
+                      borderRadius: 4,
+                      border: "1px solid oklch(0.80 0.04 340)",
+                      background: "transparent",
+                      color: "oklch(0.58 0.06 340)",
+                      cursor: "pointer",
+                      alignSelf: "flex-start",
+                    }}
+                  >
+                    Reset to defaults
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

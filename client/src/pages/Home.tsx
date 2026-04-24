@@ -22,6 +22,8 @@ import { ConfettiCelebration } from "@/components/ConfettiCelebration";
 import { DailyWrapUp } from "@/components/DailyWrapUp";
 import { recordWrapUp, recordDumpEntry, recordFocusSession, recordBlockComplete, recordMood } from "@/components/MonthlyProgress";
 import { DailyCheckIn, useDailyCheckIn, type CheckInResult } from "@/components/DailyCheckIn";
+import { ModeSelectCard, useModeSelectCard } from "@/components/ModeSelectCard";
+import type { DailyMode } from "@/lib/modeConfig";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useBlockStreak } from "@/hooks/useBlockStreak";
 import { useAutoBackup } from "@/hooks/useAutoBackup";
@@ -410,6 +412,15 @@ export default function Home() {
 
   // Daily check-in
   const { show: showCheckIn, dismiss: dismissCheckIn } = useDailyCheckIn();
+
+  // Mode select card — shown before check-in on first daily visit
+  const { show: showModeCard, dismiss: dismissModeCard } = useModeSelectCard();
+
+  const handleModeSelected = (_mode: DailyMode) => {
+    dismissModeCard(true);
+    // After mode is selected, still show the check-in if it hasn't been dismissed
+    // (mode card replaces the greeting step, check-in handles tasks/goals/wins)
+  };
 
   const handleCheckInComplete = (data: CheckInResult) => {
     // If user set a mood in check-in, use it; otherwise default to Good (4)
@@ -1122,7 +1133,15 @@ export default function Home() {
         />
       )}
 
-      {showCheckIn && (
+      {showModeCard && (
+        <ModeSelectCard
+          onDone={handleModeSelected}
+          onSkip={() => dismissModeCard(true)}
+          onClose={() => dismissModeCard(false)}
+          displayName={displayName || undefined}
+        />
+      )}
+      {!showModeCard && showCheckIn && (
         <DailyCheckIn
           onComplete={handleCheckInComplete}
           onSkip={() => dismissCheckIn(true)}
