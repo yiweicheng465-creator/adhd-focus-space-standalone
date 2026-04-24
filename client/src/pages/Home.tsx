@@ -21,7 +21,7 @@ import { GlobalRightPanel } from "@/components/GlobalRightPanel";
 import { ConfettiCelebration } from "@/components/ConfettiCelebration";
 import { DailyWrapUp } from "@/components/DailyWrapUp";
 import { recordWrapUp, recordDumpEntry, recordFocusSession, recordBlockComplete, recordMood } from "@/components/MonthlyProgress";
-import { ModeSelectCard, useModeSelectCard } from "@/components/ModeSelectCard";
+import { ModeSelectCard, useModeSelectCard, resetModeCard } from "@/components/ModeSelectCard";
 import type { DailyMode } from "@/lib/modeConfig";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useBlockStreak } from "@/hooks/useBlockStreak";
@@ -1120,7 +1120,7 @@ export default function Home() {
         <ModeSelectCard
           onDone={handleModeSelected}
           onSkip={() => dismissModeCard(true)}
-          onClose={() => dismissModeCard(false)}
+          onClose={() => { resetModeCard(); dismissModeCard(false); }}
           displayName={displayName || undefined}
         />
       )}
