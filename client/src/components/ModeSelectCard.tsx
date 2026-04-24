@@ -20,6 +20,17 @@ function getTodayKey() {
   return `adhd-mode-skip-${new Date().toDateString()}`;
 }
 
+/** Clear today's skip flag so the card shows again (useful for testing). */
+export function resetModeCard(): void {
+  try {
+    // Clear skip flag for today
+    localStorage.removeItem(getTodayKey());
+    // Also clear the mode selection so the card shows as fresh
+    localStorage.removeItem("adhd-daily-mode");
+    localStorage.removeItem("adhd-daily-mode-date");
+  } catch {}
+}
+
 export function useModeSelectCard() {
   const alreadyPicked = getTodayMode() !== null;
   const skipped = typeof localStorage !== "undefined"
@@ -134,6 +145,28 @@ export function ModeSelectCard({ onDone, onSkip, onClose, displayName }: ModeSel
           >
             daily_mode_select.exe
           </span>
+          {/* X close button — right side of title bar */}
+          <button
+            onClick={onClose}
+            title="Close (reappears on next refresh)"
+            style={{
+              width: 22, height: 22,
+              borderRadius: 4,
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: "oklch(0.55 0.08 340)",
+              fontSize: "0.75rem",
+              lineHeight: 1,
+              flexShrink: 0,
+              transition: "background 0.12s, color 0.12s",
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(212,88,152,0.12)"; (e.currentTarget as HTMLButtonElement).style.color = "oklch(0.38 0.10 340)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "oklch(0.55 0.08 340)"; }}
+          >
+            ✕
+          </button>
         </div>
 
         {/* Header */}

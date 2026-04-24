@@ -54,7 +54,7 @@ export const MODE_DEFAULTS: Record<DailyMode, ModeConfig> = {
     tagline: "Lock in. Execute.",
     description: "High energy. Long focus blocks. Get the hard thing done.",
     color: "oklch(0.52 0.18 25)",
-    timerFocus: 50,
+    timerFocus: 45,
     timerShort: 10,
     timerLong: 20,
     routineFilter: "all",
