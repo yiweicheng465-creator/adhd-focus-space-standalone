@@ -21,7 +21,6 @@ import { GlobalRightPanel } from "@/components/GlobalRightPanel";
 import { ConfettiCelebration } from "@/components/ConfettiCelebration";
 import { DailyWrapUp } from "@/components/DailyWrapUp";
 import { recordWrapUp, recordDumpEntry, recordFocusSession, recordBlockComplete, recordMood } from "@/components/MonthlyProgress";
-import { DailyCheckIn, useDailyCheckIn, type CheckInResult } from "@/components/DailyCheckIn";
 import { ModeSelectCard, useModeSelectCard } from "@/components/ModeSelectCard";
 import type { DailyMode } from "@/lib/modeConfig";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
@@ -410,27 +409,11 @@ export default function Home() {
     return () => window.removeEventListener("adhd-storage-update", handler);
   }, []);
 
-  // Daily check-in
-  const { show: showCheckIn, dismiss: dismissCheckIn } = useDailyCheckIn();
-
-  // Mode select card — shown before check-in on first daily visit
+  // Mode select card — shown on first daily visit
   const { show: showModeCard, dismiss: dismissModeCard } = useModeSelectCard();
 
   const handleModeSelected = (_mode: DailyMode) => {
     dismissModeCard(true);
-    // After mode is selected, still show the check-in if it hasn't been dismissed
-    // (mode card replaces the greeting step, check-in handles tasks/goals/wins)
-  };
-
-  const handleCheckInComplete = (data: CheckInResult) => {
-    // If user set a mood in check-in, use it; otherwise default to Good (4)
-    const moodVal = data.mood ?? 4;
-    setMood(moodVal);
-    if (data.newGoals?.length) setGoals((p) => [...data.newGoals, ...p]);
-    if (data.newTasks.length) setTasks((p) => [...data.newTasks, ...p]);
-    if (data.newWins.length) setWins((p) => [...data.newWins, ...p]);
-    if (data.newAgents.length) setAgents((p) => [...data.newAgents, ...p]);
-    dismissCheckIn(true);
   };
 
   /* ── Task completion with confetti + goal auto-nudge ── */
@@ -1139,15 +1122,6 @@ export default function Home() {
           onSkip={() => dismissModeCard(true)}
           onClose={() => dismissModeCard(false)}
           displayName={displayName || undefined}
-        />
-      )}
-      {!showModeCard && showCheckIn && (
-        <DailyCheckIn
-          onComplete={handleCheckInComplete}
-          onSkip={() => dismissCheckIn(true)}
-          onClose={() => dismissCheckIn(false)}
-          displayName={displayName || undefined}
-          existingTasks={tasks}
         />
       )}
       {showNamePrompt && (
