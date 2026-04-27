@@ -21,8 +21,6 @@ import { GlobalRightPanel } from "@/components/GlobalRightPanel";
 import { ConfettiCelebration } from "@/components/ConfettiCelebration";
 import { DailyWrapUp } from "@/components/DailyWrapUp";
 import { recordWrapUp, recordDumpEntry, recordFocusSession, recordBlockComplete, recordMood } from "@/components/MonthlyProgress";
-import { ModeSelectCard, useModeSelectCard, resetModeCard } from "@/components/ModeSelectCard";
-import type { DailyMode } from "@/lib/modeConfig";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useBlockStreak } from "@/hooks/useBlockStreak";
 import { useAutoBackup } from "@/hooks/useAutoBackup";
@@ -409,13 +407,6 @@ export default function Home() {
     return () => window.removeEventListener("adhd-storage-update", handler);
   }, []);
 
-  // Mode select card — shown on first daily visit
-  const { show: showModeCard, dismiss: dismissModeCard } = useModeSelectCard();
-
-  const handleModeSelected = (_mode: DailyMode) => {
-    dismissModeCard(true);
-  };
-
   /* ── Task completion with confetti + goal auto-nudge ── */
   const handleTasksChange = (newTasks: Task[]) => {
     // Detect newly completed tasks (just marked done)
@@ -685,7 +676,7 @@ export default function Home() {
           {/* Right: stats + mood + wrap-up */}
           <div className="flex items-center shrink-0" style={{ gap: 0 }}>
             {/* Quick-stats — visible on all sections */}
-            <div className="hidden sm:flex items-center" style={{ borderRight: "1.5px solid #E8B8D0" }}>                {(() => {
+            <div className="hidden sm:flex items-center" style={{ borderRight: "1.5px solid #E8B8D0", overflow: "hidden" }}>                {(() => {
                   // routineRefresh is referenced here so React re-renders when it changes
                   void routineRefresh;
                   // Routine completion: read from localStorage (same keys as GlobalRightPanel)
@@ -728,13 +719,13 @@ export default function Home() {
                   <React.Fragment key={label}>
                     <button
                       onClick={() => setActiveSection(section)}
-                      className="flex items-baseline gap-1 transition-all cursor-pointer px-3 py-2"
+                      className="flex items-baseline gap-1 transition-all cursor-pointer px-2 py-2"
                       style={{ background: "transparent", border: "none" }}
                       onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(212,88,152,0.10)"; }}
                       onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
                     >
-                      <span style={{ fontSize: "0.72rem", fontWeight: 400, fontFamily: "'Space Mono', monospace", color: sc.num, letterSpacing: "0.02em" }}>{value}</span>
-                      <span style={{ fontSize: "0.55rem", fontWeight: 400, fontFamily: "'Space Mono', monospace", color: sc.lbl, letterSpacing: "0.10em", textTransform: "uppercase" }}>{label}</span>
+                      <span style={{ fontSize: "0.68rem", fontWeight: 400, fontFamily: "'Space Mono', monospace", color: sc.num, letterSpacing: "0.02em", whiteSpace: "nowrap" }}>{value}</span>
+                      <span style={{ fontSize: "0.48rem", fontWeight: 400, fontFamily: "'Space Mono', monospace", color: sc.lbl, letterSpacing: "0.08em", textTransform: "uppercase", whiteSpace: "nowrap" }}>{label}</span>
                     </button>
                     {i < arr.length - 1 && (
                       <div style={{ width: 1, height: 20, background: "#E8B8D0" }} />
@@ -1116,14 +1107,6 @@ export default function Home() {
         />
       )}
 
-      {showModeCard && (
-        <ModeSelectCard
-          onDone={handleModeSelected}
-          onSkip={() => dismissModeCard(true)}
-          onClose={() => { resetModeCard(); dismissModeCard(false); }}
-          displayName={displayName || undefined}
-        />
-      )}
       {showNamePrompt && (
         <NamePrompt
           onSave={handleNameSave}

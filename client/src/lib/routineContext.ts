@@ -3,7 +3,6 @@
  * Builds a rich plain-text summary of the user's routine data for injection
  * into AI system prompts. Reads from localStorage — safe to call at any time.
  */
-import { getTodayMode, getModeConfig } from "./modeConfig";
 
 type Routine = { id: string; name: string; days: string[]; iconIdx: number };
 type DailyLog = {
@@ -127,17 +126,6 @@ export function buildRoutineContext(): string {
 
     // ── 5. Assemble the context block ─────────────────────────────
     const lines: string[] = [];
-
-    // ── 0. Daily mode context ─────────────────────────────────────
-    const dailyMode = getTodayMode();
-    if (dailyMode) {
-      const modeCfg = getModeConfig(dailyMode);
-      lines.push(`=== DAILY MODE: ${modeCfg.icon} ${modeCfg.label.toUpperCase()} ===`);
-      lines.push(`Tone instruction: ${modeCfg.aiTone}`);
-      lines.push(`Opening line to use: "${modeCfg.aiOpener}"`);
-      lines.push(`Routine display: ${modeCfg.routineFilter}${modeCfg.routineFilter === "core-only" ? ` (show only first ${modeCfg.routineCoreCount} routines)` : ""}`);
-      lines.push("");
-    }
 
     lines.push("=== ROUTINE DATA ===");
     lines.push(`All routines (${routines.length} total):`);

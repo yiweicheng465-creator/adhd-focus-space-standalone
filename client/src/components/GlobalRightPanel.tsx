@@ -10,7 +10,6 @@ import { toast } from "sonner";
 import { Bot, Loader2 } from "lucide-react";
 import { callAIStream, callAI } from "@/lib/ai";
 import { buildRoutineContext } from "@/lib/routineContext";
-import { getTodayMode, getModeConfig } from "@/lib/modeConfig";
 import { useTimer } from "@/contexts/TimerContext";
 import { useSoundContext } from "@/contexts/SoundContext";
 import { Streamdown } from "streamdown";
@@ -571,23 +570,8 @@ function RoutinePopup({ onClose, onLogWin, onUndoWin }: { onClose: () => void; o
     setPickerOpenId(null);
   };
   const allTodayRoutines = routines.filter(r => r.days.includes(today));
-  // Apply daily mode filter
-  const todayRoutines = (() => {
-    const mode = getTodayMode();
-    if (!mode) return allTodayRoutines;
-    const cfg = getModeConfig(mode);
-    if (cfg.routineFilter === "hidden") return [];
-    if (cfg.routineFilter === "core-only") {
-      const n = cfg.routineCoreCount > 0 ? cfg.routineCoreCount : 2;
-      return allTodayRoutines.slice(0, n);
-    }
-    return allTodayRoutines;
-  })();
-  const modeHidingRoutines = (() => {
-    const mode = getTodayMode();
-    if (!mode) return false;
-    return getModeConfig(mode).routineFilter !== "all";
-  })();
+  const todayRoutines = allTodayRoutines;
+  const modeHidingRoutines = false;
 
   const undoMarkDone = (routineId: string, winId: string) => {
     // Re-read current localStorage value and remove this specific routineId
@@ -686,9 +670,7 @@ function RoutinePopup({ onClose, onLogWin, onUndoWin }: { onClose: () => void; o
         )}
         {todayRoutines.length === 0 && (
           <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.80rem", color: "oklch(0.60 0.040 330)", fontStyle: "italic" }}>
-            {modeHidingRoutines
-              ? (() => { const m = getTodayMode(); const cfg = m ? getModeConfig(m) : null; return cfg ? `${cfg.icon} ${cfg.label}: ${cfg.routineFilter === "hidden" ? "Routines paused — focus on clearing your head first." : `Showing only the ${cfg.routineCoreCount} core routines for today.`}` : "No routines set for today."; })()
-              : `No routines set for ${today}.`}
+            {`No routines set for ${today}.`}
           </p>
         )}
         {/* All routines */}
