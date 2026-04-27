@@ -242,7 +242,7 @@ export function TaskManager({ tasks, onTasksChange, defaultContext = "all", allC
       {/* Cat sticker: purple sitting cat — top-right corner */}
       <img src={CAT_PURPLE} alt="" aria-hidden="true" style={{ position: "absolute", top: 0, right: 0, width: 64, opacity: 0.40, pointerEvents: "none", zIndex: 5 }} />
       {/* Context switcher — shows all known categories */}
-      <ContextSwitcher active={activeContext} onChange={setActiveContext} counts={counts} contexts={allContexts} onDeleteContext={onDeleteCategory} label="FILTER TASKS BY TAG" />
+      <ContextSwitcher active={activeContext} onChange={setActiveContext} counts={counts} contexts={allContexts} onDeleteContext={onDeleteCategory} />
 
       {/* Add task */}
       <div className="flex flex-col gap-2">
