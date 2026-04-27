@@ -105,8 +105,8 @@ export function ContextSwitcher({ active, onChange, counts, contexts, label }: C
 
   return (
     <div
-      className="flex flex-wrap items-center gap-1.5"
-      style={{ padding: "2px 0" }}
+      className="flex items-center gap-1.5"
+      style={{ padding: "2px 0", flexWrap: "nowrap", minWidth: "max-content" }}
     >
       {label && (
         <span
