@@ -616,7 +616,7 @@ ${routineContext}`;
               </div>
               </div>{/* /capture+hint column */}
               {/* Context switcher */}
-              <div style={{ flex: "1 1 auto", minWidth: 0 }}>
+              <div style={{ flex: "1 1 auto", minWidth: 0, overflowX: "auto", overflowY: "hidden" }}>
                 <ContextSwitcher active={activeContext} onChange={setActiveContext} counts={ctxCounts} contexts={allContexts} label="FILTER TASKS BY TAG" />
               </div>
             </div>
