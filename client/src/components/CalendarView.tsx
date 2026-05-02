@@ -10,6 +10,7 @@
 import React, { useState, useRef } from "react";
 import type { Task } from "./TaskManager";
 import { ChevronLeft, ChevronRight, List, CalendarDays } from "lucide-react";
+import { useMobile } from "@/hooks/useMobile";
 
 const M = {
   ink:     "oklch(0.28 0.040 320)",
@@ -50,6 +51,7 @@ interface Props {
 export function CalendarView({ tasks, onTasksChange, onTaskToggle, doneFilter = "active" }: Props) {
   const today = new Date(); today.setHours(0,0,0,0);
   const todayYMD = toYMD(today);
+  const isMobile = useMobile();
 
   const [calView, setCalView] = useState<"week" | "month">("week");
   const [weekStart, setWeekStart] = useState(() => startOfWeek(today));
@@ -174,21 +176,29 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle, doneFilter = 
             background: "#fff",
             border: `1px solid ${isOver ? M.coral : M.border}`,
             borderLeft: `3px solid ${PRIORITY_COLOR[task.priority] ?? M.coral}`,
-            borderRadius: 3, padding: "2px 5px",
+            borderRadius: 3, padding: isMobile ? "5px 7px" : "2px 5px",
             cursor: "grab", opacity: dragId === task.id ? 0.4 : 1,
-            display: "flex", alignItems: "center", gap: 4,
+            display: "flex", alignItems: "center", gap: isMobile ? 6 : 4,
+            marginBottom: isMobile ? 3 : 0,
           }}
         >
           <button
             onClick={() => onTaskToggle(task.id)}
             style={{
-              flexShrink: 0, width: 10, height: 10, borderRadius: "50%",
+              flexShrink: 0,
+              width: isMobile ? 14 : 10,
+              height: isMobile ? 14 : 10,
+              minWidth: isMobile ? 14 : 10,
+              minHeight: isMobile ? 14 : 10,
+              borderRadius: "50%",
               border: `1.5px solid ${PRIORITY_COLOR[task.priority] ?? M.muted}`,
               background: "transparent", cursor: "pointer", padding: 0,
+              boxSizing: "content-box",
             }}
           />
           <span style={{
-            fontFamily: "'DM Sans', sans-serif", fontSize: "0.60rem",
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: isMobile ? "0.78rem" : "0.60rem",
             color: M.ink, lineHeight: 1.3,
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
             flex: 1,
@@ -227,10 +237,10 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle, doneFilter = 
         {/* Header — click to open day detail */}
         <div
           onClick={() => setSelectedDay(ymd)}
-          style={{ padding: "5px 6px 4px", borderBottom: `1px solid ${M.border}`, flexShrink: 0, cursor: "pointer", minHeight: 52 }}
+          style={{ padding: isMobile ? "8px 8px 6px" : "5px 6px 4px", borderBottom: `1px solid ${M.border}`, flexShrink: 0, cursor: "pointer", minHeight: isMobile ? 60 : 52 }}
         >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.44rem", letterSpacing: "0.06em", textTransform: "uppercase", color: isToday ? M.coral : isPast ? M.muted : M.ink, margin: 0 }}>
+            <p style={{ fontFamily: "'Space Mono', monospace", fontSize: isMobile ? "0.55rem" : "0.44rem", letterSpacing: "0.06em", textTransform: "uppercase", color: isToday ? M.coral : isPast ? M.muted : M.ink, margin: 0 }}>
               {WEEKDAYS_SHORT[(day.getDay() + 6) % 7]}
             </p>
             {dayTasks.length > 0 && (
@@ -240,7 +250,7 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle, doneFilter = 
             )}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-            <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "0.90rem", fontWeight: 700, margin: 0, color: isToday ? M.coral : isPast ? M.muted : M.ink }}>
+            <p style={{ fontFamily: "'Playfair Display', serif", fontSize: isMobile ? "1.2rem" : "0.90rem", fontWeight: 700, margin: 0, color: isToday ? M.coral : isPast ? M.muted : M.ink }}>
               {day.getDate()}
             </p>
             {isToday && <div style={{ width: 4, height: 4, borderRadius: "50%", background: M.coral, flexShrink: 0 }} />}
@@ -248,7 +258,7 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle, doneFilter = 
         </div>
 
         {/* Tasks — scrollable */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "5px 4px", minHeight: 80, maxHeight: 480 }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: isMobile ? "6px 5px" : "5px 4px", minHeight: isMobile ? 120 : 80, maxHeight: isMobile ? 300 : 480 }}>
           {dayTasks.map(t => <TaskChip key={t.id} task={t} dayYMD={ymd} />)}
           {isOver && dragId && (
             <div style={{ textAlign: "center", fontSize: "0.48rem", fontFamily: "'Space Mono', monospace", color: M.coral, opacity: 0.8 }}>
@@ -281,20 +291,26 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle, doneFilter = 
 
   function WeekView() {
     const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+    // Mobile: show 3 days at a time (navigate by 3 days)
+    const mobileDays = Array.from({ length: 3 }, (_, i) => addDays(weekStart, i));
+    const navAmount = isMobile ? 3 : 7;
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 8, height: "100%", position: "relative" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <button onClick={() => setWeekStart(d => addDays(d, -7))} style={{ background: "none", border: "none", cursor: "pointer", color: M.muted, display: "flex" }}>
+          <button onClick={() => setWeekStart(d => addDays(d, -navAmount))} style={{ background: "none", border: "none", cursor: "pointer", color: M.muted, display: "flex" }}>
             <ChevronLeft size={16} />
           </button>
           <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.58rem", letterSpacing: "0.08em", color: M.muted, textTransform: "uppercase" }}>
-            {weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – {addDays(weekStart, 6).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+            {isMobile
+              ? `${weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${addDays(weekStart, 2).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
+              : `${weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${addDays(weekStart, 6).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
+            }
           </span>
-          <button onClick={() => setWeekStart(d => addDays(d, 7))} style={{ background: "none", border: "none", cursor: "pointer", color: M.muted, display: "flex" }}>
+          <button onClick={() => setWeekStart(d => addDays(d, navAmount))} style={{ background: "none", border: "none", cursor: "pointer", color: M.muted, display: "flex" }}>
             <ChevronRight size={16} />
           </button>
         </div>
-        <div style={{ display: "flex", gap: 4, flex: 1, minHeight: 0, position: "relative" }}>
+        <div style={{ display: "flex", gap: isMobile ? 6 : 4, flex: 1, minHeight: 0, position: "relative" }}>
           {/* Drag-to-advance zones: only active during drag, fully invisible otherwise */}
           <div
             onDragEnter={() => startAdvance(-1)}
@@ -334,7 +350,7 @@ export function CalendarView({ tasks, onTasksChange, onTaskToggle, doneFilter = 
             }}
           >
           </div>
-          {days.map(d => <DayColumn key={toYMD(d)} day={d} />)}
+          {(isMobile ? mobileDays : days).map(d => <DayColumn key={toYMD(d)} day={d} />)}
         </div>
       </div>
     );
