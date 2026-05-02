@@ -1,7 +1,7 @@
 /* ============================================================
-   ADHD FOCUS SPACE — Sidebar v6.0 (Retro Lo-Fi Desktop)
-   Icons: thin-line minimal geometric SVGs (no pixel art)
-   Aesthetic: clean outline icons like a vintage OS sidebar
+   ADHD FOCUS SPACE — Sidebar v7.0 (Retro Lo-Fi Desktop + Mobile)
+   Desktop: fixed left sidebar (56px wide)
+   Mobile: fixed bottom tab bar (shows 5 main nav items)
    ============================================================ */
 
 import React, { useEffect, useRef, useState } from "react";
@@ -9,6 +9,7 @@ import { useLocation } from "wouter";
 import { useTimer } from "@/contexts/TimerContext";
 import { useSoundContext } from "@/contexts/SoundContext";
 import { EffectsPanel } from "@/components/EffectsPanel";
+import { useMobile } from "@/hooks/useMobile";
 
 interface SidebarProps {
   activeSection: string;
@@ -137,6 +138,15 @@ const NAV: Array<{
   { id: "wins",      short: "WINS",   Icon: IconWins,   title: "Daily Wins"   },
   { id: "agents",    short: "AGENTS", Icon: IconAgents, title: "AI Agents"    },
   { id: "storage",   short: "STORE",  Icon: IconStorage, title: "Storage & Backup" },
+];
+
+/* Mobile bottom tab bar shows only the 5 most important items */
+const MOBILE_NAV = [
+  { id: "dashboard", short: "HOME",   Icon: IconHome,   title: "Dashboard"   },
+  { id: "tasks",     short: "TASKS",  Icon: IconTasks,  title: "My Tasks"     },
+  { id: "dump",      short: "DUMP",   Icon: IconDump,   title: "Brain Dump"   },
+  { id: "wins",      short: "WINS",   Icon: IconWins,   title: "Daily Wins"   },
+  { id: "goals",     short: "GOALS",  Icon: IconGoals,  title: "Goals"        },
 ];
 
 /* ── Floating timer pill ── */
@@ -448,7 +458,213 @@ if (typeof document !== "undefined" && !document.getElementById("sidebar-timer-p
   document.head.appendChild(s);
 }
 
+/* ── Mobile "More" menu overlay ── */
+function MobileMoreMenu({
+  activeSection,
+  onSectionChange,
+  onClose,
+}: {
+  activeSection: string;
+  onSectionChange: (s: string) => void;
+  onClose: () => void;
+}) {
+  const MORE_ITEMS = [
+    { id: "agents",  short: "AI AGENTS",  Icon: IconAgents,  title: "AI Agents" },
+    { id: "storage", short: "STORAGE",    Icon: IconStorage, title: "Storage & Backup" },
+    { id: "monthly", short: "MONTHLY",    Icon: (p: { color: string }) => (
+      <svg width="17" height="17" viewBox="0 0 18 18" fill="none">
+        <rect x="2" y="4" width="14" height="12" rx="1.5" stroke={p.color} strokeWidth="1.4"/>
+        <line x1="2" y1="8" x2="16" y2="8" stroke={p.color} strokeWidth="1.2"/>
+        <line x1="6" y1="2" x2="6" y2="6" stroke={p.color} strokeWidth="1.4" strokeLinecap="round"/>
+        <line x1="12" y1="2" x2="12" y2="6" stroke={p.color} strokeWidth="1.4" strokeLinecap="round"/>
+        <circle cx="6" cy="11" r="1" fill={p.color} />
+        <circle cx="9" cy="11" r="1" fill={p.color} />
+        <circle cx="12" cy="11" r="1" fill={p.color} />
+      </svg>
+    ), title: "Monthly" },
+    { id: "guide",   short: "GUIDE",      Icon: (p: { color: string }) => (
+      <svg width="17" height="17" viewBox="0 0 16 16" fill="none">
+        <circle cx="8" cy="8" r="6.5" stroke={p.color} strokeWidth="1.2"/>
+        <text x="8" y="12" textAnchor="middle" fontFamily="'Space Mono', monospace" fontSize="8" fill={p.color} fontWeight="600">?</text>
+      </svg>
+    ), title: "Guide" },
+  ];
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 998,
+          background: "oklch(0.18 0.01 60 / 0.3)",
+          backdropFilter: "blur(2px)",
+        }}
+      />
+      {/* Menu panel */}
+      <div
+        style={{
+          position: "fixed",
+          bottom: "calc(60px + env(safe-area-inset-bottom, 0px))",
+          right: 0,
+          left: 0,
+          zIndex: 999,
+          background: "oklch(0.930 0.045 355)",
+          borderTop: "1.5px solid oklch(0.80 0.060 340)",
+          boxShadow: "0 -4px 20px oklch(0.58 0.18 340 / 0.12)",
+          padding: "12px 16px",
+          paddingBottom: "8px",
+          display: "flex",
+          flexDirection: "column",
+          gap: 4,
+        }}
+      >
+        <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.48rem", letterSpacing: "0.12em", color: "oklch(0.52 0.060 330)", textTransform: "uppercase", marginBottom: 4, opacity: 0.7 }}>
+          More
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+          {MORE_ITEMS.map(({ id, short, Icon, title }) => {
+            const active = activeSection === id;
+            const color = active ? "oklch(0.48 0.18 340)" : "oklch(0.52 0.060 330)";
+            return (
+              <button
+                key={id}
+                onClick={() => { onSectionChange(id); onClose(); }}
+                title={title}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "10px 4px",
+                  background: active ? "oklch(0.58 0.18 340 / 0.12)" : "oklch(0.975 0.012 355 / 0.6)",
+                  border: active ? "1px solid oklch(0.58 0.18 340 / 0.25)" : "1px solid oklch(0.86 0.030 340)",
+                  borderRadius: 8,
+                  gap: 4,
+                  cursor: "pointer",
+                }}
+              >
+                <Icon color={color} />
+                <span style={{ fontSize: "0.45rem", letterSpacing: "0.10em", fontFamily: "'Space Mono', monospace", color, fontWeight: active ? 700 : 400 }}>
+                  {short}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        {/* Settings row */}
+        <div style={{ marginTop: 8, borderTop: "1px solid oklch(0.80 0.060 340 / 0.5)", paddingTop: 8 }}>
+          <EffectsPanel />
+        </div>
+      </div>
+    </>
+  );
+}
+
 export function Sidebar({ activeSection, onSectionChange, onClearData }: SidebarProps) {
+  const isMobile = useMobile();
+  const [showMore, setShowMore] = useState(false);
+
+  /* ── Mobile: bottom tab bar ── */
+  if (isMobile) {
+    return (
+      <>
+        {showMore && (
+          <MobileMoreMenu
+            activeSection={activeSection}
+            onSectionChange={onSectionChange}
+            onClose={() => setShowMore(false)}
+          />
+        )}
+        <nav
+          className="fixed bottom-0 left-0 right-0 z-40 flex items-stretch"
+          style={{
+            background: "oklch(0.930 0.045 355)",
+            borderTop: "1.5px solid oklch(0.80 0.060 340)",
+            boxShadow: "0 -2px 12px oklch(0.58 0.18 340 / 0.10)",
+            height: "calc(60px + env(safe-area-inset-bottom, 0px))",
+            paddingBottom: "env(safe-area-inset-bottom, 0px)",
+          }}
+        >
+          {MOBILE_NAV.map(({ id, short, Icon, title }) => {
+            const active = activeSection === id;
+            const color = active ? "oklch(0.48 0.18 340)" : "oklch(0.52 0.060 330)";
+            return (
+              <button
+                key={id}
+                data-nav-id={id}
+                onClick={() => { onSectionChange(id); setShowMore(false); }}
+                title={title}
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 2,
+                  background: active ? "oklch(0.58 0.18 340 / 0.10)" : "transparent",
+                  border: "none",
+                  borderTop: active ? "2px solid oklch(0.58 0.18 340)" : "2px solid transparent",
+                  cursor: "pointer",
+                  transition: "background 0.15s",
+                  padding: "6px 2px 4px",
+                }}
+              >
+                <Icon color={color} />
+                <span style={{
+                  fontSize: "0.42rem",
+                  letterSpacing: "0.10em",
+                  fontFamily: "'Space Mono', monospace",
+                  color,
+                  fontWeight: active ? 700 : 400,
+                }}>
+                  {short}
+                </span>
+              </button>
+            );
+          })}
+          {/* More button */}
+          <button
+            onClick={() => setShowMore(p => !p)}
+            title="More"
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 2,
+              background: showMore ? "oklch(0.58 0.18 340 / 0.10)" : "transparent",
+              border: "none",
+              borderTop: showMore ? "2px solid oklch(0.58 0.18 340)" : "2px solid transparent",
+              cursor: "pointer",
+              transition: "background 0.15s",
+              padding: "6px 2px 4px",
+            }}
+          >
+            <svg width="17" height="17" viewBox="0 0 20 20" fill="none">
+              <circle cx="4" cy="10" r="1.5" fill={showMore ? "oklch(0.48 0.18 340)" : "oklch(0.52 0.060 330)"}/>
+              <circle cx="10" cy="10" r="1.5" fill={showMore ? "oklch(0.48 0.18 340)" : "oklch(0.52 0.060 330)"}/>
+              <circle cx="16" cy="10" r="1.5" fill={showMore ? "oklch(0.48 0.18 340)" : "oklch(0.52 0.060 330)"}/>
+            </svg>
+            <span style={{
+              fontSize: "0.42rem",
+              letterSpacing: "0.10em",
+              fontFamily: "'Space Mono', monospace",
+              color: showMore ? "oklch(0.48 0.18 340)" : "oklch(0.52 0.060 330)",
+              fontWeight: showMore ? 700 : 400,
+            }}>
+              MORE
+            </span>
+          </button>
+        </nav>
+      </>
+    );
+  }
+
+  /* ── Desktop: left sidebar ── */
   return (
     <aside
       className="fixed left-0 top-0 h-screen w-14 z-40 flex flex-col items-center py-4"

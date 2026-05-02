@@ -737,3 +737,54 @@ html {
 body {
   transition: background-color 0.35s ease;
 }
+
+/* ── Mobile Responsive Styles ────────────────────────────────
+   Applied when viewport width < 768px (mobile devices)
+   Key changes:
+   - Bottom tab bar replaces left sidebar
+   - Content area gets bottom padding for tab bar
+   - Panels slide up from bottom
+   - Reduced padding/margins for small screens
+   ─────────────────────────────────────────────────────────── */
+
+/* Safe area bottom padding utility */
+.pb-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Mobile: prevent horizontal overflow */
+@media (max-width: 767px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Ensure retro windows don't overflow on mobile */
+  .retro-window {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* Retro task list rows — allow text to wrap on mobile */
+  .retro-task-row {
+    flex-wrap: wrap;
+  }
+
+  /* Improve touch targets */
+  button {
+    min-height: 36px;
+  }
+
+  /* Prevent text from being too small on mobile */
+  input, textarea {
+    font-size: 16px !important; /* prevents iOS zoom on focus */
+  }
+}
+
+/* ── Focus page mobile adjustments ── */
+@media (max-width: 767px) {
+  /* Remove rotation transforms on mobile for focus page */
+  .focus-page-timer-container {
+    transform: none !important;
+    margin: 0 auto !important;
+  }
+}

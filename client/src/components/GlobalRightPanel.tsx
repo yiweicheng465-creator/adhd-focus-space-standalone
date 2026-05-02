@@ -5,6 +5,7 @@
    ============================================================ */
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useMobile } from "@/hooks/useMobile";
 import { nanoid } from "nanoid";
 import { toast } from "sonner";
 import { Bot, Loader2 } from "lucide-react";
@@ -60,6 +61,7 @@ const BTN_STYLE = (active: boolean, idx: number = 0, hovered = false): React.CSS
 };
 
 export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin, onUndoWin }: Props) {
+  const isMobile = useMobile();
   const [panel, setPanel] = useState<"ai" | "coach" | "timer" | "routine" | null>(null);
   const toggle = (p: "ai" | "coach" | "timer" | "routine") => setPanel(v => v === p ? null : p);
   const [hoveredBtn, setHoveredBtn] = useState<"ai" | "coach" | "timer" | "routine" | null>(null);
@@ -120,8 +122,8 @@ export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin, onUndoWi
         />
       )}
 
-      {/* Right-edge button stack */}
-      <div data-tour-id="tour-right-panel" style={{ position: "fixed", right: 0, top: "50%", transform: "translateY(-50%)", zIndex: 101, display: "flex", flexDirection: "column", gap: 0, alignItems: "flex-end" }}>
+      {/* Right-edge button stack — hidden on mobile (use GlobalQuickAdd + panels instead) */}
+      <div data-tour-id="tour-right-panel" style={{ position: "fixed", right: 0, top: "50%", transform: "translateY(-50%)", zIndex: 101, display: isMobile ? "none" : "flex", flexDirection: "column", gap: 0, alignItems: "flex-end" }}>
         {/* AI */}
         <button data-tour-id="tour-ai-btn"
           style={BTN_STYLE(panel === "ai" || aiActiveOnDashboard, 0, hoveredBtn === "ai")}
@@ -750,6 +752,7 @@ const M_MUTED = "oklch(0.52 0.040 330)";
 function PopupShell({ onClose, title, width = 300, children, onClear, clearDisabled, headerColor, bodyBg }: { onClose: () => void; title: string; width?: number; children: React.ReactNode; onClear?: () => void; clearDisabled?: boolean; headerColor?: string; bodyBg?: string; }) {
   const hdr = headerColor ?? "oklch(0.93 0.025 355)";
   const bg = bodyBg ?? "#fdf4f8";
+  const isMobile = useMobile();
   const [tourHighlight, setTourHighlight] = useState(false);
   useEffect(() => {
     const onHL = () => setTourHighlight(true);
@@ -763,8 +766,43 @@ function PopupShell({ onClose, title, width = 300, children, onClear, clearDisab
       window.removeEventListener("tour-close-panel", offHL);
     };
   }, []);
+  // Mobile: slide up from bottom as a sheet
+  const mobileStyle: React.CSSProperties = isMobile ? {
+    position: "fixed",
+    left: 0,
+    right: 0,
+    bottom: "calc(60px + env(safe-area-inset-bottom, 0px))",
+    top: "auto",
+    zIndex: 100,
+    width: "100%",
+    maxHeight: "70vh",
+    background: bg,
+    borderRadius: "14px 14px 0 0",
+    boxShadow: "0 -4px 24px rgba(120,40,180,0.18)",
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+    border: `1px solid ${hdr}`,
+    borderBottom: "none",
+  } : {};
+  const desktopStyle: React.CSSProperties = !isMobile ? {
+    position: "fixed",
+    right: 19,
+    top: "50%",
+    transform: "translateY(-50%)",
+    zIndex: 100,
+    width,
+    background: bg,
+    borderRadius: 14,
+    boxShadow: tourHighlight ? "0 0 0 3px oklch(0.58 0.18 340), 0 0 24px oklch(0.58 0.18 340 / 0.45), 0 20px 48px rgba(120,40,180,0.18)" : "0 20px 48px rgba(120,40,180,0.18), 0 4px 12px rgba(0,0,0,0.08)",
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+    border: tourHighlight ? "2px solid oklch(0.58 0.18 340)" : `1px solid ${hdr}`,
+    transition: "box-shadow 0.3s ease, border 0.3s ease",
+  } : {};
   return (
-    <div data-tour-id="tour-panel-popup" style={{ position: "fixed", right: 19, top: "50%", transform: "translateY(-50%)", zIndex: 100, width, background: bg, borderRadius: 14, boxShadow: tourHighlight ? "0 0 0 3px oklch(0.58 0.18 340), 0 0 24px oklch(0.58 0.18 340 / 0.45), 0 20px 48px rgba(120,40,180,0.18)" : "0 20px 48px rgba(120,40,180,0.18), 0 4px 12px rgba(0,0,0,0.08)", display: "flex", flexDirection: "column", overflow: "hidden", border: tourHighlight ? "2px solid oklch(0.58 0.18 340)" : `1px solid ${hdr}`, transition: "box-shadow 0.3s ease, border 0.3s ease" }}>
+    <div data-tour-id="tour-panel-popup" style={isMobile ? mobileStyle : desktopStyle}>
       <div style={{ padding: "10px 14px", borderBottom: `1px solid ${hdr}`, background: hdr, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "0.90rem", fontWeight: 700, color: "oklch(0.28 0.040 320)", fontStyle: "italic" }}>{title}</span>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>

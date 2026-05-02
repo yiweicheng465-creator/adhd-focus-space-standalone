@@ -274,9 +274,9 @@ export function EffectsPanel() {
       {open && (
         <div data-tour-id="tour-settings-panel" style={{
           position: "fixed",
-          left: "max(56px, env(safe-area-inset-left, 0px))",
-          bottom: 8,
-          width: "min(260px, calc(100vw - 64px))",
+          left: "max(8px, env(safe-area-inset-left, 0px))",
+          bottom: "max(8px, env(safe-area-inset-bottom, 0px))",
+          width: "min(260px, calc(100vw - 16px))",
           zIndex: 10000,
           fontFamily: "'Space Mono', monospace",
           filter: "drop-shadow(3px 3px 0 oklch(0.55 0.12 340 / 0.35))",

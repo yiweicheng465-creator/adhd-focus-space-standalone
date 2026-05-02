@@ -19,3 +19,6 @@ export function useIsMobile() {
 
   return !!isMobile;
 }
+
+// Alias for convenience — same as useIsMobile
+export const useMobile = useIsMobile;

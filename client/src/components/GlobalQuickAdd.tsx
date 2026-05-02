@@ -7,9 +7,9 @@ import { useEffect, useRef, useState } from "react";
 import { Flame, Loader2, Plus, Settings, Sparkles, Star, Trash2, X, Zap } from "lucide-react";
 import { callAI } from "@/lib/ai";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useMobile } from "@/hooks/useMobile";
 import { toast } from "sonner";
 import { nanoid } from "nanoid";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
 import type { Task } from "./TaskManager";
 
 const M = {
@@ -44,6 +44,55 @@ interface GlobalQuickAddProps {
   onAddGoal?: (text: string, context?: string) => void;
   onAddWin?: (text: string, iconIdx?: number) => void;
   onAddDump?: (text: string) => void;
+}
+
+/* ── Mobile-aware floating trigger ── */
+function MobileAwareQuickAddTrigger({ open, onOpen }: { open: boolean; onOpen: () => void }) {
+  const isMobile = useMobile();
+  return (
+    <div
+      data-tour-id="tour-quick-add"
+      style={{
+        position: "fixed",
+        bottom: isMobile
+          ? "calc(68px + env(safe-area-inset-bottom, 0px))"
+          : "24px",
+        right: "24px",
+        zIndex: 50,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 6,
+        opacity: open ? 0 : 1,
+        pointerEvents: open ? "none" : "auto",
+        transition: "opacity 0.15s",
+      }}
+    >
+      <button
+        onClick={onOpen}
+        title="Quick add task (⌘K or +)"
+        style={{
+          width: 48,
+          height: 48,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "oklch(0.975 0.018 355)",
+          border: `2px solid ${M.ink}`,
+          boxShadow: `3px 3px 0 ${M.ink}`,
+          fontFamily: "'Space Mono', monospace",
+          cursor: "pointer",
+          transition: "transform 0.2s, box-shadow 0.2s",
+          borderRadius: 0,
+        }}
+      >
+        <Plus style={{ width: 20, height: 20, color: M.coral }} />
+      </button>
+      <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.50rem", letterSpacing: "0.08em", color: M.muted, textAlign: "center", lineHeight: 1.3, userSelect: "none", pointerEvents: "none" }}>
+        press +
+      </span>
+    </div>
+  );
 }
 
 export function GlobalQuickAdd({ onAddTask, onAddGoal, onAddWin, onAddDump }: GlobalQuickAddProps) {
@@ -220,24 +269,8 @@ Today is ${today} (${todayName}). Available goals: ${goalList || "none"}.`,
 
   return (
     <>
-      {/* Floating trigger */}
-      <div
-        data-tour-id="tour-quick-add"
-        className="fixed bottom-6 right-6 z-50 flex flex-col items-center gap-1.5"
-        style={{ opacity: open ? 0 : 1, pointerEvents: open ? "none" : "auto", transition: "opacity 0.15s" }}
-      >
-        <button
-          onClick={() => setOpen(true)}
-          title="Quick add task (⌘K or +)"
-          className="w-12 h-12 flex items-center justify-center transition-all duration-200 active:translate-y-[2px] active:shadow-none"
-          style={{ background: "oklch(0.975 0.018 355)", border: `2px solid ${M.ink}`, boxShadow: `3px 3px 0 ${M.ink}`, fontFamily: "'Space Mono', monospace" }}
-        >
-          <Plus className="w-5 h-5" style={{ color: M.coral }} />
-        </button>
-        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.50rem", letterSpacing: "0.08em", color: M.muted, textAlign: "center", lineHeight: 1.3, userSelect: "none", pointerEvents: "none" }}>
-          press +
-        </span>
-      </div>
+      {/* Floating trigger — on mobile, position above bottom tab bar */}
+      <MobileAwareQuickAddTrigger open={open} onOpen={() => setOpen(true)} />
 
       {/* Backdrop + modal */}
       {open && (

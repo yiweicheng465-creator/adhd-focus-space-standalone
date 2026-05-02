@@ -12,6 +12,7 @@
    ============================================================ */
 
 import { useState, useEffect, useRef } from "react";
+import { useMobile } from "@/hooks/useMobile";
 
 // ── Inject sticker peel keyframes once ───────────────────────────────────────
 const STICKER_STYLE_ID = "adhd-sticker-peel-kf";
@@ -195,6 +196,7 @@ export function Dashboard({
   onTaskToggle, onTaskCreate, onGoalCreate, onAgentCreate, onWinCreate, onTasksChange, onDumpCreate,
   displayName,
 }: DashboardProps) {
+  const isMobile = useMobile();
   const [activeContext, setActiveContext] = useState<ActiveContext>("all");
   const [nextUpFilter, setNextUpFilter] = useState<"all" | "today">("all");
   const [quickCapture, setQuickCapture] = useState("");
@@ -528,19 +530,19 @@ ${routineContext}`;
         </div>
 
         {/* ── Content ── */}
-        <div className="relative z-10 flex" style={{ height: 160 }}>
+        <div className="relative z-10 flex" style={{ height: isMobile ? "auto" : 160 }}>
           {/* Left: heartbeat planet illustration — full image, no crop, no rounded corners */}
           <div className="hidden md:block shrink-0" style={{ width: 160, height: "100%", borderRight: `1px solid ${BORDER}`, overflow: "hidden" }}>
             <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663410012773/WNs8kMVMKanwFbtYhk72en/pink-planet-heartbeat_16e01928.png" alt="heartbeat" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block", borderRadius: 0 }} />
           </div>
           {/* Center: greeting + controls */}
-          <div className="flex-1 px-6 py-3 flex flex-col justify-between" style={{ minWidth: 0 }}>
+          <div className="flex-1 flex flex-col justify-between" style={{ minWidth: 0, padding: isMobile ? "10px 12px" : "12px 24px" }}>
             <div>
               <p className="editorial-label" style={{ marginBottom: 1, fontSize: 9 }}>
                 {DAYS[now.getDay()]} · {MONTHS[now.getMonth()]} {now.getDate()}
               </p>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <h1 className="text-2xl font-bold italic" style={{ fontFamily: "'Playfair Display', serif", color: INK }}>
+                <h1 className="font-bold italic" style={{ fontFamily: "'Playfair Display', serif", color: INK, fontSize: isMobile ? "1.4rem" : "1.5rem" }}>
                   {getGreeting()}{displayName ? `, ${displayName}` : ""}
                 </h1>
                 {blockStreak > 0 && (
@@ -582,9 +584,9 @@ ${routineContext}`;
                 }} />
               </div>
             </div>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 10, flexWrap: isMobile ? "wrap" : "nowrap" }}>
               {/* Quick capture + hint stacked */}
-              <div style={{ display: "flex", flexDirection: "column", flex: "1 1 160px", maxWidth: 280, gap: 3 }}>
+              <div style={{ display: "flex", flexDirection: "column", flex: isMobile ? "1 1 100%" : "1 1 160px", maxWidth: isMobile ? "100%" : 280, gap: 3 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1px solid ${BORDER}`, background: "oklch(0.975 0.018 355 / 0.85)", padding: "5px 12px", borderRadius: 6 }}>
                 <Zap size={11} style={{ color: TC, flexShrink: 0 }} />
                 <input
@@ -633,8 +635,8 @@ ${routineContext}`;
 
       {/* AI toggle handled by GlobalRightPanel's AI button (dispatches toggleDashboardAI) */}
 
-      {/* ── MIDDLE: 3-column grid ── */}
-      <div style={{ display: "grid", gridTemplateColumns: showAI ? "1fr 1fr 1fr" : "1fr 2fr", gap: 10, alignItems: "stretch" }}>
+      {/* ── MIDDLE: 3-column grid (single column on mobile) ── */}
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : (showAI ? "1fr 1fr 1fr" : "1fr 2fr"), gap: 10, alignItems: "stretch" }}>
 
         {/* Col 1: Focus Timer — FocusTimer has its own CYBER_PET.EXE chrome, no outer title bar */}
         <div data-tour-id="tour-focus-timer" style={{ display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
@@ -647,7 +649,7 @@ ${routineContext}`;
 
         {/* Col 2: Next Up task list — taller when AI is hidden */}
         {(true || showAI) && (
-        <div className="retro-window" style={{ display: "flex", flexDirection: "column", overflow: "hidden", alignSelf: "start", height: "410px" }}>
+        <div className="retro-window" style={{ display: "flex", flexDirection: "column", overflow: "hidden", alignSelf: "start", height: isMobile ? "360px" : "410px" }}>
           <div className="retro-titlebar">
             <span>next_up.txt</span>
             <div style={{ display: "flex", alignItems: "center", gap: 5, marginLeft: "auto", marginRight: 6 }}>
@@ -828,8 +830,8 @@ ${routineContext}`;
           </div>{/* /inner padding div */}
         </div>)}{/* /retro-window Col 2 */}
 
-        {/* Col 3: AI Command Center (toggleable) */}
-        {showAI && <div data-tour-id="tour-ai-chat" className="retro-window" style={{ display: "flex", flexDirection: "column", overflow: "hidden", alignSelf: "start", height: "410px" }}>
+        {/* Col 3: AI Command Center (toggleable, hidden on mobile — use right panel instead) */}
+        {showAI && !isMobile && <div data-tour-id="tour-ai-chat" className="retro-window" style={{ display: "flex", flexDirection: "column", overflow: "hidden", alignSelf: "start", height: "410px" }}>
           <div className="retro-titlebar">
             <span>ai_assistant.app</span>
             <div style={{ display: "flex", alignItems: "center", gap: 5, marginLeft: "auto", marginRight: 4 }}>

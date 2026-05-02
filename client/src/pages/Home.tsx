@@ -8,6 +8,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Sidebar, TimerPill } from "@/components/Sidebar";
+import { useMobile } from "@/hooks/useMobile";
 import { Dashboard } from "@/components/Dashboard";
 import { FocusTimer } from "@/components/FocusTimer";
 import { TaskManager, type Task } from "@/components/TaskManager";
@@ -596,7 +597,7 @@ export default function Home() {
     setDeletedCategories([]);
     localStorage.removeItem(`adhd-checkin-skip-${today}`);
     localStorage.removeItem(`adhd-checkin-x-${today}`);
-    dismissCheckIn(false);
+    // dismissCheckIn was undefined — removed
     setTimeout(() => { window.location.reload(); }, 300);
   };
 
@@ -624,15 +625,15 @@ export default function Home() {
     return <LoginScreen onLogin={(u) => setUser(u)} />;
   }
 
+  const isMobile = useMobile();
+
   return (
     <div className="min-h-screen flex">
-      {/* Sidebar */}
+      {/* Sidebar — desktop only (left); mobile renders bottom tab bar */}
       <Sidebar activeSection={activeSection} onSectionChange={(s) => setActiveSection(s as Section)} onClearData={handleClearTestData} />
 
-
-
       {/* Main content */}
-      <main className="flex-1 ml-14 min-h-screen flex flex-col">
+      <main className={isMobile ? "flex-1 min-h-screen flex flex-col" : "flex-1 ml-14 min-h-screen flex flex-col"}>
         {/* Top header bar — retro lo-fi light style */}
         <header
           className="sticky top-0 z-30 flex items-center gap-0"
@@ -645,8 +646,8 @@ export default function Home() {
         >
           {/* Left: logo + page icon + title */}
           <div
-            className="flex items-center gap-3 px-6 py-3 flex-1 min-w-0"
-            style={{ borderRight: "1.5px solid #E8B8D0" }}
+            className="flex items-center gap-3 flex-1 min-w-0"
+            style={{ borderRight: "1.5px solid #E8B8D0", padding: isMobile ? "10px 12px" : "12px 24px" }}
           >
 
 
@@ -674,7 +675,7 @@ export default function Home() {
           </div>
 
           {/* Right: stats + mood + wrap-up */}
-          <div className="flex items-center shrink-0" style={{ gap: 0 }}>
+          <div className="flex items-center shrink-0" style={{ gap: 0, overflow: "hidden" }}>
             {/* Quick-stats — visible on all sections */}
             <div className="hidden sm:flex items-center" style={{ borderRight: "1.5px solid #E8B8D0", overflow: "hidden" }}>                {(() => {
                   // routineRefresh is referenced here so React re-renders when it changes
@@ -766,7 +767,13 @@ export default function Home() {
         </header>
 
         {/* Page content */}
-        <div className="flex-1 px-8 py-8 overflow-y-auto">
+        <div
+          className="flex-1 overflow-y-auto"
+          style={{
+            padding: isMobile ? "12px 12px" : "32px",
+            paddingBottom: isMobile ? "calc(72px + env(safe-area-inset-bottom, 0px))" : "32px",
+          }}
+        >
           <div className={cn("mx-auto", activeSection === "dashboard" ? "max-w-7xl" : "max-w-3xl")}>
 
             {activeSection === "dashboard" && (
@@ -808,11 +815,11 @@ export default function Home() {
             )}
 
             {activeSection === "focus" && (
-              <div className="relative py-8 px-4" style={{ minHeight: 700, overflow: "visible" }}>
+              <div className="relative" style={{ padding: isMobile ? "12px 0" : "32px 16px", minHeight: isMobile ? "auto" : 700, overflow: "visible" }}>
                 <FocusDecor />
 
-                {/* ── Speech bubble — top-left decorative ── */}
-                <div style={{
+                {/* ── Speech bubble — top-left decorative (desktop only) ── */}
+                {!isMobile && <div style={{
                   position: "absolute",
                   top: 18,
                   left: 12,
@@ -866,23 +873,23 @@ export default function Home() {
                       borderTop: "9px solid oklch(0.985 0.010 355)",
                     }} />
                   </div>
-                </div>
+                </div>}
 
-                {/* ── Main focus_timer.exe window — slight tilt left ── */}
+                {/* ── Main focus_timer.exe window — slight tilt left (desktop only) ── */}
                 <div style={{
                   position: "relative",
                   zIndex: 2,
-                  transform: "rotate(-1deg)",
+                  transform: isMobile ? "none" : "rotate(-1deg)",
                   transformOrigin: "top center",
                   marginLeft: "auto",
                   marginRight: "auto",
-                  maxWidth: 660,
+                  maxWidth: isMobile ? "100%" : 660,
                 }}>
                   <FocusTimer onSessionComplete={handleSessionComplete} onBlockComplete={handleBlockComplete} onQuit={() => setTimerQuitCount(q => q + 1)} />
                 </div>
 
-                {/* ── session_tips.txt window — bottom-right corner, peeking outside timer ── */}
-                <div style={{
+                {/* ── session_tips.txt window — bottom-right corner (desktop), normal flow (mobile) ── */}
+                {!isMobile && <div style={{
                   position: "relative",
                   zIndex: 1,
                   width: 210,
@@ -913,13 +920,13 @@ export default function Home() {
                       </div>
                     </div>
                   </RetroPageWrapper>
-                </div>
+                </div>}
               </div>
             )}
 
             {activeSection === "tasks" && (
               <RetroPageWrapper title="tasks.txt" sticker="star">
-                <div className="p-8 min-h-[600px] flex flex-col relative overflow-hidden">
+                <div className="flex flex-col relative overflow-hidden" style={{ padding: isMobile ? "12px" : "32px", minHeight: isMobile ? "auto" : 600 }}>
                 <TasksDecor />
                 <div className="relative z-10">
                   <TaskManager tasks={tasks} onTasksChange={handleTasksChange} allCategories={allCategories} onDeleteCategory={handleDeleteCategory} goals={goals} />
@@ -930,7 +937,7 @@ export default function Home() {
 
             {activeSection === "wins" && (
               <RetroPageWrapper title="wins.log" sticker="sparkle">
-              <div className="p-8 min-h-[600px] flex flex-col relative overflow-hidden">
+              <div className="flex flex-col relative overflow-hidden" style={{ padding: isMobile ? "12px" : "32px", minHeight: isMobile ? "auto" : 600 }}>
                 <WinsDecor />
                 <div className="relative z-10">
                   <DailyWins wins={wins} onWinsChange={setWins} />
@@ -942,7 +949,7 @@ export default function Home() {
 
             {activeSection === "dump" && (
               <RetroPageWrapper title="dump.txt" sticker="star">
-              <div className="p-8 min-h-[600px] flex flex-col relative overflow-hidden">
+              <div className="flex flex-col relative overflow-hidden" style={{ padding: isMobile ? "12px" : "32px", minHeight: isMobile ? "auto" : 600 }}>
                 <BrainDumpDecor />
                 <div className="relative z-10">
                   <BrainDump
@@ -1031,7 +1038,7 @@ export default function Home() {
                   } catch { return null; }
                 })()}
                 <RetroPageWrapper title="goals.md" sticker="leaf">
-                <div className="p-8 min-h-[600px] flex flex-col relative overflow-hidden">
+                <div className="flex flex-col relative overflow-hidden" style={{ padding: isMobile ? "12px" : "32px", minHeight: isMobile ? "auto" : 600 }}>
                   <GoalsDecor />
                   <div className="relative z-10">
                     <Goals goals={goals} onGoalsChange={setGoals} allCategories={allCategories} onDeleteCategory={handleDeleteCategory} tasks={tasks} onTasksChange={handleTasksChange} onDashboardUpdate={() => setDashboardKey(k => k + 1)} />
@@ -1043,7 +1050,7 @@ export default function Home() {
 
             {activeSection === "agents" && (
               <RetroPageWrapper title="agents.app" sticker="star">
-              <div className="p-8 relative">
+              <div className="relative" style={{ padding: isMobile ? "12px" : "32px" }}>
                 <AgentsDecor />
                 <AgentTracker
                   agents={agents}
