@@ -14,7 +14,6 @@ import { FocusTimer } from "@/components/FocusTimer";
 import { TaskManager, type Task } from "@/components/TaskManager";
 import { DailyWins, type Win } from "@/components/DailyWins";
 import { BrainDump } from "@/components/BrainDump";
-import { Goals, type Goal } from "@/components/Goals";
 import { AgentTracker, type Agent } from "@/components/AgentTracker";
 import { RetroPageWrapper } from "@/components/RetroPageWrapper";
 import { GlobalQuickAdd } from "@/components/GlobalQuickAdd";
@@ -36,7 +35,6 @@ import {
   TasksDecor,
   WinsDecor,
   BrainDumpDecor,
-  GoalsDecor,
   AgentsDecor,
 } from "@/components/PageDecor";
 import { cn } from "@/lib/utils";
@@ -214,17 +212,8 @@ function MoodPill({ mood, onMoodChange }: { mood: number | null; onMoodChange: (
   );
 }
 
-// Simple flag icon for Goals — replaces complex flower
-function GoalFlagIcon({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className={className} style={style}>
-      <line x1="5" y1="2" x2="5" y2="18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      <path d="M5 2 L15 5.5 L5 9 Z" fill="currentColor" opacity="0.85" />
-    </svg>
-  );
-}
 
-type Section = "dashboard" | "focus" | "tasks" | "wins" | "dump" | "goals" | "agents" | "storage" | "monthly" | "guide";
+type Section = "dashboard" | "focus" | "tasks" | "wins" | "dump" | "agents" | "storage" | "monthly" | "guide";
 
 const SECTION_META: Record<Section, { title: string; icon: React.ElementType }> = {
   dashboard:  { title: "Dashboard",    icon: LayoutDashboard },
@@ -232,7 +221,6 @@ const SECTION_META: Record<Section, { title: string; icon: React.ElementType }> 
   tasks:      { title: "My Tasks",     icon: Star     },
   wins:       { title: "Daily Wins",   icon: Sparkles        },
   dump:       { title: "Brain Dump",   icon: Brain           },
-  goals:      { title: "Goals", icon: GoalFlagIcon      },
   agents:     { title: "AI Agents",    icon: Bot             },
   storage:    { title: "Storage & Backup", icon: Star            },
   monthly:    { title: "Monthly Progress", icon: Star            },
@@ -245,10 +233,6 @@ const INITIAL_TASKS: Task[] = [
   { id: "3", text: "Take a 10-minute walk",     priority: "normal", context: "personal", done: false, createdAt: new Date() },
 ];
 
-const INITIAL_GOALS: Goal[] = [
-  { id: "g1", text: "Complete the project proposal", progress: 30, context: "work",     createdAt: new Date() },
-  { id: "g2", text: "Exercise 3 times this week",    progress: 0,  context: "personal", createdAt: new Date() },
-];
 
 const SUNSET_WIDE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410012773/WNs8kMVMKanwFbtYhk72en/adhd-sunset-wide_e4204b59.png";
 
@@ -256,7 +240,7 @@ export default function Home() {
   // URL-hash based section state — persists across refresh
   const [activeSection, setActiveSectionState] = useState<Section>(() => {
     const hash = window.location.hash.slice(1) as Section;
-    const VALID = ["dashboard","focus","tasks","wins","dump","goals","agents","storage","monthly","guide"] as const;
+    const VALID = ["dashboard","focus","tasks","wins","dump","agents","storage","monthly","guide"] as const;
     return (VALID as readonly string[]).includes(hash) ? hash as Section : "dashboard";
   });
   const setActiveSection = (s: Section) => {
@@ -356,7 +340,6 @@ export default function Home() {
   // ── All data in localStorage ───────────────────────────────────────────────
   const [tasks,  setTasks]  = useLocalStorage<Task[]>("adhd-tasks",  INITIAL_TASKS);
   const [wins,   setWins]   = useLocalStorage<Win[]>("adhd-wins",   []);
-  const [goals,  setGoals]  = useLocalStorage<Goal[]>("adhd-goals",  INITIAL_GOALS);
   const [agents, setAgents] = useLocalStorage<Agent[]>("adhd-agents", []);
   const [mood,   setLocalMood]   = useLocalStorage<number | null>("adhd-mood", null);
 
@@ -442,74 +425,18 @@ export default function Home() {
         setWins((prev) => prev.find((w) => w.id === winId) ? prev : [win, ...prev]);
       });
 
-      // Auto-nudge linked goals
-      const goalNudges: Record<string, number> = {};
-      newlyDone.forEach((t) => {
-        if (t.goalId) {
-          const totalLinked = newTasks.filter((task) => task.goalId === t.goalId).length;
-          const increment = totalLinked > 0 ? Math.round(100 / totalLinked) : 10;
-          goalNudges[t.goalId] = (goalNudges[t.goalId] ?? 0) + increment;
-        }
-      });
-      if (Object.keys(goalNudges).length > 0) {
-        setGoals((prev) =>
-          prev.map((g) => {
-            if (!goalNudges[g.id]) return g;
-            const newProgress = Math.min(100, g.progress + goalNudges[g.id]);
-            if (newProgress >= 100 && g.progress < 100) {
-              setTimeout(() => setConfettiTrigger(true), 300);
-            }
-            return { ...g, progress: newProgress };
-          })
-        );
-      }
     }
 
-    // Bug fix 1: Undo task — remove its win entry and revert goal progress
+    // Bug fix 1: Undo task — remove its win entry
     if (newlyUndone.length > 0) {
       const undoneWinIds = newlyUndone.map((t) => `task-win-${t.id}`);
       setWins((prev) => prev.filter((w) => !undoneWinIds.includes(w.id)));
-
-      const goalReductions: Record<string, number> = {};
-      newlyUndone.forEach((t) => {
-        if (t.goalId) {
-          const totalLinked = newTasks.filter((task) => task.goalId === t.goalId).length;
-          const decrement = totalLinked > 0 ? Math.round(100 / totalLinked) : 10;
-          goalReductions[t.goalId] = (goalReductions[t.goalId] ?? 0) + decrement;
-        }
-      });
-      if (Object.keys(goalReductions).length > 0) {
-        setGoals((prev) =>
-          prev.map((g) => {
-            if (!goalReductions[g.id]) return g;
-            return { ...g, progress: Math.max(0, g.progress - goalReductions[g.id]) };
-          })
-        );
-      }
     }
 
-    // Bug fix 2: Deleted task — remove its win entry; if it was done, also revert goal progress
+    // Bug fix 2: Deleted task — remove its win entry
     if (deletedTasks.length > 0) {
       const deletedWinIds = deletedTasks.map((t) => `task-win-${t.id}`);
       setWins((prev) => prev.filter((w) => !deletedWinIds.includes(w.id)));
-
-      const deletedDone = deletedTasks.filter((t) => t.done);
-      const goalReductions: Record<string, number> = {};
-      deletedDone.forEach((t) => {
-        if (t.goalId) {
-          const totalLinked = tasks.filter((task) => task.goalId === t.goalId).length;
-          const decrement = totalLinked > 0 ? Math.round(100 / totalLinked) : 10;
-          goalReductions[t.goalId] = (goalReductions[t.goalId] ?? 0) + decrement;
-        }
-      });
-      if (Object.keys(goalReductions).length > 0) {
-        setGoals((prev) =>
-          prev.map((g) => {
-            if (!goalReductions[g.id]) return g;
-            return { ...g, progress: Math.max(0, g.progress - goalReductions[g.id]) };
-          })
-        );
-      }
     }
 
     setTasks(newTasks);
@@ -574,7 +501,6 @@ export default function Home() {
     typeof c === "string" && c.length > 0 && c !== "null" && c !== "undefined";
   const allItemContexts = new Set([
     ...tasks.map((t) => t.context).filter(isValidContext),
-    ...goals.map((g) => g.context).filter(isValidContext),
     ...agents.map((a) => a.context).filter(isValidContext),
   ]);
   const allCategories = Array.from(new Set([
@@ -587,12 +513,11 @@ export default function Home() {
     return allItemContexts.has(c);
   });
 
-  /** Clear all test data — wipes tasks, wins, goals, agents but keeps settings */
+  /** Clear all test data — wipes tasks, wins, agents but keeps settings */
   const handleClearTestData = () => {
-    if (!confirm("Clear all tasks, wins, goals, and agents? This cannot be undone.")) return;
+    if (!confirm("Clear all tasks, wins, and agents? This cannot be undone.")) return;
     setTasks([]);
     setWins([]);
-    setGoals([]);
     setAgents([]);
     setLocalMood(null);
     setDeletedCategories([]);
@@ -606,7 +531,6 @@ export default function Home() {
   const handleDeleteCategory = (ctx: string) => {
     if (ctx === "work" || ctx === "personal") return;
     setTasks((prev) => prev.map((t) => t.context === ctx ? { ...t, context: "personal" } : t));
-    setGoals((prev) => prev.map((g) => g.context === ctx ? { ...g, context: "personal" } : g));
     setAgents((prev) => prev.map((a) => a.context === ctx ? { ...a, context: "personal" } : a));
     setDeletedCategories((prev) => [...prev, ctx]);
   };
@@ -781,7 +705,7 @@ export default function Home() {
               <Dashboard
                 tasks={tasks}
                 wins={wins}
-                goals={goals}
+                goals={[]}
                 agents={agents}
                 mood={mood}
                 displayName={displayName || undefined}
@@ -799,7 +723,7 @@ export default function Home() {
                   handleTasksChange(updated);
                 }}
                 onTaskCreate={(task) => setTasks((prev) => [task, ...prev])}
-                onGoalCreate={(goal) => setGoals((prev) => [goal, ...prev])}
+                onGoalCreate={() => {}}
                 onAgentCreate={(agent) => setAgents((prev) => [agent, ...prev])}
                 onWinCreate={(win) => setWins((prev) => [win, ...prev])}
                 onDumpCreate={(text) => {
@@ -928,7 +852,7 @@ export default function Home() {
                 <div className="flex flex-col relative overflow-hidden" style={{ padding: isMobile ? "12px" : "32px", minHeight: isMobile ? "auto" : 600 }}>
                 <TasksDecor />
                 <div className="relative z-10">
-                  <TaskManager tasks={tasks} onTasksChange={handleTasksChange} allCategories={allCategories} onDeleteCategory={handleDeleteCategory} goals={goals} />
+                  <TaskManager tasks={tasks} onTasksChange={handleTasksChange} allCategories={allCategories} onDeleteCategory={handleDeleteCategory} goals={[]} />
                 </div>
                 </div>
               </RetroPageWrapper>
@@ -967,85 +891,7 @@ export default function Home() {
               </RetroPageWrapper>
             )}
 
-            {activeSection === "goals" && (
-              <>
-                {/* 🧭 Life Dashboard — above goals.md widget */}
-                {dashboardKey >= 0 && (() => {
-                  try {
-                    const data = JSON.parse(localStorage.getItem("adhd-life-dashboard") ?? "null");
-                    if (!data || (!data.life && !data.career)) return null;
-                    return (
-                      <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid oklch(0.82 0.040 285)", background: "oklch(0.975 0.010 285)", marginBottom: 12 }}>
-                        <div style={{ padding: "8px 14px", background: "oklch(0.58 0.12 285 / 0.10)", borderBottom: "1px solid oklch(0.82 0.040 285)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                          <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "0.85rem", fontWeight: 700, fontStyle: "italic", color: "oklch(0.35 0.10 285)" }}>🧭 Life Dashboard</span>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            {data.life && (
-                              <button onClick={() => {
-                                if (window.confirm("Clear Life Planning dashboard and conversation? This cannot be undone.")) {
-                                  const d = (() => { try { return JSON.parse(localStorage.getItem("adhd-life-dashboard") ?? "{}"); } catch { return {}; } })();
-                                  delete d.life;
-                                  if (Object.keys(d).length === 0) localStorage.removeItem("adhd-life-dashboard"); else localStorage.setItem("adhd-life-dashboard", JSON.stringify(d));
-                                  localStorage.removeItem("adhd-life-coach-chat-life");
-                                  setDashboardKey(k => k + 1);
-                                }
-                              }} style={{ fontSize: "0.44rem", fontFamily: "'Space Mono', monospace", letterSpacing: "0.06em", padding: "2px 7px", border: "1px solid oklch(0.72 0.050 330 / 0.6)", borderRadius: 3, background: "transparent", color: "oklch(0.60 0.060 20)", cursor: "pointer" }}>
-                                🌱 Clear Life
-                              </button>
-                            )}
-                            {data.career && (
-                              <button onClick={() => {
-                                if (window.confirm("Clear Career Coaching dashboard and conversation? This cannot be undone.")) {
-                                  const d = (() => { try { return JSON.parse(localStorage.getItem("adhd-life-dashboard") ?? "{}"); } catch { return {}; } })();
-                                  delete d.career;
-                                  if (Object.keys(d).length === 0) localStorage.removeItem("adhd-life-dashboard"); else localStorage.setItem("adhd-life-dashboard", JSON.stringify(d));
-                                  localStorage.removeItem("adhd-life-coach-chat-career");
-                                  setDashboardKey(k => k + 1);
-                                }
-                              }} style={{ fontSize: "0.44rem", fontFamily: "'Space Mono', monospace", letterSpacing: "0.06em", padding: "2px 7px", border: "1px solid oklch(0.72 0.050 330 / 0.6)", borderRadius: 3, background: "transparent", color: "oklch(0.60 0.060 20)", cursor: "pointer" }}>
-                                🚀 Clear Career
-                              </button>
-                            )}
-                            <button onClick={() => document.querySelector<HTMLButtonElement>("[data-life-coach-trigger]")?.click()} style={{ fontSize: "0.48rem", fontFamily: "'Space Mono', monospace", color: "oklch(0.55 0.12 285)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 0, letterSpacing: "0.06em" }}>
-                              Update with Coach →
-                            </button>
-                          </div>
-                        </div>
-                        <div style={{ padding: "10px 14px", display: "grid", gridTemplateColumns: data.life && data.career ? "1fr 1fr" : "1fr", gap: 12 }}>
-                          {data.life && (
-                            <div>
-                              <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.44rem", letterSpacing: "0.10em", color: "oklch(0.55 0.12 285)", textTransform: "uppercase", marginBottom: 5 }}>🌱 Life Direction</p>
-                              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem", fontWeight: 600, color: "oklch(0.28 0.040 320)", margin: "0 0 5px", lineHeight: 1.4 }}>{data.life.direction}</p>
-                              {data.life.insights?.map((ins: string, i: number) => (
-                                <p key={i} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.72rem", color: "oklch(0.40 0.040 320)", margin: "2px 0", lineHeight: 1.4 }}>• {ins}</p>
-                              ))}
-                              {data.life.nextStep && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.70rem", color: "oklch(0.55 0.12 285)", marginTop: 5, fontStyle: "italic" }}>→ {data.life.nextStep}</p>}
-                            </div>
-                          )}
-                          {data.career && (
-                            <div>
-                              <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.44rem", letterSpacing: "0.10em", color: "oklch(0.55 0.12 285)", textTransform: "uppercase", marginBottom: 5 }}>🚀 Career Direction</p>
-                              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem", fontWeight: 600, color: "oklch(0.28 0.040 320)", margin: "0 0 5px", lineHeight: 1.4 }}>{data.career.direction}</p>
-                              {data.career.insights?.map((ins: string, i: number) => (
-                                <p key={i} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.72rem", color: "oklch(0.40 0.040 320)", margin: "2px 0", lineHeight: 1.4 }}>• {ins}</p>
-                              ))}
-                              {data.career.nextStep && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.70rem", color: "oklch(0.55 0.12 285)", marginTop: 5, fontStyle: "italic" }}>→ {data.career.nextStep}</p>}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  } catch { return null; }
-                })()}
-                <RetroPageWrapper title="goals.md" sticker="leaf">
-                <div className="flex flex-col relative overflow-hidden" style={{ padding: isMobile ? "12px" : "32px", minHeight: isMobile ? "auto" : 600 }}>
-                  <GoalsDecor />
-                  <div className="relative z-10">
-                    <Goals goals={goals} onGoalsChange={setGoals} allCategories={allCategories} onDeleteCategory={handleDeleteCategory} tasks={tasks} onTasksChange={handleTasksChange} onDashboardUpdate={() => setDashboardKey(k => k + 1)} />
-                  </div>
-                </div>
-                </RetroPageWrapper>
-              </>
-            )}
+            {/* Goals section removed */}
 
             {activeSection === "agents" && (
               <RetroPageWrapper title="agents.app" sticker="star">
@@ -1081,12 +927,10 @@ export default function Home() {
       </main>
 
       {/* ── Global overlays ── */}
-      <GlobalRightPanel goals={goals} onLogWin={(text, iconIdx, winId) => setWins((prev: any) => [{ id: winId, text, iconIdx, createdAt: new Date() }, ...prev])} onUndoWin={(winId) => setWins((prev: any) => prev.filter((w: any) => w.id !== winId))} />
+      <GlobalRightPanel goals={[]} onLogWin={(text, iconIdx, winId) => setWins((prev: any) => [{ id: winId, text, iconIdx, createdAt: new Date() }, ...prev])} onUndoWin={(winId) => setWins((prev: any) => prev.filter((w: any) => w.id !== winId))} />
       <GlobalQuickAdd
         onAddTask={(t) => setTasks((p) => [t, ...p])}
-        onAddGoal={(text, context) => {
-          setGoals((prev: any) => [{ id: `g-${Date.now()}`, text, progress: 0, context: context ?? "personal", createdAt: new Date() }, ...prev]);
-        }}
+        onAddGoal={() => {}}
         onAddWin={(text, iconIdx) => {
           setWins((prev: any) => [{ id: nanoid(), text, iconIdx: iconIdx ?? 4, createdAt: new Date() }, ...prev]);
         }}

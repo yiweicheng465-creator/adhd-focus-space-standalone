@@ -774,8 +774,16 @@ body {
     min-height: 36px;
   }
 
-  /* Prevent text from being too small on mobile */
-  input, textarea {
+  /* Prevent text from being too small on mobile — only text inputs, not checkboxes/radios */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="url"],
+  input[type="tel"],
+  input[type="number"],
+  input:not([type]),
+  textarea {
     font-size: 16px !important; /* prevents iOS zoom on focus */
   }
 }

@@ -133,20 +133,19 @@ const NAV: Array<{
 }> = [
   { id: "dashboard", short: "HOME",   Icon: IconHome,   title: "Dashboard"   },
   { id: "tasks",     short: "TASKS",  Icon: IconTasks,  title: "My Tasks"     },
-  { id: "goals",     short: "GOALS",  Icon: IconGoals,  title: "Goals"        },
   { id: "dump",      short: "DUMP",   Icon: IconDump,   title: "Brain Dump"   },
   { id: "wins",      short: "WINS",   Icon: IconWins,   title: "Daily Wins"   },
   { id: "agents",    short: "AGENTS", Icon: IconAgents, title: "AI Agents"    },
   { id: "storage",   short: "STORE",  Icon: IconStorage, title: "Storage & Backup" },
 ];
 
-/* Mobile bottom tab bar shows only the 5 most important items */
+/* Mobile bottom tab bar shows only the most important items */
 const MOBILE_NAV = [
   { id: "dashboard", short: "HOME",   Icon: IconHome,   title: "Dashboard"   },
   { id: "tasks",     short: "TASKS",  Icon: IconTasks,  title: "My Tasks"     },
   { id: "dump",      short: "DUMP",   Icon: IconDump,   title: "Brain Dump"   },
   { id: "wins",      short: "WINS",   Icon: IconWins,   title: "Daily Wins"   },
-  { id: "goals",     short: "GOALS",  Icon: IconGoals,  title: "Goals"        },
+  { id: "agents",    short: "AGENTS", Icon: IconAgents, title: "AI Agents"    },
 ];
 
 /* ── Floating timer pill ── */
@@ -469,7 +468,6 @@ function MobileMoreMenu({
   onClose: () => void;
 }) {
   const MORE_ITEMS = [
-    { id: "agents",  short: "AI AGENTS",  Icon: IconAgents,  title: "AI Agents" },
     { id: "storage", short: "STORAGE",    Icon: IconStorage, title: "Storage & Backup" },
     { id: "monthly", short: "MONTHLY",    Icon: (p: { color: string }) => (
       <svg width="17" height="17" viewBox="0 0 18 18" fill="none">
@@ -524,7 +522,7 @@ function MobileMoreMenu({
         <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.48rem", letterSpacing: "0.12em", color: "oklch(0.52 0.060 330)", textTransform: "uppercase", marginBottom: 4, opacity: 0.7 }}>
           More
         </p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
           {MORE_ITEMS.map(({ id, short, Icon, title }) => {
             const active = activeSection === id;
             const color = active ? "oklch(0.48 0.18 340)" : "oklch(0.52 0.060 330)";

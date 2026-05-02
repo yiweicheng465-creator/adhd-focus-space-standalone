@@ -60,6 +60,40 @@ const BTN_STYLE = (active: boolean, idx: number = 0, hovered = false): React.CSS
   };
 };
 
+/* ── Mobile timer button (shows countdown when active) ── */
+function MobileTimerButton({ active, onClick }: { active: boolean; onClick: () => void }) {
+  const { phase, remaining, mode } = useTimer();
+  const isActive = phase === "running" || phase === "paused";
+  const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
+  const ss = String(remaining % 60).padStart(2, "0");
+  return (
+    <button
+      data-tour-id="tour-timer-btn"
+      onClick={onClick}
+      title="Timer"
+      style={{
+        width: isActive ? 56 : 40,
+        height: 40,
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1,
+        background: (active || isActive) ? BTN_COLORS[2].active : BTN_COLORS[2].idle,
+        border: "none", borderRadius: 10,
+        boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+        cursor: "pointer",
+        transition: "width 0.2s ease",
+      }}
+    >
+      {isActive ? (
+        <>
+          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.55rem", fontWeight: 700, color: "oklch(0.42 0.12 275)", letterSpacing: "-0.02em", lineHeight: 1 }}>{mm}:{ss}</span>
+          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.30rem", color: "oklch(0.42 0.12 275)", letterSpacing: "0.08em" }}>{phase === "paused" ? "PAUSE" : mode?.toUpperCase()}</span>
+        </>
+      ) : (
+        <span style={{ fontSize: "1.1rem", lineHeight: 1 }}>⏱</span>
+      )}
+    </button>
+  );
+}
+
 export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin, onUndoWin }: Props) {
   const isMobile = useMobile();
   const [panel, setPanel] = useState<"ai" | "coach" | "timer" | "routine" | null>(null);
@@ -122,50 +156,93 @@ export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin, onUndoWi
         />
       )}
 
-      {/* Right-edge button stack — hidden on mobile (use GlobalQuickAdd + panels instead) */}
-      <div data-tour-id="tour-right-panel" style={{ position: "fixed", right: 0, top: "50%", transform: "translateY(-50%)", zIndex: 101, display: isMobile ? "none" : "flex", flexDirection: "column", gap: 0, alignItems: "flex-end" }}>
-        {/* AI */}
-        <button data-tour-id="tour-ai-btn"
-          style={BTN_STYLE(panel === "ai" || aiActiveOnDashboard, 0, hoveredBtn === "ai")}
-          onClick={handleAIClick}
-          onMouseEnter={() => setHoveredBtn("ai")}
-          onMouseLeave={() => setHoveredBtn(null)}
-          title="AI Assistant">
-          <Bot size={14} />
-          <span style={{ writingMode: "vertical-rl", fontSize: "0.38rem" }}>{aiActiveOnDashboard ? "HIDE AI" : "AI"}</span>
-        </button>
-        {/* Life Coach */}
-        <button data-tour-id="tour-coach-btn"
-          style={BTN_STYLE(panel === "coach", 1, hoveredBtn === "coach")}
-          onClick={() => toggle("coach")}
-          onMouseEnter={() => setHoveredBtn("coach")}
-          onMouseLeave={() => setHoveredBtn(null)}
-          title="Life Coach">
-          <span style={{ fontSize: "0.75rem", lineHeight: 1 }}>🧭</span>
-          <span style={{ writingMode: "vertical-rl", fontSize: "0.38rem" }}>COACH</span>
-        </button>
-        {/* Timer */}
-        <TimerButton
-          active={panel === "timer"}
-          onClick={() => toggle("timer")}
-          hovered={hoveredBtn === "timer"}
-          onHoverChange={(h) => setHoveredBtn(h ? "timer" : null)}
-        />
-        {/* Routine */}
-        <button data-tour-id="tour-routine-btn"
-          style={BTN_STYLE(panel === "routine", 3, hoveredBtn === "routine")}
-          onClick={() => toggle("routine")}
-          onMouseEnter={() => setHoveredBtn("routine")}
-          onMouseLeave={() => setHoveredBtn(null)}
-          title="Daily Routine">
-          <span style={{ fontSize: "0.75rem", lineHeight: 1 }}>💫</span>
-          <span style={{ writingMode: "vertical-rl", fontSize: "0.38rem" }}>ROUTINE</span>
-        </button>
-      </div>
+      {/* Desktop: right-edge vertical button stack */}
+      {!isMobile && (
+        <div data-tour-id="tour-right-panel" style={{ position: "fixed", right: 0, top: "50%", transform: "translateY(-50%)", zIndex: 101, display: "flex", flexDirection: "column", gap: 0, alignItems: "flex-end" }}>
+          {/* AI */}
+          <button data-tour-id="tour-ai-btn"
+            style={BTN_STYLE(panel === "ai" || aiActiveOnDashboard, 0, hoveredBtn === "ai")}
+            onClick={handleAIClick}
+            onMouseEnter={() => setHoveredBtn("ai")}
+            onMouseLeave={() => setHoveredBtn(null)}
+            title="AI Assistant">
+            <Bot size={14} />
+            <span style={{ writingMode: "vertical-rl", fontSize: "0.38rem" }}>{aiActiveOnDashboard ? "HIDE AI" : "AI"}</span>
+          </button>
+          {/* Timer */}
+          <TimerButton
+            active={panel === "timer"}
+            onClick={() => toggle("timer")}
+            hovered={hoveredBtn === "timer"}
+            onHoverChange={(h) => setHoveredBtn(h ? "timer" : null)}
+          />
+          {/* Routine */}
+          <button data-tour-id="tour-routine-btn"
+            style={BTN_STYLE(panel === "routine", 3, hoveredBtn === "routine")}
+            onClick={() => toggle("routine")}
+            onMouseEnter={() => setHoveredBtn("routine")}
+            onMouseLeave={() => setHoveredBtn(null)}
+            title="Daily Routine">
+            <span style={{ fontSize: "0.75rem", lineHeight: 1 }}>💫</span>
+            <span style={{ writingMode: "vertical-rl", fontSize: "0.38rem" }}>ROUTINE</span>
+          </button>
+        </div>
+      )}
+
+      {/* Mobile: horizontal floating button row above bottom tab bar */}
+      {isMobile && (
+        <div
+          data-tour-id="tour-right-panel"
+          style={{
+            position: "fixed",
+            bottom: "calc(68px + env(safe-area-inset-bottom, 0px))",
+            right: 12,
+            zIndex: 101,
+            display: "flex",
+            flexDirection: "row",
+            gap: 8,
+            alignItems: "center",
+          }}
+        >
+          {/* AI */}
+          <button
+            data-tour-id="tour-ai-btn"
+            onClick={handleAIClick}
+            title="AI Assistant"
+            style={{
+              width: 40, height: 40,
+              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2,
+              background: (panel === "ai" || aiActiveOnDashboard) ? BTN_COLORS[0].active : BTN_COLORS[0].idle,
+              border: "none", borderRadius: 10,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+              cursor: "pointer",
+            }}
+          >
+            <Bot size={16} color={(panel === "ai" || aiActiveOnDashboard) ? "white" : BTN_COLORS[0].text} />
+          </button>
+          {/* Timer */}
+          <MobileTimerButton active={panel === "timer"} onClick={() => toggle("timer")} />
+          {/* Routine */}
+          <button
+            data-tour-id="tour-routine-btn"
+            onClick={() => toggle("routine")}
+            title="Daily Routine"
+            style={{
+              width: 40, height: 40,
+              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2,
+              background: panel === "routine" ? BTN_COLORS[3].active : BTN_COLORS[3].idle,
+              border: "none", borderRadius: 10,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+              cursor: "pointer",
+            }}
+          >
+            <span style={{ fontSize: "1.1rem", lineHeight: 1 }}>💫</span>
+          </button>
+        </div>
+      )}
 
       {/* Popups — zIndex 100, above backdrop (99) but below buttons (101) */}
       {panel === "ai" && <AIChatPopup onClose={() => setPanel(null)} goals={goals} />}
-      {panel === "coach" && <CoachPopup onClose={() => setPanel(null)} goals={goals} />}
       {panel === "timer" && <TimerPopup onClose={() => setPanel(null)} />}
       {panel === "routine" && <RoutinePopup onClose={() => setPanel(null)} onLogWin={onLogWin} onUndoWin={onUndoWin} />}
     </>

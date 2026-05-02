@@ -101,7 +101,7 @@ export function GlobalQuickAdd({ onAddTask, onAddGoal, onAddWin, onAddDump }: Gl
   const [text, setText]           = useState("");
   const [aiMode, setAiMode] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
-  const [goalId, setGoalId] = useState<string | null>(null);
+
   const [dueDate, setDueDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [priority, setPriority]   = useState<Priority>("focus");
   const [newChip, setNewChip]     = useState("");
@@ -162,29 +162,23 @@ export function GlobalQuickAdd({ onAddTask, onAddGoal, onAddWin, onAddDump }: Gl
     if (!text.trim()) return;
     setAiGenerating(true);
     try {
-      // Load goals for matching
-      const goals: { id: string; text: string }[] = (() => { try { return JSON.parse(localStorage.getItem("adhd-goals") ?? "[]"); } catch { return []; } })();
-      const goalList = goals.map(g => `"${g.text}"`).join(", ");
       const today = new Date().toISOString().slice(0,10);
       const todayName = new Date().toLocaleDateString("en-US", { weekday: "long" });
 
       const result = await callAI(
         `Parse this capture request and return ONLY valid JSON:
-{"type":"task|goal|win|dump","text":"clean content","priority":"urgent|focus|normal","context":"work|personal","dueDate":"YYYY-MM-DD or today or tomorrow or null","goalName":"partial goal name or null"}
-type: "task" for actionable tasks, "goal" for long-term goals/aspirations, "win" for accomplishments to celebrate, "dump" for random thoughts/ideas.
-Today is ${today} (${todayName}). Available goals: ${goalList || "none"}.`,
+{"type":"task|win|dump","text":"clean content","priority":"urgent|focus|normal","context":"work|personal","dueDate":"YYYY-MM-DD or today or tomorrow or null"}
+type: "task" for actionable tasks, "win" for accomplishments to celebrate, "dump" for random thoughts/ideas.
+Today is ${today} (${todayName}).`,
         text.trim()
       );
       const match = result.match(/\{[\s\S]*\}/);
       if (match) {
-        const parsed = JSON.parse(match[0]) as { type?: string; text?: string; priority?: string; context?: string; dueDate?: string; goalName?: string };
+        const parsed = JSON.parse(match[0]) as { type?: string; text?: string; priority?: string; context?: string; dueDate?: string };
         const cleanText = parsed.text?.trim() || text.trim();
         const type = parsed.type ?? "task";
 
-        if (type === "goal" && onAddGoal) {
-          onAddGoal(cleanText, parsed.context);
-          toast.success(`🎯 Goal created: ${cleanText}`);
-        } else if (type === "win" && onAddWin) {
+        if (type === "win" && onAddWin) {
           onAddWin(cleanText, parsed.context === "work" ? 2 : parsed.context === "personal" ? 5 : 4);
           toast.success(`🏆 Win logged: ${cleanText}`);
         } else if (type === "dump" && onAddDump) {
@@ -198,13 +192,8 @@ Today is ${today} (${todayName}). Available goals: ${goalList || "none"}.`,
           if (taskDue === "null" || taskDue === "undefined") taskDue = null;
           if (!taskDue || taskDue === "today") taskDue = today;
           if (taskDue === "tomorrow") { const d = new Date(); d.setDate(d.getDate()+1); taskDue = d.toISOString().slice(0,10); }
-          let taskGoalId: string | undefined;
-          if (parsed.goalName) {
-            const gMatch = goals.find(g => g.text.toLowerCase().includes(parsed.goalName!.toLowerCase()));
-            if (gMatch) taskGoalId = gMatch.id;
-          }
-          onAddTask({ id: nanoid(), text: cleanText, priority: taskPriority, context: taskContext, done: false, createdAt: new Date(), dueDate: taskDue ?? today, ...(taskGoalId ? { goalId: taskGoalId } : {}) });
-          toast.success(`✓ Task: ${cleanText} · ${taskPriority}${taskGoalId ? " → goal" : ""}`);
+          onAddTask({ id: nanoid(), text: cleanText, priority: taskPriority, context: taskContext, done: false, createdAt: new Date(), dueDate: taskDue ?? today });
+          toast.success(`✓ Task: ${cleanText} · ${taskPriority}`);
         }
         setText(""); setAiMode(false); setOpen(false);
       }
@@ -232,13 +221,11 @@ Today is ${today} (${todayName}). Available goals: ${goalList || "none"}.`,
       done: false,
       createdAt: new Date(),
       dueDate: dueDate || new Date().toISOString().slice(0, 10),
-      ...(goalId ? { goalId } : {}),
     });
-    toast.success(`Task added · ${priority}${effectiveTag !== "personal" ? ` · #${effectiveTag}` : ""}${goalId ? " → goal" : ""}`);
+    toast.success(`Task added · ${priority}${effectiveTag !== "personal" ? ` · #${effectiveTag}` : ""}`);
     setText("");
     setPriority("focus");
     setDueDate(new Date().toISOString().slice(0, 10));
-    setGoalId(null);
     setOpen(false);
   };
 
@@ -398,43 +385,29 @@ Today is ${today} (${todayName}). Available goals: ${goalList || "none"}.`,
 
                 {aiMode ? (
                   <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.48rem", color: M.muted, margin: "5px 0 0", lineHeight: 1.5, opacity: 0.8 }}>
-                    Create a task, goal, win, or brain dump — AI understands it all naturally.
+                    Create a task, win, or brain dump — AI understands it all naturally.
                   </p>
                 ) : (
                   <>
-                  {/* Compact controls row: icon-only priority + goal + date */}
-                  {(() => {
-                    const goals: { id: string; text: string }[] = (() => { try { return JSON.parse(localStorage.getItem("adhd-goals") ?? "[]"); } catch { return []; } })();
-                    const activeGoals = goals.filter((g: any) => !g.archived);
-                    return (
-                      <div className="flex items-center gap-1.5 mt-2">
-                        {/* Icon-only priority buttons */}
-                        {(["urgent", "focus", "normal"] as Priority[]).map((p) => {
-                          const { Icon, color, bg, border } = PRIORITY_CFG[p];
-                          const isActive = priority === p;
-                          return (
-                            <button key={p} onClick={() => setPriority(p)} title={p}
-                              style={{ width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", background: isActive ? bg : "transparent", color: isActive ? color : M.muted, border: `1px solid ${isActive ? border : M.border}`, borderRadius: 4, cursor: "pointer", flexShrink: 0 }}>
-                              <Icon style={{ width: 12, height: 12 }} />
-                            </button>
-                          );
-                        })}
-                        {/* Divider */}
-                        <div style={{ width: 1, height: 18, background: M.border, flexShrink: 0 }} />
-                        {/* Goal selector */}
-                        {activeGoals.length > 0 && (
-                          <select value={goalId ?? ""} onChange={e => setGoalId(e.target.value || null)}
-                            style={{ flex: 1, minWidth: 0, fontSize: "0.60rem", fontFamily: "'DM Sans', sans-serif", padding: "3px 5px", border: `1px solid ${goalId ? M.coralBdr : M.border}`, background: "transparent", color: goalId ? M.coral : M.muted, borderRadius: 3, outline: "none", cursor: "pointer" }}>
-                            <option value="">↳ goal</option>
-                            {activeGoals.map((g: any) => <option key={g.id} value={g.id}>{g.text.length > 28 ? g.text.slice(0,28)+"…" : g.text}</option>)}
-                          </select>
-                        )}
-                        {/* Date picker */}
-                        <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} min={new Date().toISOString().slice(0,10)}
-                          style={{ fontSize: "0.60rem", fontFamily: "'DM Sans', sans-serif", padding: "3px 5px", border: `1px solid ${dueDate ? M.coralBdr : M.border}`, background: "transparent", color: dueDate ? M.coral : M.muted, borderRadius: 3, outline: "none", cursor: "pointer", flexShrink: 0, maxWidth: 110 }} />
-                      </div>
-                    );
-                  })()}
+                  {/* Compact controls row: icon-only priority + date */}
+                  <div className="flex items-center gap-1.5 mt-2">
+                    {/* Icon-only priority buttons */}
+                    {(["urgent", "focus", "normal"] as Priority[]).map((p) => {
+                      const { Icon, color, bg, border } = PRIORITY_CFG[p];
+                      const isActive = priority === p;
+                      return (
+                        <button key={p} onClick={() => setPriority(p)} title={p}
+                          style={{ width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", background: isActive ? bg : "transparent", color: isActive ? color : M.muted, border: `1px solid ${isActive ? border : M.border}`, borderRadius: 4, cursor: "pointer", flexShrink: 0 }}>
+                          <Icon style={{ width: 12, height: 12 }} />
+                        </button>
+                      );
+                    })}
+                    {/* Divider */}
+                    <div style={{ width: 1, height: 18, background: M.border, flexShrink: 0 }} />
+                    {/* Date picker */}
+                    <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} min={new Date().toISOString().slice(0,10)}
+                      style={{ fontSize: "0.60rem", fontFamily: "'DM Sans', sans-serif", padding: "3px 5px", border: `1px solid ${dueDate ? M.coralBdr : M.border}`, background: "transparent", color: dueDate ? M.coral : M.muted, borderRadius: 3, outline: "none", cursor: "pointer", flexShrink: 0, maxWidth: 110 }} />
+                  </div>
 
                 {/* Quick chips */}
                 <div className="flex flex-wrap gap-2 mt-3">
