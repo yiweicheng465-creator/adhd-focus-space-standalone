@@ -265,6 +265,7 @@ export default function Home() {
   };
   const { durations } = useTimer();
   const { user, loading: authLoading, setUser } = useAuth();
+  const isMobile = useMobile(); // Must be called before any early returns (React Hooks rules)
   const today = new Date().toDateString();
 
   // ── Name / personalisation (localStorage + auth user) ──
@@ -624,8 +625,6 @@ export default function Home() {
   if (!user) {
     return <LoginScreen onLogin={(u) => setUser(u)} />;
   }
-
-  const isMobile = useMobile();
 
   return (
     <div className="min-h-screen flex">
