@@ -136,10 +136,12 @@ export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin, onUndoWi
   };
 
   const handleAIClick = () => {
-    if (onDashboard()) {
-      setPanel(null); // close any open side popup
+    if (!isMobile && onDashboard()) {
+      // Desktop: toggle inline AI panel in Dashboard
+      setPanel(null);
       window.dispatchEvent(new CustomEvent("toggleDashboardAI"));
     } else {
+      // Mobile: always open popup panel
       toggle("ai");
     }
   };
@@ -189,14 +191,14 @@ export function GlobalRightPanel({ goals = [], onGoToSection, onLogWin, onUndoWi
         </div>
       )}
 
-      {/* Mobile: horizontal floating button row above bottom tab bar */}
+      {/* Mobile: horizontal floating button row above bottom tab bar — LEFT side to avoid + button */}
       {isMobile && (
         <div
           data-tour-id="tour-right-panel"
           style={{
             position: "fixed",
             bottom: "calc(68px + env(safe-area-inset-bottom, 0px))",
-            right: 12,
+            left: 12,
             zIndex: 101,
             display: "flex",
             flexDirection: "row",
@@ -719,7 +721,7 @@ function RoutinePopup({ onClose, onLogWin, onUndoWin }: { onClose: () => void; o
                       onClick={() => markDone(r)}
                       disabled={done}
                       title={done ? "Done today!" : "Mark done"}
-                      style={{ width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${done ? "oklch(0.62 0.12 220)" : "oklch(0.72 0.08 220)"}`, background: done ? "oklch(0.62 0.12 220)" : "transparent", cursor: done ? "default" : "pointer", flexShrink: 0, transition: "all 0.15s", padding: 0 }}
+                      style={{ width: 14, height: 14, minWidth: 14, minHeight: 14, borderRadius: "50%", border: `1.5px solid ${done ? "oklch(0.62 0.12 220)" : "oklch(0.72 0.08 220)"}`, background: done ? "oklch(0.62 0.12 220)" : "transparent", cursor: done ? "default" : "pointer", flexShrink: 0, transition: "all 0.15s", padding: 0, boxSizing: "content-box" }}
                       onMouseEnter={e => { if (!done) { (e.currentTarget as HTMLButtonElement).style.background = "oklch(0.78 0.10 220)"; } }}
                       onMouseLeave={e => { if (!done) { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; } }}
                     />

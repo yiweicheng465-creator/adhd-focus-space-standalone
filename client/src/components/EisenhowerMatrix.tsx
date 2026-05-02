@@ -4,7 +4,7 @@
    stamps, ruled notebook lines, warm muted palette.
    ============================================================ */
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import type { Task, TaskPriority } from "./TaskManager";
 
 // ── Quadrant definitions ──────────────────────────────────────────────────────
@@ -131,6 +131,78 @@ export function EisenhowerMatrix({
     try { localStorage.setItem("adhd-quadrant-task-order", JSON.stringify(taskOrder)); } catch {}
   }, [taskOrder]);
   const draggingId = useRef<string | null>(null);
+  const touchDragId = useRef<string | null>(null);
+  const touchGhost = useRef<HTMLDivElement | null>(null);
+
+  // Touch drag support for mobile
+  const handleTouchStart = useCallback((e: React.TouchEvent, taskId: string) => {
+    touchDragId.current = taskId;
+    draggingId.current = taskId;
+    // Create ghost element
+    const target = e.currentTarget as HTMLElement;
+    const ghost = target.cloneNode(true) as HTMLDivElement;
+    ghost.style.position = "fixed";
+    ghost.style.pointerEvents = "none";
+    ghost.style.opacity = "0.7";
+    ghost.style.zIndex = "9999";
+    ghost.style.width = target.offsetWidth + "px";
+    ghost.style.transform = "scale(1.05)";
+    ghost.style.boxShadow = "0 8px 24px rgba(0,0,0,0.2)";
+    document.body.appendChild(ghost);
+    touchGhost.current = ghost;
+    target.style.opacity = "0.4";
+    const touch = e.touches[0];
+    ghost.style.left = (touch.clientX - target.offsetWidth / 2) + "px";
+    ghost.style.top = (touch.clientY - 20) + "px";
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchDragId.current) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    if (touchGhost.current) {
+      touchGhost.current.style.left = (touch.clientX - 60) + "px";
+      touchGhost.current.style.top = (touch.clientY - 20) + "px";
+    }
+    // Find which quadrant we're over
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const quadrantEl = el?.closest("[data-quadrant-id]");
+    if (quadrantEl) {
+      const qId = quadrantEl.getAttribute("data-quadrant-id") as QuadrantId;
+      setDragOverQ(qId);
+    } else {
+      setDragOverQ(null);
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent, sourceTaskId: string) => {
+    const touch = e.changedTouches[0];
+    // Clean up ghost
+    if (touchGhost.current) {
+      document.body.removeChild(touchGhost.current);
+      touchGhost.current = null;
+    }
+    // Restore opacity
+    const target = e.currentTarget as HTMLElement;
+    target.style.opacity = "1";
+    // Find drop target
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const quadrantEl = el?.closest("[data-quadrant-id]");
+    if (quadrantEl) {
+      const qId = quadrantEl.getAttribute("data-quadrant-id") as QuadrantId;
+      const newMap = { ...quadrantMap, [sourceTaskId]: qId };
+      onQuadrantMapChange(newMap);
+      const newPriority = quadrantToPriority(qId);
+      const updated = tasks.map((t) =>
+        t.id === sourceTaskId ? { ...t, priority: newPriority, updatedAt: new Date().toISOString() } : t
+      );
+      onTasksChange(updated);
+    }
+    touchDragId.current = null;
+    draggingId.current = null;
+    setDragOverQ(null);
+    setDragOverTaskId(null);
+  }, [quadrantMap, tasks, onQuadrantMapChange, onTasksChange]);
 
   const activeTasks = tasks.filter((t) => !t.done);
 
@@ -280,6 +352,7 @@ export function EisenhowerMatrix({
             return (
               <div
                 key={q.id}
+                data-quadrant-id={q.id}
                 onDragOver={(e) => handleDragOver(e, q.id)}
                 onDragLeave={() => setDragOverQ(null)}
                 onDrop={(e) => handleDrop(e, q.id)}
@@ -422,6 +495,9 @@ export function EisenhowerMatrix({
                       onDrop={(e) => handleDropOnTask(e, task.id, q.id)}
                       isDragOver={dragOverTaskId === task.id}
                       dragOverPos={dragOverPos}
+                      onTouchStart={(e) => handleTouchStart(e, task.id)}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={(e) => handleTouchEnd(e, task.id)}
                     />
                   ))}
                 </div>
@@ -459,6 +535,9 @@ function TaskChip({
   onDrop,
   isDragOver = false,
   dragOverPos = "after",
+  onTouchStart,
+  onTouchMove,
+  onTouchEnd,
 }: {
   task: Task;
   quadrantColor: string;
@@ -470,6 +549,9 @@ function TaskChip({
   onDrop?: (e: React.DragEvent) => void;
   isDragOver?: boolean;
   dragOverPos?: "before" | "after";
+  onTouchStart?: (e: React.TouchEvent) => void;
+  onTouchMove?: (e: React.TouchEvent) => void;
+  onTouchEnd?: (e: React.TouchEvent) => void;
 }) {
   return (
     <div style={{ position: "relative" }}>
@@ -483,6 +565,9 @@ function TaskChip({
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
       title={task.text}
       style={{
         background: "oklch(1 0 0 / 0.80)",
@@ -496,6 +581,8 @@ function TaskChip({
         gap: 6,
         transition: "box-shadow 0.10s, transform 0.10s",
         userSelect: "none",
+        WebkitUserSelect: "none",
+        touchAction: "none",
         boxShadow: `2px 2px 0 ${quadrantColor}22`,
       }}
       onMouseEnter={(e) => {
