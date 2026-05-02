@@ -738,6 +738,16 @@ body {
   transition: background-color 0.35s ease;
 }
 
+/* ── Global fix: prevent flex from stretching buttons/elements in mobile ──
+   The min-height:36px on buttons can cause circular buttons to become ovals
+   when inside flex containers. Reset for small buttons. ── */
+@media (max-width: 767px) {
+  /* Override the min-height:36px for small circular buttons */
+  button[style] {
+    min-height: unset;
+  }
+}
+
 /* ── Mobile Responsive Styles ────────────────────────────────
    Applied when viewport width < 768px (mobile devices)
    Key changes:

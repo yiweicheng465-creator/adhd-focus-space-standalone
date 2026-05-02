@@ -607,7 +607,7 @@ function DayDetailModal({ selectedDay, onClose, getTasksForDay, dayOrder, saveDa
                   {/* Gap crosses the spine line */}
                   <div style={{ width: 10, flexShrink: 0 }} />
                   {/* Circle — RIGHT of spine */}
-                  <button onClick={() => onTaskToggle(task.id)} style={{ flexShrink: 0, width: 16, height: 16, borderRadius: "50%", border: `1.8px solid ${PRIORITY_COLOR[task.priority] ?? "oklch(0.58 0.18 340)"}`, background: task.done ? PRIORITY_COLOR[task.priority] : "#fdf4f8", cursor: "pointer", padding: 0, position: "relative", zIndex: 1, boxShadow: `0 0 0 2px #fdf4f8` }} />
+                  <button onClick={() => onTaskToggle(task.id)} style={{ flexShrink: 0, width: 16, height: 16, minWidth: 16, minHeight: 16, borderRadius: "50%", border: `1.8px solid ${PRIORITY_COLOR[task.priority] ?? "oklch(0.58 0.18 340)"}`, background: task.done ? PRIORITY_COLOR[task.priority] : "#fdf4f8", cursor: "pointer", padding: 0, position: "relative", zIndex: 1, boxShadow: `0 0 0 2px #fdf4f8`, boxSizing: "content-box" }} />
                   {/* Gap after circle */}
                   <div style={{ width: 10, flexShrink: 0 }} />
                   {/* Task text */}

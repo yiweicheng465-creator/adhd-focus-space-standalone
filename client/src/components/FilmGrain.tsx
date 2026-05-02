@@ -10,7 +10,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 
 const LS_INTENSITY = "adhd-film-grain-intensity";
 const LS_SPEED     = "adhd-film-grain-speed";
-const DEFAULT_INTENSITY = 15;
+const DEFAULT_INTENSITY = 0;  // Off by default — user must explicitly enable
 const DEFAULT_SPEED     = 88;
 
 /* ─── helpers ─────────────────────────────────────────────── */

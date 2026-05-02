@@ -468,7 +468,7 @@ export function EffectsPanel() {
                         title={selectedSlot === idx ? `Slot ${idx + 1} selected — click "Set as" to save current hue` : p.label}
                         onClick={() => { setHue(p.hue); setSelectedSlot(selectedSlot === idx ? null : idx); }}
                         style={{
-                          width: 18, height: 18,
+                          width: 18, height: 18, minWidth: 18, minHeight: 18,
                           borderRadius: "50%",
                           background: p.color,
                           border: selectedSlot === idx
@@ -482,6 +482,8 @@ export function EffectsPanel() {
                           transform: selectedSlot === idx ? "scale(1.30)" : "scale(1)",
                           boxShadow: "0 1px 3px rgba(0,0,0,0.20)",
                           outline: "none",
+                          boxSizing: "content-box",
+                          padding: 0,
                         }}
                       />
                     ))}
